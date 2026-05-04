@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Polla Mundial 2026</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <main class="app">
+    <header class="hero">
+      <div class="badge">🏆 Mundial 2026</div>
+      <h1>Polla Mundial 2026</h1>
+      <p>
+        Completa tus pronósticos del Mundial 2026. Puedes guardar algunos partidos
+        y volver más tarde para editar. Cada partido se cierra 3 horas antes de comenzar.
+      </p>
+    </header>
+
+    <section class="user-card">
+      <label for="usuario">Tu nombre</label>
+      <input 
+        type="text" 
+        id="usuario" 
+        placeholder="Ej: Agustín" 
+        autocomplete="name"
+      />
+
+      <label for="codigoUsuario" class="second-label">Código de participante</label>
+      <input 
+        type="text" 
+        id="codigoUsuario" 
+        placeholder="Ej: agu2026" 
+        autocomplete="off"
+      />
+
+      <p class="user-help">
+        Usa siempre el mismo código para poder editar tus pronósticos después.
+      </p>
+
+      <button type="button" id="btnLimpiar" onclick="limpiarFormulario()">
+        Limpiar formulario
+      </button>
+    </section>
+
+    <section class="progress-card">
+      <p id="contadorPronosticos">Pronósticos completados: 0</p>
+    </section>
+
+    <section id="partidos" class="matches"></section>
+
+    <button id="btnEnviar" onclick="enviar()">
+      Guardar mis pronósticos
+    </button>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
