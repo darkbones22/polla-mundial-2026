@@ -292,6 +292,86 @@ function formatearFecha(fecha) {
 
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0LDbeRCQxYDp18grZApWUPQJDYEpBBODYorhPl7FeACkpytoytAVcRx0P7Szx580V2g/exec";
 
+function validarCodigoConServidor(codigoUsuario) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `validarCodigo_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2)}`;
+
+    const script = document.createElement("script");
+
+    const timeout = setTimeout(() => {
+      limpiar();
+      reject(new Error("Tiempo de espera agotado."));
+    }, 10000);
+
+    function limpiar() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[callbackName] = (respuesta) => {
+      limpiar();
+      resolve(respuesta);
+    };
+
+    script.onerror = () => {
+      limpiar();
+      reject(new Error("No se pudo validar el código."));
+    };
+
+    script.src = `${WEB_APP_URL}?action=validarCodigo&codigo=${encodeURIComponent(codigoUsuario)}&callback=${callbackName}`;
+
+    document.body.appendChild(script);
+  });
+}
+
+function mostrarPollasDelParticipante(validacionCodigo) {
+  const infoPollas = document.getElementById("infoPollas");
+
+  if (!infoPollas) return;
+
+  infoPollas.classList.remove("hidden", "error");
+
+  const listaPollas = validacionCodigo.pollas
+    .map((polla) => `<li>${polla.nombre}</li>`)
+    .join("");
+
+  infoPollas.innerHTML = `
+    <strong>✅ Código validado</strong>
+    <div>Participas en:</div>
+    <ul>${listaPollas}</ul>
+  `;
+}
+
+function mostrarErrorCodigo(mensaje) {
+  const infoPollas = document.getElementById("infoPollas");
+
+  if (!infoPollas) return;
+
+  infoPollas.classList.remove("hidden");
+  infoPollas.classList.add("error");
+
+  infoPollas.innerHTML = `
+    <strong>⚠️ Código no válido</strong>
+    <div>${mensaje}</div>
+  `;
+}
+
+function limpiarInfoPollas() {
+  const infoPollas = document.getElementById("infoPollas");
+
+  if (!infoPollas) return;
+
+  infoPollas.classList.add("hidden");
+  infoPollas.classList.remove("error");
+  infoPollas.innerHTML = "";
+}
+
 async function enviar() {
     const usuario = document.getElementById("usuario").value.trim();
     const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
@@ -306,6 +386,30 @@ async function enviar() {
   alert("Ingresa tu código de participante antes de guardar 🔐");
   return;
 }
+
+btnEnviar.disabled = true;
+btnEnviar.textContent = "Validando código... 🔐";
+
+let validacionCodigo;
+
+try {
+  validacionCodigo = await validarCodigoConServidor(codigoUsuario);
+} catch (error) {
+  alert("No se pudo validar el código. Intenta nuevamente.");
+  btnEnviar.disabled = false;
+  btnEnviar.textContent = "Guardar mis pronósticos";
+  return;
+}
+
+if (!validacionCodigo.ok) {
+  mostrarErrorCodigo(validacionCodigo.error);
+  alert(validacionCodigo.error);
+  btnEnviar.disabled = false;
+  btnEnviar.textContent = "Guardar mis pronósticos";
+  return;
+}
+
+mostrarPollasDelParticipante(validacionCodigo);
 
   const pronosticos = [];
 
@@ -393,6 +497,7 @@ inputUsuario.addEventListener("input", () => {
 inputCodigoUsuario.addEventListener("input", () => {
   localStorage.setItem("codigoUsuario", inputCodigoUsuario.value);
   actualizarContadorPronosticos();
+  limpiarInfoPollas();
 });
 
 function actualizarContadorPronosticos() {
