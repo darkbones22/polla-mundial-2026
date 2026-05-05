@@ -62,16 +62,26 @@
         <p id="usuarioActivo"></p>
       </div>
 
-      <button class="small-button" onclick="cambiarUsuario()">
-        Cambiar usuario
-      </button>
+      <div class="header-actions">
+        <button class="small-button" onclick="limpiarFormulario()">
+          Limpiar pronósticos
+        </button>
+
+        <button class="small-button" onclick="cambiarUsuario()">
+          Cambiar usuario
+        </button>
+      </div>
     </header>
 
     <section id="pollasActivasBox" class="pollas-summary"></section>
 
     <nav class="main-menu">
       <button id="tabPronosticos" class="menu-button active" onclick="mostrarSeccion('pronosticos')">
-        Pronósticos
+        Grupos
+      </button>
+
+      <button id="tabEliminacion" class="menu-button" onclick="mostrarSeccion('eliminacion')">
+        Eliminación
       </button>
 
       <button id="tabRanking" class="menu-button" onclick="mostrarSeccion('ranking')">
@@ -89,9 +99,40 @@
       <section id="partidos" class="matches"></section>
 
       <div class="save-bar">
-        <button id="btnEnviar" onclick="enviar()">
-          Guardar mis pronósticos
-        </button>
+        <div class="save-bar-content">
+          <div class="save-text">
+            <strong>Fase de grupos</strong>
+            <span>Guarda tus cambios antes de salir.</span>
+          </div>
+
+          <button id="btnEnviar" class="save-button" onclick="enviar()">
+            Guardar grupos
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- SECCIÓN ELIMINACIÓN -->
+    <section id="seccionEliminacion" class="page-section hidden">
+
+      <section class="progress-card">
+        <p id="contadorEliminacion">Pronósticos de eliminación completados: 0</p>
+      </section>
+
+      <section id="partidosEliminacion" class="matches"></section>
+
+      <div class="save-bar">
+        <div class="save-bar-content">
+          <div class="save-text">
+            <strong>Eliminación directa</strong>
+            <span>Recuerda elegir también quién clasifica.</span>
+          </div>
+
+          <button id="btnEnviarEliminacion" class="save-button" onclick="enviarEliminacion()">
+            Guardar eliminación
+          </button>
+        </div>
       </div>
 
     </section>
@@ -100,12 +141,28 @@
     <section id="seccionRanking" class="page-section hidden">
       <section class="ranking-card">
         <h2>Ranking</h2>
-        <p>
-          Aquí aparecerán los puntajes de cada polla cuando conectemos los resultados reales.
-        </p>
 
-        <div class="ranking-placeholder">
-          🏅 Ranking en construcción
+        <label for="selectorPollaRanking">Selecciona una polla</label>
+        <select id="selectorPollaRanking" onchange="cargarRankingSeleccionado()">
+          <option value="">Selecciona una polla</option>
+        </select>
+
+        <div class="ranking-tabs">
+          <button id="rankingTotalBtn" class="ranking-tab active" onclick="cambiarTipoRanking('total')">
+            Total
+          </button>
+
+          <button id="rankingGruposBtn" class="ranking-tab" onclick="cambiarTipoRanking('grupos')">
+            Grupos
+          </button>
+
+          <button id="rankingEliminacionBtn" class="ranking-tab" onclick="cambiarTipoRanking('eliminacion')">
+            Eliminación
+          </button>
+        </div>
+
+        <div id="rankingContent" class="ranking-placeholder">
+          Selecciona una polla para ver el ranking 🏅
         </div>
       </section>
     </section>

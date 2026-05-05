@@ -291,6 +291,9 @@ function formatearFecha(fecha) {
 // =======================
 
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0LDbeRCQxYDp18grZApWUPQJDYEpBBODYorhPl7FeACkpytoytAVcRx0P7Szx580V2g/exec";
+let llavesEliminacion = [];
+let tipoRankingActual = "total";
+let ultimoRankingCargado = [];
 
 function validarCodigoConServidor(codigoUsuario) {
   return new Promise((resolve, reject) => {
@@ -428,6 +431,7 @@ function abrirApp(validacionCodigo) {
   document.getElementById("usuarioActivo").textContent = `Hola, ${usuario} · Código: ${codigoUsuario}`;
 
   mostrarResumenPollas(validacionCodigo.pollas);
+  llenarSelectorRanking(validacionCodigo.pollas);
   mostrarSeccion("pronosticos");
   actualizarContadorPronosticos();
 }
@@ -449,25 +453,42 @@ function mostrarResumenPollas(pollas) {
 
 function mostrarSeccion(seccion) {
   const seccionPronosticos = document.getElementById("seccionPronosticos");
+  const seccionEliminacion = document.getElementById("seccionEliminacion");
   const seccionRanking = document.getElementById("seccionRanking");
 
   const tabPronosticos = document.getElementById("tabPronosticos");
+  const tabEliminacion = document.getElementById("tabEliminacion");
   const tabRanking = document.getElementById("tabRanking");
+
+  seccionPronosticos.classList.add("hidden");
+  seccionEliminacion.classList.add("hidden");
+  seccionRanking.classList.add("hidden");
+
+  tabPronosticos.classList.remove("active");
+  tabEliminacion.classList.remove("active");
+  tabRanking.classList.remove("active");
 
   if (seccion === "pronosticos") {
     seccionPronosticos.classList.remove("hidden");
-    seccionRanking.classList.add("hidden");
-
     tabPronosticos.classList.add("active");
-    tabRanking.classList.remove("active");
+  }
+
+  if (seccion === "eliminacion") {
+    seccionEliminacion.classList.remove("hidden");
+    tabEliminacion.classList.add("active");
+
+    if (llavesEliminacion.length === 0) {
+      cargarYRenderizarEliminacion();
+    } else {
+      renderizarEliminacion();
+    }
   }
 
   if (seccion === "ranking") {
-    seccionPronosticos.classList.add("hidden");
     seccionRanking.classList.remove("hidden");
-
-    tabPronosticos.classList.remove("active");
     tabRanking.classList.add("active");
+
+    cargarRankingSeleccionado();
   }
 }
 
@@ -476,6 +497,486 @@ function cambiarUsuario() {
   document.getElementById("loginView").classList.remove("hidden");
 
   limpiarInfoPollas();
+}
+
+function cargarRankingConServidor(idPolla) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `ranking_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2)}`;
+
+    const script = document.createElement("script");
+
+    const timeout = setTimeout(() => {
+      limpiar();
+      reject(new Error("Tiempo de espera agotado."));
+    }, 10000);
+
+    function limpiar() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[callbackName] = (respuesta) => {
+      limpiar();
+      resolve(respuesta);
+    };
+
+    script.onerror = () => {
+      limpiar();
+      reject(new Error("No se pudo cargar el ranking."));
+    };
+
+    script.src = `${WEB_APP_URL}?action=ranking&polla=${encodeURIComponent(idPolla)}&callback=${callbackName}`;
+
+    document.body.appendChild(script);
+  });
+}
+
+function llenarSelectorRanking(pollas) {
+  const selector = document.getElementById("selectorPollaRanking");
+
+  if (!selector) return;
+
+  selector.innerHTML = `<option value="">Selecciona una polla</option>`;
+
+  pollas.forEach((polla) => {
+    const option = document.createElement("option");
+    option.value = polla.id;
+    option.textContent = polla.nombre;
+    selector.appendChild(option);
+  });
+
+  if (pollas.length === 1) {
+    selector.value = pollas[0].id;
+    cargarRankingSeleccionado();
+  }
+}
+
+async function cargarRankingSeleccionado() {
+  const selector = document.getElementById("selectorPollaRanking");
+  const rankingContent = document.getElementById("rankingContent");
+
+  if (!selector || !rankingContent) return;
+
+  const idPolla = selector.value;
+
+  if (!idPolla) {
+    rankingContent.className = "ranking-placeholder";
+    rankingContent.textContent = "Selecciona una polla para ver el ranking 🏅";
+    return;
+  }
+
+  rankingContent.className = "ranking-placeholder";
+  rankingContent.textContent = "Cargando ranking... ⏳";
+
+  try {
+    const respuesta = await cargarRankingConServidor(idPolla);
+
+    if (!respuesta.ok) {
+      rankingContent.className = "ranking-empty";
+      rankingContent.textContent = respuesta.error || "No se pudo cargar el ranking.";
+      return;
+    }
+
+    ultimoRankingCargado = respuesta.ranking || [];
+    mostrarRanking(ultimoRankingCargado);
+
+  } catch (error) {
+    rankingContent.className = "ranking-empty";
+    rankingContent.textContent = "No se pudo cargar el ranking. Intenta nuevamente.";
+  }
+}
+
+function mostrarRanking(ranking) {
+  const rankingContent = document.getElementById("rankingContent");
+
+  if (!rankingContent) return;
+
+  if (!ranking || ranking.length === 0) {
+    rankingContent.className = "ranking-empty";
+    rankingContent.textContent = "Todavía no hay puntajes para esta polla.";
+    return;
+  }
+
+  ultimoRankingCargado = ranking;
+
+  const rankingOrdenado = [...ranking].sort((a, b) => {
+    const puntosA = obtenerPuntosSegunTipo(a);
+    const puntosB = obtenerPuntosSegunTipo(b);
+
+    if (puntosB !== puntosA) return puntosB - puntosA;
+
+    const exactosA = obtenerExactosSegunTipo(a);
+    const exactosB = obtenerExactosSegunTipo(b);
+
+    if (exactosB !== exactosA) return exactosB - exactosA;
+
+    return a.nombre.localeCompare(b.nombre);
+  });
+
+  rankingContent.className = "ranking-list";
+
+  rankingContent.innerHTML = rankingOrdenado
+    .map((participante, index) => {
+      const posicion = index + 1;
+      const puntos = obtenerPuntosSegunTipo(participante);
+      const detalle = obtenerDetalleSegunTipo(participante);
+
+      return `
+        <article class="ranking-item">
+          <div class="ranking-position">${posicion}</div>
+
+          <div>
+            <div class="ranking-name">${participante.nombre}</div>
+
+            <div class="ranking-breakdown">
+              ${detalle}
+            </div>
+          </div>
+
+          <div class="ranking-points">
+            ${puntos}
+            <span>puntos</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function cambiarTipoRanking(tipo) {
+  tipoRankingActual = tipo;
+
+  const totalBtn = document.getElementById("rankingTotalBtn");
+  const gruposBtn = document.getElementById("rankingGruposBtn");
+  const eliminacionBtn = document.getElementById("rankingEliminacionBtn");
+
+  totalBtn.classList.remove("active");
+  gruposBtn.classList.remove("active");
+  eliminacionBtn.classList.remove("active");
+
+  if (tipo === "total") totalBtn.classList.add("active");
+  if (tipo === "grupos") gruposBtn.classList.add("active");
+  if (tipo === "eliminacion") eliminacionBtn.classList.add("active");
+
+  mostrarRanking(ultimoRankingCargado);
+}
+
+function obtenerPuntosSegunTipo(participante) {
+  if (tipoRankingActual === "grupos") {
+    return participante.puntosGrupos || 0;
+  }
+
+  if (tipoRankingActual === "eliminacion") {
+    return participante.puntosEliminacion || 0;
+  }
+
+  return participante.puntosTotal || 0;
+}
+
+function obtenerExactosSegunTipo(participante) {
+  if (tipoRankingActual === "grupos") {
+    return participante.exactosGrupos || 0;
+  }
+
+  if (tipoRankingActual === "eliminacion") {
+    return participante.exactosEliminacion || 0;
+  }
+
+  return (participante.exactosGrupos || 0) + (participante.exactosEliminacion || 0);
+}
+
+function obtenerDetalleSegunTipo(participante) {
+  if (tipoRankingActual === "grupos") {
+    return `
+      <span class="ranking-highlight">Grupos:</span>
+      Exactos: ${participante.exactosGrupos || 0} ·
+      Ganador/empate: ${participante.ganadorEmpateGrupos || 0} ·
+      Goles local: ${participante.golesLocalGrupos || 0} ·
+      Goles visita: ${participante.golesVisitaGrupos || 0} ·
+      Diferencia: ${participante.diferenciaGrupos || 0} ·
+      Partidos: ${participante.partidosGrupos || 0}
+    `;
+  }
+
+  if (tipoRankingActual === "eliminacion") {
+    return `
+      <span class="ranking-highlight">Eliminación:</span>
+      Exactos: ${participante.exactosEliminacion || 0} ·
+      Clasificados: ${participante.clasificados || 0} ·
+      Ganador/empate: ${participante.ganadorEmpateEliminacion || 0} ·
+      Goles local: ${participante.golesLocalEliminacion || 0} ·
+      Goles visita: ${participante.golesVisitaEliminacion || 0} ·
+      Diferencia: ${participante.diferenciaEliminacion || 0} ·
+      Partidos: ${participante.partidosEliminacion || 0}
+    `;
+  }
+
+  return `
+    <span class="ranking-highlight">Total:</span>
+    Grupos: ${participante.puntosGrupos || 0} pts ·
+    Eliminación: ${participante.puntosEliminacion || 0} pts ·
+    Exactos: ${(participante.exactosGrupos || 0) + (participante.exactosEliminacion || 0)} ·
+    Partidos puntuados: ${(participante.partidosGrupos || 0) + (participante.partidosEliminacion || 0)}
+  `;
+}
+
+function cargarLlavesConServidor() {
+  return new Promise((resolve, reject) => {
+    const callbackName = `llaves_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2)}`;
+
+    const script = document.createElement("script");
+
+    const timeout = setTimeout(() => {
+      limpiar();
+      reject(new Error("Tiempo de espera agotado."));
+    }, 10000);
+
+    function limpiar() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[callbackName] = (respuesta) => {
+      limpiar();
+      resolve(respuesta);
+    };
+
+    script.onerror = () => {
+      limpiar();
+      reject(new Error("No se pudieron cargar las llaves."));
+    };
+
+    script.src = `${WEB_APP_URL}?action=llaves&callback=${callbackName}`;
+
+    document.body.appendChild(script);
+  });
+}
+
+async function cargarYRenderizarEliminacion() {
+  const contenedor = document.getElementById("partidosEliminacion");
+
+  if (!contenedor) return;
+
+  contenedor.innerHTML = `
+    <div class="knockout-message">
+      Cargando partidos de eliminación... ⏳
+    </div>
+  `;
+
+  try {
+    const respuesta = await cargarLlavesConServidor();
+
+    if (!respuesta.ok) {
+      contenedor.innerHTML = `
+        <div class="knockout-message">
+          No se pudieron cargar las llaves.
+        </div>
+      `;
+      return;
+    }
+
+    llavesEliminacion = respuesta.llaves || [];
+    renderizarEliminacion();
+
+  } catch (error) {
+    contenedor.innerHTML = `
+      <div class="knockout-message">
+        No se pudieron cargar las llaves. Intenta nuevamente.
+      </div>
+    `;
+  }
+}
+
+function renderizarEliminacion() {
+  const contenedor = document.getElementById("partidosEliminacion");
+
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "";
+
+  if (!llavesEliminacion || llavesEliminacion.length === 0) {
+    contenedor.innerHTML = `
+      <div class="knockout-message">
+        Todavía no hay partidos de eliminación cargados.
+      </div>
+    `;
+    return;
+  }
+
+  let rondaActual = "";
+
+  llavesEliminacion.forEach((partido) => {
+    if (partido.ronda !== rondaActual) {
+      rondaActual = partido.ronda;
+
+      const tituloRonda = document.createElement("h2");
+      tituloRonda.className = "group-title";
+      tituloRonda.textContent = rondaActual;
+      contenedor.appendChild(tituloRonda);
+    }
+
+    const localMostrado = partido.local || partido.localPlaceholder;
+    const visitaMostrada = partido.visita || partido.visitaPlaceholder;
+
+    const estadoNormalizado = partido.estado.trim().toLowerCase();
+
+    const abierto = estadoNormalizado === "abierto";
+    const bloqueadoPorHora = estaBloqueado({
+      fecha: partido.fecha,
+      hora: partido.hora
+    });
+
+    const bloqueado = !abierto || bloqueadoPorHora;
+
+    const tarjeta = document.createElement("article");
+    tarjeta.className = bloqueado ? "match-card locked" : "match-card";
+
+    tarjeta.innerHTML = `
+      <div class="match-info">
+        ${formatearFecha(partido.fecha)} · ${partido.hora} hrs
+      </div>
+
+      <div class="match-row">
+        <div class="team local">${localMostrado}</div>
+
+        <input 
+          class="score-input" 
+          type="number" 
+          min="0" 
+          id="${partido.id}_elim_local"
+          placeholder="0"
+          ${bloqueado ? "disabled" : ""}
+        />
+
+        <div class="separator">-</div>
+
+        <input 
+          class="score-input" 
+          type="number" 
+          min="0" 
+          id="${partido.id}_elim_visita"
+          placeholder="0"
+          ${bloqueado ? "disabled" : ""}
+        />
+
+        <div class="team visitante">${visitaMostrada}</div>
+      </div>
+
+      <div class="classify-box">
+        <span class="classify-label">¿Quién clasifica?</span>
+
+        <div class="classify-options">
+          <label class="classify-option">
+            <input 
+              type="radio" 
+              name="${partido.id}_clasifica" 
+              value="${localMostrado}"
+              ${bloqueado ? "disabled" : ""}
+            />
+            ${localMostrado}
+          </label>
+
+          <label class="classify-option">
+            <input 
+              type="radio" 
+              name="${partido.id}_clasifica" 
+              value="${visitaMostrada}"
+              ${bloqueado ? "disabled" : ""}
+            />
+            ${visitaMostrada}
+          </label>
+        </div>
+      </div>
+
+      <div class="match-status ${bloqueado ? "locked" : "open"}">
+        ${
+          bloqueado
+            ? `🔒 ${partido.estado}`
+            : "✅ Disponible para pronosticar"
+        }
+      </div>
+    `;
+
+    const inputLocal = tarjeta.querySelector(`#${partido.id}_elim_local`);
+    const inputVisita = tarjeta.querySelector(`#${partido.id}_elim_visita`);
+    const radiosClasifica = tarjeta.querySelectorAll(`input[name="${partido.id}_clasifica"]`);
+
+    inputLocal.value = localStorage.getItem(crearClaveEliminacion(partido.id, "local")) || "";
+    inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
+
+    const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasifica"));
+
+    radiosClasifica.forEach((radio) => {
+      if (radio.value === clasificaGuardado) {
+        radio.checked = true;
+      }
+    });
+
+    if (!bloqueado) {
+      inputLocal.addEventListener("input", () => {
+        localStorage.setItem(crearClaveEliminacion(partido.id, "local"), inputLocal.value);
+        actualizarContadorEliminacion();
+      });
+
+      inputVisita.addEventListener("input", () => {
+        localStorage.setItem(crearClaveEliminacion(partido.id, "visita"), inputVisita.value);
+        actualizarContadorEliminacion();
+      });
+
+      radiosClasifica.forEach((radio) => {
+        radio.addEventListener("change", () => {
+          localStorage.setItem(crearClaveEliminacion(partido.id, "clasifica"), radio.value);
+          actualizarContadorEliminacion();
+        });
+      });
+    }
+
+    contenedor.appendChild(tarjeta);
+  });
+
+  actualizarContadorEliminacion();
+}
+
+function actualizarContadorEliminacion() {
+  let completados = 0;
+
+  llavesEliminacion.forEach((partido) => {
+    const estadoNormalizado = partido.estado.trim().toLowerCase();
+
+    if (estadoNormalizado !== "abierto") return;
+
+    const inputLocal = document.getElementById(`${partido.id}_elim_local`);
+    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
+    const clasifica = document.querySelector(`input[name="${partido.id}_clasifica"]:checked`);
+
+    if (!inputLocal || !inputVisita) return;
+
+    if (
+      inputLocal.value !== "" &&
+      inputVisita.value !== "" &&
+      clasifica
+    ) {
+      completados++;
+    }
+  });
+
+  const contador = document.getElementById("contadorEliminacion");
+
+  if (contador) {
+    contador.textContent = `Pronósticos de eliminación completados: ${completados}`;
+  }
 }
 
 async function enviar() {
@@ -641,11 +1142,24 @@ function crearClavePronostico(partidoId, tipo) {
   return `pronostico_${codigo}_${partidoId}_${tipo}`;
 }
 
+function crearClaveEliminacion(partidoId, tipo) {
+  const codigo = obtenerCodigoActual();
+
+  if (!codigo) {
+    return `sin_codigo_elim_${partidoId}_${tipo}`;
+  }
+
+  return `eliminacion_${codigo}_${partidoId}_${tipo}`;
+}
+
 function limpiarFormulario() {
-  const confirmar = confirm("¿Seguro que quieres limpiar los pronósticos de este formulario?");
+  const confirmar = confirm(
+    "¿Seguro que quieres limpiar los pronósticos guardados en este dispositivo? Esto no borra lo que ya enviaste a la polla."
+  );
 
   if (!confirmar) return;
 
+  // Limpiar fase de grupos
   partidos.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_local`);
     const inputVisita = document.getElementById(`${partido.id}_visita`);
@@ -657,10 +1171,157 @@ function limpiarFormulario() {
     localStorage.removeItem(crearClavePronostico(partido.id, "visita"));
   });
 
-  actualizarContadorPronosticos();
+  // Limpiar eliminación directa
+  llavesEliminacion.forEach((partido) => {
+    const inputLocal = document.getElementById(`${partido.id}_elim_local`);
+    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
+    const radiosClasifica = document.querySelectorAll(`input[name="${partido.id}_clasifica"]`);
 
-  alert("Formulario limpio ✅");
+    if (inputLocal) inputLocal.value = "";
+    if (inputVisita) inputVisita.value = "";
+
+    radiosClasifica.forEach((radio) => {
+      radio.checked = false;
+    });
+
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "local"));
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "visita"));
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "clasifica"));
+  });
+
+  actualizarContadorPronosticos();
+  actualizarContadorEliminacion();
+
+  alert("Pronósticos limpiados en este dispositivo ✅");
 }
+
+async function enviarEliminacion() {
+  const usuario = document.getElementById("usuario").value.trim();
+  const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
+  const btnEnviar = document.getElementById("btnEnviarEliminacion");
+
+  if (!usuario) {
+    alert("Ingresa tu nombre antes de guardar 😊");
+    return;
+  }
+
+  if (!codigoUsuario) {
+    alert("Ingresa tu código de participante antes de guardar 🔐");
+    return;
+  }
+
+  btnEnviar.disabled = true;
+  btnEnviar.textContent = "Validando código... 🔐";
+
+  let validacionCodigo;
+
+  try {
+    validacionCodigo = await validarCodigoConServidor(codigoUsuario);
+  } catch (error) {
+    alert("No se pudo validar el código. Intenta nuevamente.");
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = "Guardar eliminación";
+    return;
+  }
+
+  if (!validacionCodigo.ok) {
+    mostrarErrorCodigo(validacionCodigo.error);
+    alert(validacionCodigo.error);
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = "Guardar eliminación";
+    return;
+  }
+
+  const pronosticos = [];
+
+  for (const partido of llavesEliminacion) {
+    const estadoNormalizado = partido.estado.trim().toLowerCase();
+
+    if (estadoNormalizado !== "abierto") {
+      continue;
+    }
+
+    const bloqueadoPorHora = estaBloqueado({
+      fecha: partido.fecha,
+      hora: partido.hora
+    });
+
+    if (bloqueadoPorHora) {
+      continue;
+    }
+
+    const localMostrado = partido.local || partido.localPlaceholder;
+    const visitaMostrada = partido.visita || partido.visitaPlaceholder;
+
+    const golesLocal = document.getElementById(`${partido.id}_elim_local`).value;
+    const golesVisita = document.getElementById(`${partido.id}_elim_visita`).value;
+    const clasificaSeleccionado = document.querySelector(`input[name="${partido.id}_clasifica"]:checked`);
+
+    const localVacio = golesLocal === "";
+    const visitaVacia = golesVisita === "";
+    const clasificaVacio = !clasificaSeleccionado;
+
+    if (localVacio && visitaVacia && clasificaVacio) {
+      continue;
+    }
+
+    if (localVacio || visitaVacia || clasificaVacio) {
+      alert(`Te falta completar goles y clasificado en ${localMostrado} vs ${visitaMostrada} ⚽`);
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = "Guardar eliminación";
+      return;
+    }
+
+    pronosticos.push({
+      id: partido.id,
+      ronda: partido.ronda,
+      fecha: partido.fecha,
+      hora: partido.hora,
+      local: localMostrado,
+      golesLocal: Number(golesLocal),
+      golesVisita: Number(golesVisita),
+      visita: visitaMostrada,
+      clasifica: clasificaSeleccionado.value
+    });
+  }
+
+  if (pronosticos.length === 0) {
+    alert("Completa al menos un partido abierto de eliminación antes de guardar 😊");
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = "Guardar eliminación";
+    return;
+  }
+
+  btnEnviar.textContent = "Guardando eliminación... ⏳";
+
+  try {
+    await fetch(WEB_APP_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body: JSON.stringify({
+        tipo: "eliminacion",
+        usuario,
+        codigoUsuario,
+        pronosticos
+      })
+    });
+
+    alert("Pronósticos de eliminación guardados correctamente ✅");
+    btnEnviar.textContent = "Eliminación guardada ✅";
+
+    setTimeout(() => {
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = "Guardar eliminación";
+    }, 2000);
+
+  } catch (error) {
+    console.error(error);
+    alert("Hubo un error al guardar la eliminación. Intenta nuevamente.");
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = "Guardar eliminación";
+  }
+}
+
 // Iniciar página
 renderizarPartidos();
 actualizarContadorPronosticos();
