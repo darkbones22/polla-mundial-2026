@@ -14,6 +14,7 @@ body {
   max-width: 900px;
   margin: 0 auto;
   padding: 20px;
+  padding-bottom: 110px;
 }
 
 .hero {
@@ -129,9 +130,18 @@ body {
   color: #64748b;
 }
 
+.save-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  background: rgba(238, 243, 248, 0.92);
+  backdrop-filter: blur(10px);
+  padding: 12px 0 16px;
+  margin-top: 26px;
+}
+
 #btnEnviar {
   width: 100%;
-  margin-top: 26px;
   padding: 16px;
   border: none;
   border-radius: 16px;
@@ -270,4 +280,208 @@ body {
 
 .hidden {
   display: none;
+}
+
+.login-view {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #eef3f8;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 480px;
+  background: white;
+  padding: 28px;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.login-card h1 {
+  margin: 12px 0 8px;
+  color: #0f172a;
+}
+
+.login-card p {
+  color: #64748b;
+}
+
+.login-card label {
+  display: block;
+  font-weight: bold;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+#btnIngresar {
+  width: 100%;
+  margin-top: 18px;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  background: #1d4ed8;
+  color: white;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#btnIngresar:hover {
+  background: #1e40af;
+}
+
+#btnIngresar:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #0f172a, #1d4ed8);
+  color: white;
+  padding: 24px 20px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.app-header h1 {
+  margin: 8px 0;
+  font-size: 32px;
+}
+
+.app-header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.small-button {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.small-button:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.pollas-summary {
+  background: white;
+  padding: 14px 18px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.pollas-summary strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.pollas-summary ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.main-menu {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.menu-button {
+  border: none;
+  border-radius: 12px;
+  padding: 13px;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.menu-button.active {
+  background: #1d4ed8;
+  color: white;
+}
+
+.page-section {
+  animation: fadeIn 0.2s ease;
+}
+
+.ranking-card {
+  background: white;
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.ranking-card h2 {
+  margin-top: 0;
+}
+
+.ranking-placeholder {
+  margin-top: 18px;
+  padding: 22px;
+  border-radius: 16px;
+  background: #f8fafc;
+  text-align: center;
+  font-weight: bold;
+  color: #64748b;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    flex-direction: column;
+  }
+
+  .small-button {
+    width: 100%;
+  }
+
+  .app-header h1 {
+    font-size: 27px;
+  }
 }

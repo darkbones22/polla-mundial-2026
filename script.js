@@ -372,6 +372,112 @@ function limpiarInfoPollas() {
   infoPollas.innerHTML = "";
 }
 
+async function iniciarSesion() {
+  const usuario = document.getElementById("usuario").value.trim();
+  const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
+  const btnIngresar = document.getElementById("btnIngresar");
+
+  if (!usuario) {
+    alert("Ingresa tu nombre 😊");
+    return;
+  }
+
+  if (!codigoUsuario) {
+    alert("Ingresa tu código de participante 🔐");
+    return;
+  }
+
+  btnIngresar.disabled = true;
+  btnIngresar.textContent = "Validando código... 🔐";
+
+  let validacionCodigo;
+
+  try {
+    validacionCodigo = await validarCodigoConServidor(codigoUsuario);
+  } catch (error) {
+    mostrarErrorCodigo("No se pudo validar el código. Intenta nuevamente.");
+    btnIngresar.disabled = false;
+    btnIngresar.textContent = "Ingresar";
+    return;
+  }
+
+  if (!validacionCodigo.ok) {
+    mostrarErrorCodigo(validacionCodigo.error);
+    btnIngresar.disabled = false;
+    btnIngresar.textContent = "Ingresar";
+    return;
+  }
+
+  localStorage.setItem("usuario", usuario);
+  localStorage.setItem("codigoUsuario", codigoUsuario);
+
+  mostrarPollasDelParticipante(validacionCodigo);
+  abrirApp(validacionCodigo);
+
+  btnIngresar.disabled = false;
+  btnIngresar.textContent = "Ingresar";
+}
+
+function abrirApp(validacionCodigo) {
+  const usuario = document.getElementById("usuario").value.trim();
+  const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
+
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("appView").classList.remove("hidden");
+
+  document.getElementById("usuarioActivo").textContent = `Hola, ${usuario} · Código: ${codigoUsuario}`;
+
+  mostrarResumenPollas(validacionCodigo.pollas);
+  mostrarSeccion("pronosticos");
+  actualizarContadorPronosticos();
+}
+
+function mostrarResumenPollas(pollas) {
+  const box = document.getElementById("pollasActivasBox");
+
+  if (!box) return;
+
+  const lista = pollas
+    .map((polla) => `<li>${polla.nombre}</li>`)
+    .join("");
+
+  box.innerHTML = `
+    <strong>Participas en:</strong>
+    <ul>${lista}</ul>
+  `;
+}
+
+function mostrarSeccion(seccion) {
+  const seccionPronosticos = document.getElementById("seccionPronosticos");
+  const seccionRanking = document.getElementById("seccionRanking");
+
+  const tabPronosticos = document.getElementById("tabPronosticos");
+  const tabRanking = document.getElementById("tabRanking");
+
+  if (seccion === "pronosticos") {
+    seccionPronosticos.classList.remove("hidden");
+    seccionRanking.classList.add("hidden");
+
+    tabPronosticos.classList.add("active");
+    tabRanking.classList.remove("active");
+  }
+
+  if (seccion === "ranking") {
+    seccionPronosticos.classList.add("hidden");
+    seccionRanking.classList.remove("hidden");
+
+    tabPronosticos.classList.remove("active");
+    tabRanking.classList.add("active");
+  }
+}
+
+function cambiarUsuario() {
+  document.getElementById("appView").classList.add("hidden");
+  document.getElementById("loginView").classList.remove("hidden");
+
+  limpiarInfoPollas();
+}
+
 async function enviar() {
     const usuario = document.getElementById("usuario").value.trim();
     const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
