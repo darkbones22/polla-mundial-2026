@@ -426,6 +426,25 @@ function limpiarInfoPollas() {
   infoPollas.innerHTML = "";
 }
 
+async function sincronizarPronosticosUsuarioDesdeServidor(codigoUsuario) {
+  try {
+    const pronosticosUsuario = await cargarPronosticosUsuarioConServidor(codigoUsuario);
+
+    if (pronosticosUsuario.ok) {
+      aplicarPronosticosServidorEnLocalStorage(
+        pronosticosUsuario.pronosticos,
+        codigoUsuario
+      );
+
+      return true;
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  return false;
+}
+
 async function iniciarSesion() {
   const usuario = document.getElementById("usuario").value.trim();
   const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
@@ -467,18 +486,7 @@ async function iniciarSesion() {
 
   btnIngresar.textContent = "Cargando pronósticos... ⏳";
 
-  try {
-    const pronosticosUsuario = await cargarPronosticosUsuarioConServidor(codigoUsuario);
-
-    if (pronosticosUsuario.ok) {
-      aplicarPronosticosServidorEnLocalStorage(
-        pronosticosUsuario.pronosticos,
-        codigoUsuario
-      );
-    }
-  } catch (error) {
-    console.error(error);
-  }
+  await sincronizarPronosticosUsuarioDesdeServidor(codigoUsuario);
 
   mostrarPollasDelParticipante(validacionCodigo);
   abrirApp(validacionCodigo);
@@ -502,6 +510,38 @@ function abrirApp(validacionCodigo) {
   recargarPronosticosGruposDesdeLocalStorage();
   recargarPronosticosEliminacionDesdeLocalStorage();
   actualizarContadorPronosticos();
+}
+
+async function iniciarSesionGuardada() {
+  const usuarioGuardado = localStorage.getItem("usuario") || "";
+  const codigoGuardado = localStorage.getItem("codigoUsuario") || "";
+
+  if (!usuarioGuardado || !codigoGuardado) return;
+
+  const btnIngresar = document.getElementById("btnIngresar");
+
+  btnIngresar.disabled = true;
+  btnIngresar.textContent = "Cargando pronósticos... ⏳";
+
+  try {
+    const validacionCodigo = await validarCodigoConServidor(codigoGuardado);
+
+    if (!validacionCodigo.ok) {
+      btnIngresar.disabled = false;
+      btnIngresar.textContent = "Ingresar";
+      return;
+    }
+
+    await sincronizarPronosticosUsuarioDesdeServidor(codigoGuardado);
+    mostrarPollasDelParticipante(validacionCodigo);
+    abrirApp(validacionCodigo);
+
+  } catch (error) {
+    console.error(error);
+  }
+
+  btnIngresar.disabled = false;
+  btnIngresar.textContent = "Ingresar";
 }
 
 function mostrarResumenPollas(pollas) {
@@ -1512,3 +1552,4 @@ async function enviarEliminacion() {
 // Iniciar página
 renderizarPartidos();
 actualizarContadorPronosticos();
+iniciarSesionGuardada();
