@@ -76,7 +76,7 @@ const equipos = {
   L4: "Panamá",
 };
 
-const partidos = [
+let partidos = [
   // Grupo A
   { id: "GA1", grupo: "A", fecha: "2026-06-11", hora: "15:00", local: "A1", visita: "A2" },
   { id: "GA2", grupo: "A", fecha: "2026-06-11", hora: "22:00", local: "A3", visita: "A4" },
@@ -205,31 +205,92 @@ function estaBloqueado(partido) {
 
 const contenedorPartidos = document.getElementById("partidos");
 
+function obtenerFechaHoraPartido(partido) {
+  return new Date(`${partido.fecha}T${partido.hora}:00`);
+}
+
+function formatearFechaEncabezado(fecha) {
+  const fechaObj = new Date(fecha + "T00:00:00");
+  const fechaTexto = fechaObj.toLocaleDateString("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+  const fechaSinComa = fechaTexto.replace(",", "");
+
+  return fechaSinComa.charAt(0).toUpperCase() + fechaSinComa.slice(1);
+}
+
+function obtenerEstadoVisualGrupo(partido) {
+  const estado = String(partido.estado || "").trim().toLowerCase();
+
+  if (estado === "cerrado" || estado === "finalizado") {
+    return {
+      bloqueado: true,
+      motivo: "estado",
+      texto: "\uD83D\uDD12 Partido cerrado"
+    };
+  }
+
+  if (estaBloqueado(partido)) {
+    return {
+      bloqueado: true,
+      motivo: "horario",
+      texto: "\uD83D\uDD12 Pron\u00f3stico cerrado"
+    };
+  }
+
+  return {
+    bloqueado: false,
+    motivo: "disponible",
+    texto: "\u2705 Disponible para editar"
+  };
+}
+
+function obtenerNombreEquipo(referenciaEquipo) {
+  return equipos[referenciaEquipo] || referenciaEquipo || "";
+}
+
 function renderizarPartidos() {
-  let grupoActual = "";
+  contenedorPartidos.innerHTML = "";
 
-  partidos.forEach((partido) => {
-    if (partido.grupo !== grupoActual) {
-      grupoActual = partido.grupo;
+  const partidosOrdenados = [...partidos].sort((a, b) => {
+    const fechaA = obtenerFechaHoraPartido(a);
+    const fechaB = obtenerFechaHoraPartido(b);
 
-      const tituloGrupo = document.createElement("h2");
-      tituloGrupo.className = "group-title";
-      tituloGrupo.textContent = `Grupo ${grupoActual}`;
-      contenedorPartidos.appendChild(tituloGrupo);
+    return fechaA - fechaB;
+  });
+
+  let fechaActual = "";
+
+  partidosOrdenados.forEach((partido) => {
+    if (partido.fecha !== fechaActual) {
+      fechaActual = partido.fecha;
+
+      const tituloFecha = document.createElement("h2");
+      tituloFecha.className = "date-title";
+      tituloFecha.textContent = formatearFechaEncabezado(fechaActual);
+      contenedorPartidos.appendChild(tituloFecha);
     }
 
-    const bloqueado = estaBloqueado(partido);
+    const estadoVisual = obtenerEstadoVisualGrupo(partido);
+    const bloqueado = estadoVisual.bloqueado;
     const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
     const horaSegura = escapeHTML(partido.hora);
-    const localSeguro = escapeHTML(equipos[partido.local]);
-    const visitaSeguro = escapeHTML(equipos[partido.visita]);
+    const grupoSeguro = escapeHTML(partido.grupo);
+    const localSeguro = escapeHTML(obtenerNombreEquipo(partido.local));
+    const visitaSeguro = escapeHTML(obtenerNombreEquipo(partido.visita));
 
     const tarjeta = document.createElement("article");
-    tarjeta.className = bloqueado ? "match-card locked" : "match-card";
+    tarjeta.className = bloqueado
+      ? "match-card locked partido-bloqueado"
+      : "match-card";
 
     tarjeta.innerHTML = `
       <div class="match-info">
-        ${fechaSegura} · ${horaSegura} hrs
+        <span class="group-badge">Grupo ${grupoSeguro}</span>
+        ${fechaSegura} &middot; ${horaSegura} hrs
       </div>
 
       <div class="match-row">
@@ -258,12 +319,8 @@ function renderizarPartidos() {
         <div class="team visitante">${visitaSeguro}</div>
       </div>
 
-      <div class="match-status ${bloqueado ? "locked" : "open"}">
-        ${
-          bloqueado
-            ? "🔒 Pronóstico cerrado"
-            : "✅ Disponible para editar"
-        }
+      <div class="match-status ${bloqueado ? "locked bloqueado" : "open disponible"}">
+        ${escapeHTML(estadoVisual.texto)}
       </div>
     `;
 
@@ -307,6 +364,44 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0LDbeRCQxYDp18grZ
 let llavesEliminacion = [];
 let tipoRankingActual = "total";
 let ultimoRankingCargado = [];
+
+function cargarPartidosConServidor() {
+  return new Promise((resolve, reject) => {
+    const callbackName = `partidos_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2)}`;
+
+    const script = document.createElement("script");
+
+    const timeout = setTimeout(() => {
+      limpiar();
+      reject(new Error("Tiempo de espera agotado."));
+    }, 10000);
+
+    function limpiar() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[callbackName] = (respuesta) => {
+      limpiar();
+      resolve(respuesta);
+    };
+
+    script.onerror = () => {
+      limpiar();
+      reject(new Error("No se pudieron cargar los partidos."));
+    };
+
+    script.src = `${WEB_APP_URL}?action=partidos&callback=${callbackName}`;
+
+    document.body.appendChild(script);
+  });
+}
 
 function validarCodigoConServidor(codigoUsuario) {
   return new Promise((resolve, reject) => {
@@ -379,6 +474,46 @@ function cargarPronosticosUsuarioConServidor(codigoUsuario) {
     };
 
     script.src = `${WEB_APP_URL}?action=pronosticosUsuario&codigo=${encodeURIComponent(codigoUsuario)}&callback=${callbackName}`;
+
+    document.body.appendChild(script);
+  });
+}
+
+function guardarPronosticosConServidor(datosGuardado) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `guardarPronosticos_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2)}`;
+
+    const script = document.createElement("script");
+
+    const timeout = setTimeout(() => {
+      limpiar();
+      reject(new Error("Tiempo de espera agotado."));
+    }, 20000);
+
+    function limpiar() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[callbackName] = (respuesta) => {
+      limpiar();
+      resolve(respuesta);
+    };
+
+    script.onerror = () => {
+      limpiar();
+      reject(new Error("No se pudieron guardar los pronósticos."));
+    };
+
+    const data = encodeURIComponent(JSON.stringify(datosGuardado));
+
+    script.src = `${WEB_APP_URL}?action=guardarPronosticos&data=${data}&callback=${callbackName}`;
 
     document.body.appendChild(script);
   });
@@ -1163,7 +1298,7 @@ mostrarPollasDelParticipante(validacionCodigo);
     }
 
     if (localVacio || visitaVacia) {
-      alert(`Te falta completar ambos goles en ${equipos[partido.local]} vs ${equipos[partido.visita]} ⚽`);
+      alert(`Te falta completar ambos goles en ${obtenerNombreEquipo(partido.local)} vs ${obtenerNombreEquipo(partido.visita)} ⚽`);
       btnEnviar.disabled = false;
       btnEnviar.textContent = "Guardar mis pronósticos";
       return;
@@ -1174,10 +1309,10 @@ mostrarPollasDelParticipante(validacionCodigo);
       grupo: partido.grupo,
       fecha: partido.fecha,
       hora: partido.hora,
-      local: equipos[partido.local],
+      local: obtenerNombreEquipo(partido.local),
       golesLocal: Number(golesLocal),
       golesVisita: Number(golesVisita),
-      visita: equipos[partido.visita]
+      visita: obtenerNombreEquipo(partido.visita)
     });
   }
 
@@ -1192,17 +1327,20 @@ mostrarPollasDelParticipante(validacionCodigo);
   btnEnviar.textContent = "Guardando pronósticos... ⏳";
 
   try {
-    await fetch(WEB_APP_URL, {
-      method: "POST",
-      mode: "no-cors",
-      body: JSON.stringify({
-        usuario,
-        codigoUsuario,
-        pronosticos
-        })
+    const respuesta = await guardarPronosticosConServidor({
+      usuario,
+      codigoUsuario,
+      pronosticos
     });
 
-    alert("Pronósticos guardados correctamente ✅");
+    if (!respuesta.ok) {
+      alert(respuesta.error || respuesta.mensaje || "No se pudieron guardar los pronósticos. Intenta nuevamente.");
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = "Guardar mis pronósticos";
+      return;
+    }
+
+    alert(respuesta.mensaje || "Pronósticos guardados correctamente ✅");
     btnEnviar.textContent = "Pronósticos guardados ✅";
 
     setTimeout(() => {
@@ -1522,16 +1660,19 @@ async function enviarEliminacion() {
   btnEnviar.textContent = "Guardando eliminación... ⏳";
 
   try {
-    await fetch(WEB_APP_URL, {
-      method: "POST",
-      mode: "no-cors",
-      body: JSON.stringify({
-        tipo: "eliminacion",
-        usuario,
-        codigoUsuario,
-        pronosticos
-      })
+    const respuesta = await guardarPronosticosConServidor({
+      tipo: "eliminacion",
+      usuario,
+      codigoUsuario,
+      pronosticos
     });
+
+    if (!respuesta.ok) {
+      alert(respuesta.error || "No se pudo guardar la eliminación. Intenta nuevamente.");
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = "Guardar eliminación";
+      return;
+    }
 
     alert("Pronósticos de eliminación guardados correctamente ✅");
     btnEnviar.textContent = "Eliminación guardada ✅";
@@ -1549,7 +1690,21 @@ async function enviarEliminacion() {
   }
 }
 
+async function inicializarApp() {
+  try {
+    const respuesta = await cargarPartidosConServidor();
+
+    if (respuesta.ok && Array.isArray(respuesta.partidos)) {
+      partidos = respuesta.partidos;
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  renderizarPartidos();
+  actualizarContadorPronosticos();
+  iniciarSesionGuardada();
+}
+
 // Iniciar página
-renderizarPartidos();
-actualizarContadorPronosticos();
-iniciarSesionGuardada();
+inicializarApp();

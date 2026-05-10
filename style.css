@@ -81,6 +81,12 @@ body {
   color: #0f172a;
 }
 
+.date-title {
+  margin: 24px 0 4px;
+  font-size: 22px;
+  color: #0f172a;
+}
+
 .match-card {
   background: white;
   border-radius: 16px;
@@ -88,10 +94,26 @@ body {
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
 
+.match-card.partido-bloqueado {
+  border: 1px solid #fecaca;
+}
+
 .match-info {
   font-size: 13px;
   color: #64748b;
   margin-bottom: 12px;
+}
+
+.group-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .match-row {
@@ -249,12 +271,22 @@ body {
   color: #16a34a;
 }
 
+.match-status.disponible {
+  color: #16a34a;
+}
+
 .match-status.locked {
+  color: #dc2626;
+}
+
+.match-status.bloqueado {
   color: #dc2626;
 }
 
 .score-input:disabled {
   background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #64748b;
   cursor: not-allowed;
 }
 
