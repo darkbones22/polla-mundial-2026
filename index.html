@@ -56,7 +56,7 @@
   <main id="appView" class="app hidden">
 
     <header class="app-header">
-      <div>
+      <div class="header-title">
         <div class="badge">🏆 Mundial 2026</div>
         <h1>Polla Mundial 2026</h1>
         <p id="usuarioActivo"></p>
@@ -66,6 +66,27 @@
         <button class="small-button" onclick="limpiarFormulario()">
           Limpiar pronósticos
         </button>
+
+        <section id="selectorPollaGlobalBox" class="global-polla-selector hidden">
+          <label id="selectorPollaGlobalLabel" for="selectorPollaGlobal">Polla:</label>
+          <button
+            id="selectorPollaGlobalButton"
+            class="global-polla-button"
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            aria-labelledby="selectorPollaGlobalLabel selectorPollaGlobalTexto"
+            onclick="toggleDropdownPollaGlobal(event)"
+            onkeydown="manejarTecladoDropdownPollaGlobal(event)"
+          >
+            <span id="selectorPollaGlobalTexto">Selecciona una polla</span>
+            <span class="global-polla-arrow" aria-hidden="true"></span>
+          </button>
+          <div id="selectorPollaGlobalMenu" class="global-polla-menu hidden" role="listbox"></div>
+          <select id="selectorPollaGlobal" class="native-polla-select" onchange="cambiarPollaGlobal()">
+            <option value="">Selecciona una polla</option>
+          </select>
+        </section>
 
         <button class="small-button" onclick="cambiarUsuario()">
           Cambiar usuario
@@ -77,15 +98,19 @@
 
     <nav class="main-menu">
       <button id="tabPronosticos" class="menu-button active" onclick="mostrarSeccion('pronosticos')">
-        Grupos
+        Pronósticos Fase de grupos
       </button>
 
       <button id="tabEliminacion" class="menu-button" onclick="mostrarSeccion('eliminacion')">
-        Eliminación
+        Pronóstico Fase de eliminación
       </button>
 
       <button id="tabRanking" class="menu-button" onclick="mostrarSeccion('ranking')">
         Ranking
+      </button>
+
+      <button id="tabResultados" class="menu-button" onclick="mostrarSeccion('resultados')">
+        Resultados
       </button>
     </nav>
 
@@ -111,6 +136,11 @@
         </div>
       </div>
 
+    </section>
+
+    <!-- SECCIÓN RESULTADOS -->
+    <section id="seccionResultados" class="page-section hidden">
+      <section id="resultadosGrupos" class="matches"></section>
     </section>
 
     <!-- SECCIÓN ELIMINACIÓN -->
@@ -142,8 +172,8 @@
       <section class="ranking-card">
         <h2>Ranking</h2>
 
-        <label for="selectorPollaRanking">Selecciona una polla</label>
-        <select id="selectorPollaRanking" onchange="cargarRankingSeleccionado()">
+        <label for="selectorPollaRanking" class="hidden">Selecciona una polla</label>
+        <select id="selectorPollaRanking" class="hidden" onchange="cargarRankingSeleccionado()">
           <option value="">Selecciona una polla</option>
         </select>
 

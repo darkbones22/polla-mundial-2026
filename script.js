@@ -204,6 +204,9 @@ function estaBloqueado(partido) {
 // =======================
 
 const contenedorPartidos = document.getElementById("partidos");
+const contenedorResultados = document.getElementById("resultadosGrupos");
+let resultadosGrupos = {};
+let detalleResultadoAbierto = "";
 
 function obtenerFechaHoraPartido(partido) {
   return new Date(`${partido.fecha}T${partido.hora}:00`);
@@ -229,7 +232,8 @@ function obtenerEstadoVisualGrupo(partido) {
     return {
       bloqueado: true,
       motivo: "estado",
-      texto: "\uD83D\uDD12 Partido cerrado"
+      clase: estado === "finalizado" ? "finalizado" : "bloqueado",
+      texto: estado === "finalizado" ? "\uD83C\uDFC1 Finalizado" : "\uD83D\uDD12 Cerrado"
     };
   }
 
@@ -237,14 +241,50 @@ function obtenerEstadoVisualGrupo(partido) {
     return {
       bloqueado: true,
       motivo: "horario",
-      texto: "\uD83D\uDD12 Pron\u00f3stico cerrado"
+      clase: "bloqueado",
+      texto: "\uD83D\uDD12 Cerrado"
     };
   }
 
   return {
     bloqueado: false,
     motivo: "disponible",
-    texto: "\u2705 Disponible para editar"
+    clase: "disponible",
+    texto: "\u2705 Disponible"
+  };
+}
+
+function obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora) {
+  const estado = String(partido.estado || "").trim().toLowerCase();
+
+  if (estado === "finalizado") {
+    return {
+      bloqueado: true,
+      clase: "finalizado",
+      texto: "\uD83C\uDFC1 Finalizado"
+    };
+  }
+
+  if (estado === "pendiente") {
+    return {
+      bloqueado: true,
+      clase: "pendiente",
+      texto: "\u23F3 Pendiente"
+    };
+  }
+
+  if (estado === "cerrado" || bloqueadoPorHora) {
+    return {
+      bloqueado: true,
+      clase: "bloqueado",
+      texto: "\uD83D\uDD12 Cerrado"
+    };
+  }
+
+  return {
+    bloqueado: false,
+    clase: "disponible",
+    texto: "\u2705 Disponible"
   };
 }
 
@@ -252,15 +292,44 @@ function obtenerNombreEquipo(referenciaEquipo) {
   return equipos[referenciaEquipo] || referenciaEquipo || "";
 }
 
-function renderizarPartidos() {
-  contenedorPartidos.innerHTML = "";
+function guardarResultadosEnMemoria(resultados) {
+  resultadosGrupos = {};
 
-  const partidosOrdenados = [...partidos].sort((a, b) => {
+  resultados.forEach((resultado) => {
+    if (!resultado.id) return;
+
+    resultadosGrupos[resultado.id] = resultado;
+  });
+}
+
+function partidoDisponibleParaPronosticar(partido) {
+  return !obtenerEstadoVisualGrupo(partido).bloqueado;
+}
+
+function ordenarPartidosPorFechaHora(listaPartidos) {
+  return [...listaPartidos].sort((a, b) => {
     const fechaA = obtenerFechaHoraPartido(a);
     const fechaB = obtenerFechaHoraPartido(b);
 
     return fechaA - fechaB;
   });
+}
+
+function renderizarPartidos() {
+  contenedorPartidos.innerHTML = "";
+
+  const partidosOrdenados = ordenarPartidosPorFechaHora(
+    partidos.filter(partidoDisponibleParaPronosticar)
+  );
+
+  if (partidosOrdenados.length === 0) {
+    contenedorPartidos.innerHTML = `
+      <div class="empty-state">
+        No hay partidos disponibles para pronosticar por ahora.
+      </div>
+    `;
+    return;
+  }
 
   let fechaActual = "";
 
@@ -284,8 +353,8 @@ function renderizarPartidos() {
 
     const tarjeta = document.createElement("article");
     tarjeta.className = bloqueado
-      ? "match-card locked partido-bloqueado"
-      : "match-card";
+      ? "match-card group-prediction-card locked partido-bloqueado"
+      : "match-card group-prediction-card";
 
     tarjeta.innerHTML = `
       <div class="match-info">
@@ -319,7 +388,7 @@ function renderizarPartidos() {
         <div class="team visitante">${visitaSeguro}</div>
       </div>
 
-      <div class="match-status ${bloqueado ? "locked bloqueado" : "open disponible"}">
+      <div class="match-status ${estadoVisual.clase}">
         ${escapeHTML(estadoVisual.texto)}
       </div>
     `;
@@ -346,6 +415,238 @@ function renderizarPartidos() {
   });
 }
 
+function renderizarResultadosGrupos() {
+  if (!contenedorResultados) return;
+
+  contenedorResultados.innerHTML = "";
+
+  const partidosCerrados = ordenarPartidosPorFechaHora(
+    partidos.filter((partido) => !partidoDisponibleParaPronosticar(partido))
+  );
+
+  if (partidosCerrados.length === 0) {
+    contenedorResultados.innerHTML = `
+      <div class="empty-state">
+        Todavía no hay resultados disponibles.
+      </div>
+    `;
+    return;
+  }
+
+  partidosCerrados.forEach((partido) => {
+    const resultado = resultadosGrupos[partido.id];
+    const resultadoFinalizado =
+      resultado &&
+      String(resultado.estado || "").trim().toLowerCase() === "finalizado" &&
+      resultado.golesLocalReal !== "" &&
+      resultado.golesVisitaReal !== "";
+
+    const marcador = resultadoFinalizado
+      ? `${escapeHTML(resultado.golesLocalReal)} - ${escapeHTML(resultado.golesVisitaReal)}`
+      : "Resultado pendiente";
+
+    const grupoSeguro = escapeHTML(partido.grupo);
+    const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
+    const horaSegura = escapeHTML(partido.hora);
+    const localSeguro = escapeHTML(obtenerNombreEquipo(partido.local));
+    const visitaSeguro = escapeHTML(obtenerNombreEquipo(partido.visita));
+
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "match-card result-card partido-bloqueado";
+    tarjeta.setAttribute("role", "button");
+    tarjeta.setAttribute("tabindex", "0");
+    tarjeta.setAttribute("aria-expanded", detalleResultadoAbierto === partido.id ? "true" : "false");
+
+    tarjeta.innerHTML = `
+      <div class="match-info">
+        <span class="group-badge">Grupo ${grupoSeguro}</span>
+        ${fechaSegura} &middot; ${horaSegura} hrs
+      </div>
+
+      <div class="result-row">
+        <div class="team local">${localSeguro}</div>
+        <div class="${resultadoFinalizado ? "result-score" : "result-pending"}">${marcador}</div>
+        <div class="team visitante">${visitaSeguro}</div>
+      </div>
+
+      <div class="result-hint">
+        ${resultadoFinalizado ? "Ver detalle de puntos" : "El resultado a\u00fan no est\u00e1 disponible."}
+      </div>
+    `;
+
+    contenedorResultados.appendChild(tarjeta);
+
+    const panelDetalle = document.createElement("section");
+    panelDetalle.className = "result-detail-panel hidden";
+    panelDetalle.id = `detalle_${partido.id}`;
+    contenedorResultados.appendChild(panelDetalle);
+
+    const alternarDetalle = () => {
+      manejarClickDetalleResultado(partido, resultadoFinalizado);
+    };
+
+    tarjeta.addEventListener("click", alternarDetalle);
+    tarjeta.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        alternarDetalle();
+      }
+    });
+  });
+}
+
+function cerrarDetallesResultado() {
+  document.querySelectorAll(".result-detail-panel").forEach((panel) => {
+    panel.classList.add("hidden");
+    panel.innerHTML = "";
+  });
+
+  document.querySelectorAll(".result-card").forEach((tarjeta) => {
+    tarjeta.classList.remove("active");
+    tarjeta.setAttribute("aria-expanded", "false");
+  });
+}
+
+function obtenerPanelDetalleResultado(partidoId) {
+  return document.getElementById(`detalle_${partidoId}`);
+}
+
+function marcarTarjetaResultadoActiva(partidoId) {
+  document.querySelectorAll(".result-card").forEach((tarjeta) => {
+    tarjeta.classList.remove("active");
+    tarjeta.setAttribute("aria-expanded", "false");
+  });
+
+  const panel = obtenerPanelDetalleResultado(partidoId);
+  const tarjeta = panel ? panel.previousElementSibling : null;
+
+  if (tarjeta) {
+    tarjeta.classList.add("active");
+    tarjeta.setAttribute("aria-expanded", "true");
+  }
+}
+
+async function manejarClickDetalleResultado(partido, resultadoFinalizado) {
+  const panel = obtenerPanelDetalleResultado(partido.id);
+
+  if (!panel) return;
+
+  if (detalleResultadoAbierto === partido.id && !panel.classList.contains("hidden")) {
+    detalleResultadoAbierto = "";
+    cerrarDetallesResultado();
+    return;
+  }
+
+  detalleResultadoAbierto = partido.id;
+  cerrarDetallesResultado();
+  marcarTarjetaResultadoActiva(partido.id);
+  panel.classList.remove("hidden");
+
+  if (!resultadoFinalizado) {
+    panel.innerHTML = `
+      <div class="result-detail-message">
+        El resultado a\u00fan no est\u00e1 disponible.
+      </div>
+    `;
+    return;
+  }
+
+  const idPolla = obtenerPollaGlobalSeleccionada();
+
+  if (!idPolla) {
+    panel.innerHTML = `
+      <div class="result-detail-message">
+        Selecciona una polla para ver el detalle de puntos.
+      </div>
+    `;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="result-detail-message">
+      Cargando detalle de puntos...
+    </div>
+  `;
+
+  try {
+    const respuesta = await cargarDetallePartidoConServidor(partido.id, "grupos");
+
+    if (!respuesta.ok) {
+      panel.innerHTML = `
+        <div class="result-detail-message error">
+          ${escapeHTML(respuesta.error || "No se pudo cargar el detalle.")}
+        </div>
+      `;
+      return;
+    }
+
+    mostrarDetallePartido(panel, respuesta);
+  } catch (error) {
+    panel.innerHTML = `
+      <div class="result-detail-message error">
+        ${escapeHTML(error.message || "No se pudo cargar el detalle.")}
+      </div>
+    `;
+  }
+}
+
+function obtenerTextoDetallePuntos(participante) {
+  if (participante.sinPronostico) {
+    return "Sin pron\u00f3stico";
+  }
+
+  const pronostico = participante.pronostico || {};
+  const golesLocal = pronostico.golesLocal ?? "";
+  const golesVisita = pronostico.golesVisita ?? "";
+
+  return `Pron\u00f3stico: ${golesLocal} - ${golesVisita}`;
+}
+
+function mostrarDetallePartido(panel, respuesta) {
+  const partido = respuesta.partido || {};
+  const participantes = respuesta.participantes || [];
+  const nombrePolla = respuesta.polla ? respuesta.polla.nombre : obtenerNombrePollaPorId(obtenerPollaGlobalSeleccionada());
+  const local = obtenerNombreEquipo(partido.local);
+  const visita = obtenerNombreEquipo(partido.visita);
+  const marcador = `${partido.golesLocalReal} - ${partido.golesVisitaReal}`;
+
+  const filas = participantes.length
+    ? participantes.map((participante, index) => `
+        <li class="result-detail-row">
+          <div>
+            <strong>${index + 1}. ${escapeHTML(participante.nombre)}</strong>
+            <span>${escapeHTML(obtenerTextoDetallePuntos(participante))}</span>
+          </div>
+          <strong class="result-detail-points">${escapeHTML(participante.puntos || 0)} pts</strong>
+        </li>
+      `).join("")
+    : `<li class="result-detail-row empty">No hay participantes activos en esta polla.</li>`;
+
+  panel.innerHTML = `
+    <div class="result-detail-header">
+      <div>
+        <span class="result-detail-kicker">${escapeHTML(nombrePolla)}</span>
+        <h3>${escapeHTML(local)} ${escapeHTML(marcador)} ${escapeHTML(visita)}</h3>
+      </div>
+      <button class="result-detail-close" type="button" aria-label="Cerrar detalle">×</button>
+    </div>
+
+    <ul class="result-detail-list">
+      ${filas}
+    </ul>
+  `;
+
+  const botonCerrar = panel.querySelector(".result-detail-close");
+
+  if (botonCerrar) {
+    botonCerrar.addEventListener("click", (event) => {
+      event.stopPropagation();
+      detalleResultadoAbierto = "";
+      cerrarDetallesResultado();
+    });
+  }
+}
+
 function formatearFecha(fecha) {
   const fechaObj = new Date(fecha + "T00:00:00");
 
@@ -364,6 +665,7 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw0LDbeRCQxYDp18grZ
 let llavesEliminacion = [];
 let tipoRankingActual = "total";
 let ultimoRankingCargado = [];
+let pollasUsuarioActual = [];
 
 function cargarPartidosConServidor() {
   return new Promise((resolve, reject) => {
@@ -398,6 +700,97 @@ function cargarPartidosConServidor() {
     };
 
     script.src = `${WEB_APP_URL}?action=partidos&callback=${callbackName}`;
+
+    document.body.appendChild(script);
+  });
+}
+
+function cargarResultadosConServidor() {
+  return new Promise((resolve, reject) => {
+    const callbackName = `resultados_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2)}`;
+
+    const script = document.createElement("script");
+
+    const timeout = setTimeout(() => {
+      limpiar();
+      reject(new Error("Tiempo de espera agotado."));
+    }, 10000);
+
+    function limpiar() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[callbackName] = (respuesta) => {
+      limpiar();
+      resolve(respuesta);
+    };
+
+    script.onerror = () => {
+      limpiar();
+      reject(new Error("No se pudieron cargar los resultados."));
+    };
+
+    script.src = `${WEB_APP_URL}?action=resultados&callback=${callbackName}`;
+
+    document.body.appendChild(script);
+  });
+}
+
+function cargarDetallePartidoConServidor(partidoId, tipo) {
+  return new Promise((resolve, reject) => {
+    const idPolla = obtenerPollaGlobalSeleccionada();
+
+    if (!idPolla) {
+      reject(new Error("Selecciona una polla para ver el detalle."));
+      return;
+    }
+
+    const callbackName = `detalle_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2)}`;
+
+    const script = document.createElement("script");
+
+    const timeout = setTimeout(() => {
+      limpiar();
+      reject(new Error("Tiempo de espera agotado."));
+    }, 10000);
+
+    function limpiar() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[callbackName] = (respuesta) => {
+      limpiar();
+      resolve(respuesta);
+    };
+
+    script.onerror = () => {
+      limpiar();
+      reject(new Error("No se pudo cargar el detalle del partido."));
+    };
+
+    const params = new URLSearchParams({
+      action: "detallePartido",
+      idPolla,
+      partidoId,
+      tipo,
+      callback: callbackName
+    });
+
+    script.src = `${WEB_APP_URL}?${params.toString()}`;
 
     document.body.appendChild(script);
   });
@@ -640,6 +1033,7 @@ function abrirApp(validacionCodigo) {
   document.getElementById("usuarioActivo").textContent = `Hola, ${usuario} · Código: ${codigoUsuario}`;
 
   mostrarResumenPollas(validacionCodigo.pollas);
+  llenarSelectorPollaGlobal(validacionCodigo.pollas);
   llenarSelectorRanking(validacionCodigo.pollas);
   mostrarSeccion("pronosticos");
   recargarPronosticosGruposDesdeLocalStorage();
@@ -694,21 +1088,259 @@ function mostrarResumenPollas(pollas) {
   `;
 }
 
+function obtenerClavePollaGlobal() {
+  const codigo = obtenerCodigoActual();
+
+  if (!codigo) {
+    return "pollaSeleccionada";
+  }
+
+  return `pollaSeleccionada_${codigo}`;
+}
+
+function obtenerPollaGlobalSeleccionada() {
+  const selectorGlobal = document.getElementById("selectorPollaGlobal");
+
+  return selectorGlobal ? selectorGlobal.value : "";
+}
+
+function sincronizarSelectorRankingConGlobal() {
+  const selectorRanking = document.getElementById("selectorPollaRanking");
+  const idPolla = obtenerPollaGlobalSeleccionada();
+
+  if (selectorRanking) {
+    selectorRanking.value = idPolla;
+  }
+}
+
+function obtenerNombrePollaPorId(idPolla) {
+  const polla = pollasUsuarioActual.find((item) => item.id === idPolla);
+
+  return polla ? polla.nombre : "Selecciona una polla";
+}
+
+function cerrarDropdownPollaGlobal() {
+  const box = document.getElementById("selectorPollaGlobalBox");
+  const boton = document.getElementById("selectorPollaGlobalButton");
+  const menu = document.getElementById("selectorPollaGlobalMenu");
+
+  if (box) {
+    box.classList.remove("open");
+  }
+
+  if (boton) {
+    boton.setAttribute("aria-expanded", "false");
+  }
+
+  if (menu) {
+    menu.classList.add("hidden");
+  }
+}
+
+function actualizarDropdownPollaGlobal() {
+  const idPolla = obtenerPollaGlobalSeleccionada();
+  const texto = document.getElementById("selectorPollaGlobalTexto");
+  const opciones = document.querySelectorAll(".global-polla-option");
+
+  if (texto) {
+    texto.textContent = obtenerNombrePollaPorId(idPolla);
+  }
+
+  opciones.forEach((opcion) => {
+    const seleccionada = opcion.dataset.value === idPolla;
+    opcion.classList.toggle("selected", seleccionada);
+    opcion.setAttribute("aria-selected", seleccionada ? "true" : "false");
+  });
+}
+
+function toggleDropdownPollaGlobal(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+
+  const box = document.getElementById("selectorPollaGlobalBox");
+  const boton = document.getElementById("selectorPollaGlobalButton");
+  const menu = document.getElementById("selectorPollaGlobalMenu");
+
+  if (!box || !boton || !menu) return;
+
+  const abrir = menu.classList.contains("hidden");
+
+  box.classList.toggle("open", abrir);
+  menu.classList.toggle("hidden", !abrir);
+  boton.setAttribute("aria-expanded", abrir ? "true" : "false");
+}
+
+function seleccionarPollaGlobal(idPolla) {
+  const selectorGlobal = document.getElementById("selectorPollaGlobal");
+
+  if (!selectorGlobal) return;
+
+  selectorGlobal.value = idPolla;
+  actualizarDropdownPollaGlobal();
+  cerrarDropdownPollaGlobal();
+  cambiarPollaGlobal();
+}
+
+function enfocarOpcionDropdownPollaGlobal(direccion) {
+  const opciones = Array.from(document.querySelectorAll(".global-polla-option"));
+
+  if (opciones.length === 0) return;
+
+  const indiceActual = opciones.indexOf(document.activeElement);
+  const siguienteIndice = indiceActual === -1
+    ? 0
+    : (indiceActual + direccion + opciones.length) % opciones.length;
+
+  opciones[siguienteIndice].focus();
+}
+
+function manejarTecladoDropdownPollaGlobal(event) {
+  if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+
+    const menu = document.getElementById("selectorPollaGlobalMenu");
+    const estaCerrado = !menu || menu.classList.contains("hidden");
+
+    if (estaCerrado) {
+      toggleDropdownPollaGlobal(event);
+    }
+
+    const opcionActiva = document.querySelector(".global-polla-option.selected");
+    const primeraOpcion = document.querySelector(".global-polla-option");
+    const opcionParaEnfocar = opcionActiva || primeraOpcion;
+
+    if (opcionParaEnfocar) {
+      opcionParaEnfocar.focus();
+    }
+  }
+
+  if (event.key === "Escape") {
+    cerrarDropdownPollaGlobal();
+  }
+}
+
+function manejarTecladoOpcionPollaGlobal(event) {
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    enfocarOpcionDropdownPollaGlobal(1);
+  }
+
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    enfocarOpcionDropdownPollaGlobal(-1);
+  }
+
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    seleccionarPollaGlobal(event.currentTarget.dataset.value);
+  }
+
+  if (event.key === "Escape") {
+    cerrarDropdownPollaGlobal();
+
+    const boton = document.getElementById("selectorPollaGlobalButton");
+
+    if (boton) {
+      boton.focus();
+    }
+  }
+}
+
+function llenarSelectorPollaGlobal(pollas) {
+  pollasUsuarioActual = pollas || [];
+
+  const box = document.getElementById("selectorPollaGlobalBox");
+  const selectorGlobal = document.getElementById("selectorPollaGlobal");
+  const menu = document.getElementById("selectorPollaGlobalMenu");
+
+  if (!box || !selectorGlobal || !menu) return;
+
+  selectorGlobal.innerHTML = `<option value="">Selecciona una polla</option>`;
+  menu.innerHTML = "";
+
+  pollasUsuarioActual.forEach((polla) => {
+    const option = document.createElement("option");
+    option.value = polla.id;
+    option.textContent = polla.nombre;
+    selectorGlobal.appendChild(option);
+
+    const botonOpcion = document.createElement("button");
+    botonOpcion.type = "button";
+    botonOpcion.className = "global-polla-option";
+    botonOpcion.dataset.value = polla.id;
+    botonOpcion.textContent = polla.nombre;
+    botonOpcion.setAttribute("role", "option");
+    botonOpcion.setAttribute("aria-selected", "false");
+    botonOpcion.addEventListener("click", (event) => {
+      event.stopPropagation();
+      seleccionarPollaGlobal(polla.id);
+    });
+    botonOpcion.addEventListener("keydown", manejarTecladoOpcionPollaGlobal);
+    menu.appendChild(botonOpcion);
+  });
+
+  const pollaGuardada = localStorage.getItem(obtenerClavePollaGlobal());
+  const existeGuardada = pollasUsuarioActual.some((polla) => polla.id === pollaGuardada);
+  const pollaInicial = existeGuardada
+    ? pollaGuardada
+    : (pollasUsuarioActual[0] && pollasUsuarioActual[0].id) || "";
+
+  selectorGlobal.value = pollaInicial;
+
+  if (pollaInicial) {
+    localStorage.setItem(obtenerClavePollaGlobal(), pollaInicial);
+  }
+
+  box.classList.toggle("hidden", pollasUsuarioActual.length === 0);
+  sincronizarSelectorRankingConGlobal();
+  actualizarDropdownPollaGlobal();
+  cerrarDropdownPollaGlobal();
+}
+
+function cambiarPollaGlobal() {
+  const idPolla = obtenerPollaGlobalSeleccionada();
+
+  if (idPolla) {
+    localStorage.setItem(obtenerClavePollaGlobal(), idPolla);
+  }
+
+  actualizarDropdownPollaGlobal();
+  sincronizarSelectorRankingConGlobal();
+
+  const seccionRanking = document.getElementById("seccionRanking");
+
+  if (seccionRanking && !seccionRanking.classList.contains("hidden")) {
+    cargarRankingSeleccionado();
+  }
+
+  const seccionResultados = document.getElementById("seccionResultados");
+
+  if (seccionResultados && !seccionResultados.classList.contains("hidden")) {
+    detalleResultadoAbierto = "";
+    renderizarResultadosGrupos();
+  }
+}
+
 function mostrarSeccion(seccion) {
   const seccionPronosticos = document.getElementById("seccionPronosticos");
   const seccionEliminacion = document.getElementById("seccionEliminacion");
+  const seccionResultados = document.getElementById("seccionResultados");
   const seccionRanking = document.getElementById("seccionRanking");
 
   const tabPronosticos = document.getElementById("tabPronosticos");
   const tabEliminacion = document.getElementById("tabEliminacion");
+  const tabResultados = document.getElementById("tabResultados");
   const tabRanking = document.getElementById("tabRanking");
 
   seccionPronosticos.classList.add("hidden");
   seccionEliminacion.classList.add("hidden");
+  seccionResultados.classList.add("hidden");
   seccionRanking.classList.add("hidden");
 
   tabPronosticos.classList.remove("active");
   tabEliminacion.classList.remove("active");
+  tabResultados.classList.remove("active");
   tabRanking.classList.remove("active");
 
   if (seccion === "pronosticos") {
@@ -725,6 +1357,12 @@ function mostrarSeccion(seccion) {
     } else {
       renderizarEliminacion();
     }
+  }
+
+  if (seccion === "resultados") {
+    seccionResultados.classList.remove("hidden");
+    tabResultados.classList.add("active");
+    renderizarResultadosGrupos();
   }
 
   if (seccion === "ranking") {
@@ -794,10 +1432,7 @@ function llenarSelectorRanking(pollas) {
     selector.appendChild(option);
   });
 
-  if (pollas.length === 1) {
-    selector.value = pollas[0].id;
-    cargarRankingSeleccionado();
-  }
+  sincronizarSelectorRankingConGlobal();
 }
 
 async function cargarRankingSeleccionado() {
@@ -806,7 +1441,8 @@ async function cargarRankingSeleccionado() {
 
   if (!selector || !rankingContent) return;
 
-  const idPolla = selector.value;
+  const idPolla = obtenerPollaGlobalSeleccionada() || selector.value;
+  selector.value = idPolla;
 
   if (!idPolla) {
     rankingContent.className = "ranking-placeholder";
@@ -1089,8 +1725,6 @@ function renderizarEliminacion() {
     const horaSegura = escapeHTML(partido.hora);
     const localSeguro = escapeHTML(localMostrado);
     const visitaSeguro = escapeHTML(visitaMostrada);
-    const estadoSeguro = escapeHTML(partido.estado);
-
     const estadoNormalizado = String(partido.estado || "").trim().toLowerCase();
 
     const abierto = estadoNormalizado === "abierto";
@@ -1099,10 +1733,13 @@ function renderizarEliminacion() {
       hora: partido.hora
     });
 
-    const bloqueado = !abierto || bloqueadoPorHora;
+    const estadoVisual = obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora);
+    const bloqueado = estadoVisual.bloqueado;
 
     const tarjeta = document.createElement("article");
-    tarjeta.className = bloqueado ? "match-card locked" : "match-card";
+    tarjeta.className = bloqueado
+      ? "match-card knockout-prediction-card locked"
+      : "match-card knockout-prediction-card";
 
     tarjeta.innerHTML = `
       <div class="match-info">
@@ -1161,12 +1798,8 @@ function renderizarEliminacion() {
         </div>
       </div>
 
-      <div class="match-status ${bloqueado ? "locked" : "open"}">
-        ${
-          bloqueado
-            ? `🔒 ${estadoSeguro}`
-            : "✅ Disponible para pronosticar"
-        }
+      <div class="match-status ${estadoVisual.clase}">
+        ${estadoVisual.texto}
       </div>
     `;
 
@@ -1283,7 +1916,7 @@ mostrarPollasDelParticipante(validacionCodigo);
   const pronosticos = [];
 
   for (const partido of partidos) {
-    if (estaBloqueado(partido)) {
+    if (!partidoDisponibleParaPronosticar(partido)) {
       continue;
     }
 
@@ -1379,10 +2012,20 @@ inputCodigoUsuario.addEventListener("input", () => {
   limpiarInfoPollas();
 });
 
+document.addEventListener("click", cerrarDropdownPollaGlobal);
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    cerrarDropdownPollaGlobal();
+  }
+});
+
 function actualizarContadorPronosticos() {
   let completados = 0;
 
   partidos.forEach((partido) => {
+    if (!partidoDisponibleParaPronosticar(partido)) return;
+
     const inputLocal = document.getElementById(`${partido.id}_local`);
     const inputVisita = document.getElementById(`${partido.id}_visita`);
 
@@ -1396,7 +2039,8 @@ function actualizarContadorPronosticos() {
   const contador = document.getElementById("contadorPronosticos");
 
   if (contador) {
-    contador.textContent = `Pronósticos completados: ${completados} de ${partidos.length}`;
+    const disponibles = partidos.filter(partidoDisponibleParaPronosticar).length;
+    contador.textContent = `Pronósticos completados: ${completados} de ${disponibles}`;
   }
 }
 
@@ -1478,6 +2122,8 @@ function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsu
 
 function recargarPronosticosGruposDesdeLocalStorage() {
   partidos.forEach((partido) => {
+    if (!partidoDisponibleParaPronosticar(partido)) return;
+
     const inputLocal = document.getElementById(`${partido.id}_local`);
     const inputVisita = document.getElementById(`${partido.id}_visita`);
 
@@ -1691,20 +2337,41 @@ async function enviarEliminacion() {
 }
 
 async function inicializarApp() {
-  try {
-    const respuesta = await cargarPartidosConServidor();
+  const [cargaPartidos, cargaResultados] = await Promise.allSettled([
+    cargarPartidosConServidor(),
+    cargarResultadosConServidor()
+  ]);
 
-    if (respuesta.ok && Array.isArray(respuesta.partidos)) {
-      partidos = respuesta.partidos;
-    }
-  } catch (error) {
-    console.error(error);
+  if (
+    cargaPartidos.status === "fulfilled" &&
+    cargaPartidos.value.ok &&
+    Array.isArray(cargaPartidos.value.partidos)
+  ) {
+    partidos = cargaPartidos.value.partidos;
+  }
+
+  if (
+    cargaResultados.status === "fulfilled" &&
+    cargaResultados.value.ok &&
+    Array.isArray(cargaResultados.value.resultados)
+  ) {
+    guardarResultadosEnMemoria(cargaResultados.value.resultados);
+  }
+
+  if (cargaPartidos.status === "rejected") {
+    console.error(cargaPartidos.reason);
+  }
+
+  if (cargaResultados.status === "rejected") {
+    console.error(cargaResultados.reason);
   }
 
   renderizarPartidos();
+  renderizarResultadosGrupos();
   actualizarContadorPronosticos();
   iniciarSesionGuardada();
 }
 
 // Iniciar página
 inicializarApp();
+
