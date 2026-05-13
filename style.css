@@ -542,6 +542,9 @@ body {
 
   .result-card .team {
     font-size: 12px;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: auto;
   }
 
   .result-card .match-info {
@@ -1058,6 +1061,11 @@ body {
     margin-bottom: 12px;
   }
 
+  .header-title {
+    flex: 0 1 auto;
+    width: 100%;
+  }
+
   .small-button {
     width: 100%;
     min-height: 34px;
@@ -1284,10 +1292,12 @@ body {
   .app-header {
     padding: 12px 10px;
     border-radius: 15px;
+    gap: 7px;
   }
 
   .app-header h1 {
     font-size: 24px;
+    margin: 4px 0;
   }
 
   .app-header p {
@@ -1347,10 +1357,15 @@ body {
     line-height: 1.2;
   }
 
-  .match-row,
-  .result-row {
+  .match-row {
     grid-template-columns: minmax(0, 1fr) 44px 10px 44px minmax(0, 1fr);
     gap: 4px;
+  }
+
+  .result-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 5px;
+    align-items: center;
   }
 
   .score-input {
@@ -1363,6 +1378,12 @@ body {
   .result-card .team {
     font-size: 11px;
     line-height: 1.15;
+  }
+
+  .result-card .team {
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: auto;
   }
 
   .match-status {
