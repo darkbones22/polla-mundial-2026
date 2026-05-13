@@ -7,6 +7,7 @@ body {
   font-family: Arial, sans-serif;
   background: #eef3f8;
   color: #1f2937;
+  overflow-x: hidden;
 }
 
 .app {
@@ -153,9 +154,11 @@ body {
 }
 
 .team {
+  min-width: 0;
   font-weight: bold;
   font-size: 13px;
   line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .team.local {
@@ -167,6 +170,7 @@ body {
 }
 
 .score-input {
+  max-width: 100%;
   width: 56px;
   padding: 7px 8px;
   border: 1px solid #cbd5e1;
@@ -508,6 +512,7 @@ body {
 
   .match-status {
     white-space: normal;
+    max-width: 100%;
   }
 
   .result-card {
@@ -1074,6 +1079,10 @@ body {
   border: 1px solid #e2e8f0;
 }
 
+.ranking-item > div:nth-child(2) {
+  min-width: 0;
+}
+
 .ranking-position {
   width: 24px;
   height: 24px;
@@ -1097,6 +1106,7 @@ body {
   font-size: 10px;
   color: #64748b;
   margin-top: 2px;
+  overflow-wrap: anywhere;
 }
 
 .ranking-points {
@@ -1126,7 +1136,7 @@ body {
 
 @media (max-width: 600px) {
   .ranking-item {
-    grid-template-columns: 24px 1fr auto;
+    grid-template-columns: 24px minmax(0, 1fr) minmax(56px, auto);
     padding: 8px;
   }
 
@@ -1205,6 +1215,110 @@ body {
 
   .classify-options {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .app {
+    padding: 10px;
+    padding-bottom: 104px;
+  }
+
+  .matches,
+  #partidos,
+  #partidosEliminacion,
+  #resultadosGrupos {
+    gap: 6px;
+  }
+
+  .match-card,
+  .group-prediction-card,
+  .knockout-prediction-card,
+  .result-card {
+    padding: 7px 8px;
+    border-radius: 11px;
+  }
+
+  .date-title,
+  .group-title {
+    margin: 12px 0 2px;
+    font-size: 15px;
+  }
+
+  .match-info,
+  .result-card .match-info {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .match-row,
+  .result-row {
+    grid-template-columns: minmax(0, 1fr) 44px 10px 44px minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .score-input {
+    width: 44px;
+    padding: 6px 4px;
+    font-size: 13px;
+  }
+
+  .team,
+  .result-card .team {
+    font-size: 11px;
+    line-height: 1.15;
+  }
+
+  .match-status {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+
+  .result-score,
+  .result-pending {
+    padding: 4px 7px;
+    font-size: 11px;
+  }
+
+  .result-hint {
+    font-size: 10px;
+  }
+
+  .classify-option {
+    padding: 6px 7px;
+    font-size: 11px;
+  }
+
+  .ranking-card {
+    padding: 10px;
+  }
+
+  .ranking-item {
+    grid-template-columns: 22px minmax(0, 1fr) minmax(50px, auto);
+    gap: 7px;
+    padding: 7px;
+  }
+
+  .ranking-position {
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
+  }
+
+  .ranking-name {
+    font-size: 12px;
+  }
+
+  .ranking-details {
+    font-size: 9px;
+  }
+
+  .ranking-points {
+    font-size: 15px;
+  }
+
+  .ranking-points span {
+    font-size: 9px;
   }
 }
 
