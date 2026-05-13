@@ -1292,7 +1292,12 @@ function llenarSelectorPollaGlobal(pollas) {
     localStorage.setItem(obtenerClavePollaGlobal(), pollaInicial);
   }
 
-  box.classList.toggle("hidden", pollasUsuarioActual.length === 0);
+  const ocultarSelector = pollasUsuarioActual.length === 0;
+
+  box.classList.toggle("hidden", ocultarSelector);
+  box.hidden = ocultarSelector;
+  box.setAttribute("aria-hidden", ocultarSelector ? "true" : "false");
+
   sincronizarSelectorRankingConGlobal();
   actualizarDropdownPollaGlobal();
   cerrarDropdownPollaGlobal();

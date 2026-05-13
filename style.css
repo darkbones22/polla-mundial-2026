@@ -460,15 +460,34 @@ body {
   .save-bar-content {
     flex-direction: column;
     align-items: stretch;
+    gap: 7px;
+    padding: 8px;
+    border-radius: 12px;
   }
 
   .save-button {
     width: 100%;
     min-width: 0;
+    padding: 9px 12px;
+    font-size: 13px;
   }
 
   .save-text {
     text-align: center;
+  }
+
+  .save-text strong {
+    font-size: 13px;
+  }
+
+  .save-text span {
+    font-size: 11px;
+  }
+
+  .save-bar {
+    position: static;
+    padding: 6px 0 8px;
+    margin-top: 10px;
   }
 }
 
@@ -843,6 +862,13 @@ body {
   backdrop-filter: blur(6px);
 }
 
+.app-header #selectorPollaGlobalBox:not(.hidden) {
+  display: flex !important;
+  visibility: visible;
+  opacity: 1;
+  height: auto;
+}
+
 .global-polla-selector.open {
   background: rgba(255, 255, 255, 0.24);
   border-color: rgba(255, 255, 255, 0.34);
@@ -1026,19 +1052,46 @@ body {
 @media (max-width: 600px) {
   .app-header {
     flex-direction: column;
+    gap: 10px;
+    padding: 14px 12px;
+    border-radius: 16px;
+    margin-bottom: 12px;
   }
 
   .small-button {
     width: 100%;
+    min-height: 34px;
+    padding: 7px 12px;
+    font-size: 12px;
   }
 
   .app-header h1 {
-    font-size: 27px;
+    margin: 6px 0;
+    font-size: 26px;
+    line-height: 1.1;
+  }
+
+  .app-header p {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .app-header .badge {
+    padding: 6px 10px;
+    font-size: 12px;
+    margin-bottom: 6px;
   }
 
   .global-polla-selector {
     width: 100%;
+    min-height: 34px;
+    padding: 6px 10px;
     max-width: none;
+  }
+
+  .global-polla-selector label,
+  .global-polla-button {
+    font-size: 12px;
   }
 }
 
@@ -1204,13 +1257,17 @@ body {
 @media (max-width: 600px) {
   .main-menu {
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    gap: 6px;
+    padding: 7px;
+    border-radius: 12px;
+    margin-bottom: 10px;
   }
 
   .menu-button {
-    min-height: 42px;
-    padding: 8px 6px;
+    min-height: 34px;
+    padding: 6px 7px;
     font-size: 11px;
+    border-radius: 9px;
   }
 
   .classify-options {
@@ -1222,6 +1279,45 @@ body {
   .app {
     padding: 10px;
     padding-bottom: 104px;
+  }
+
+  .app-header {
+    padding: 12px 10px;
+    border-radius: 15px;
+  }
+
+  .app-header h1 {
+    font-size: 24px;
+  }
+
+  .app-header p {
+    font-size: 13px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .small-button,
+  .global-polla-selector {
+    min-height: 32px;
+  }
+
+  .global-polla-selector {
+    padding: 5px 9px;
+  }
+
+  .main-menu {
+    gap: 5px;
+    padding: 6px;
+    margin-bottom: 8px;
+  }
+
+  .menu-button {
+    min-height: 32px;
+    padding: 5px 6px;
+    font-size: 10px;
+    line-height: 1.1;
   }
 
   .matches,
@@ -1293,6 +1389,15 @@ body {
     padding: 10px;
   }
 
+  .ranking-card h2 {
+    font-size: 18px;
+  }
+
+  .ranking-placeholder {
+    padding: 12px;
+    font-size: 13px;
+  }
+
   .ranking-item {
     grid-template-columns: 22px minmax(0, 1fr) minmax(50px, auto);
     gap: 7px;
@@ -1358,7 +1463,14 @@ body {
 
 @media (max-width: 600px) {
   .ranking-tabs {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .ranking-tab {
+    min-height: 34px;
+    padding: 7px 5px;
+    font-size: 11px;
   }
 }
 
@@ -1375,12 +1487,27 @@ body {
 @media (max-width: 760px) {
   .header-actions {
     width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    justify-content: stretch;
+    flex-wrap: initial;
   }
 
   .header-actions .small-button {
     width: 100%;
+  }
+
+  .header-actions .small-button:first-child {
+    order: 1;
+  }
+
+  .header-actions .global-polla-selector {
+    order: 2;
+  }
+
+  .header-actions .small-button:last-child {
+    order: 3;
   }
 
   .global-polla-selector {
