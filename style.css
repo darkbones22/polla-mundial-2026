@@ -545,6 +545,8 @@ body {
     text-align: right;
     white-space: nowrap;
     max-width: 132px;
+    padding: 2px 6px;
+    font-size: 9px;
   }
 
   .knockout-prediction-card .classify-box {
@@ -1121,6 +1123,15 @@ body {
   .global-polla-button {
     font-size: 12px;
   }
+
+  .global-polla-button {
+    justify-content: center;
+  }
+
+  .global-polla-button span:first-child {
+    flex: 0 1 auto;
+    text-align: center;
+  }
 }
 
 .ranking-card label {
@@ -1319,7 +1330,7 @@ body {
   }
 
   #tabPronosticos::after {
-    content: "Grupos";
+    content: "Pronósticos grupos";
   }
 
   #tabEliminacion::after {
@@ -1465,8 +1476,8 @@ body {
   }
 
   .match-status {
-    padding: 3px 7px;
-    font-size: 10px;
+    padding: 2px 6px;
+    font-size: 9px;
   }
 
   .result-score,

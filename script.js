@@ -1515,7 +1515,9 @@ function mostrarRanking(ranking) {
     .map((participante, index) => {
       const posicion = index + 1;
       const puntos = obtenerPuntosSegunTipo(participante);
-      const detalle = obtenerDetalleRankingCompacto(participante);
+      const detalle = tipoRankingActual === "total"
+        ? obtenerDetalleRankingCompacto(participante)
+        : obtenerDetalleSegunTipo(participante);
 
       return `
         <article class="ranking-item">
@@ -1640,6 +1642,75 @@ function obtenerRadiosClasifica(partidoId) {
 function obtenerClasificaSeleccionado(partidoId) {
   return obtenerRadiosClasifica(partidoId)
     .find((radio) => radio.checked) || null;
+}
+
+function obtenerClasificadoAutomaticoEliminacion(partido, golesLocal, golesVisita) {
+  if (golesLocal === "" || golesVisita === "") return "";
+
+  const local = Number(golesLocal);
+  const visita = Number(golesVisita);
+
+  if (Number.isNaN(local) || Number.isNaN(visita) || local === visita) return "";
+
+  return local > visita
+    ? partido.local || partido.localPlaceholder
+    : partido.visita || partido.visitaPlaceholder;
+}
+
+function actualizarClasificaEliminacion(partido, tarjeta) {
+  const inputsMarcador = tarjeta.querySelectorAll(".score-input");
+  const inputLocal = inputsMarcador[0];
+  const inputVisita = inputsMarcador[1];
+  const cajaClasifica = tarjeta.querySelector(".classify-box");
+  const radiosClasifica = Array.from(tarjeta.querySelectorAll('input[type="radio"]'));
+
+  if (!inputLocal || !inputVisita || !cajaClasifica) return;
+
+  const clasificadoAutomatico = obtenerClasificadoAutomaticoEliminacion(
+    partido,
+    inputLocal.value,
+    inputVisita.value
+  );
+
+  if (clasificadoAutomatico) {
+    cajaClasifica.classList.add("hidden");
+
+    radiosClasifica.forEach((radio) => {
+      radio.checked = false;
+    });
+
+    localStorage.setItem(
+      crearClaveEliminacion(partido.id, "clasifica"),
+      clasificadoAutomatico
+    );
+
+    return;
+  }
+
+  const marcadorCompleto = inputLocal.value !== "" && inputVisita.value !== "";
+
+  cajaClasifica.classList.toggle("hidden", !marcadorCompleto);
+
+  if (marcadorCompleto) {
+    const clasificaManual = radiosClasifica.find((radio) => radio.checked);
+
+    if (clasificaManual) {
+      localStorage.setItem(
+        crearClaveEliminacion(partido.id, "clasifica"),
+        clasificaManual.value
+      );
+    } else {
+      localStorage.removeItem(crearClaveEliminacion(partido.id, "clasifica"));
+    }
+  }
+
+  if (!marcadorCompleto) {
+    radiosClasifica.forEach((radio) => {
+      radio.checked = false;
+    });
+
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "clasifica"));
+  }
 }
 
 function cargarLlavesConServidor() {
@@ -1844,14 +1915,18 @@ function renderizarEliminacion() {
       }
     });
 
+    actualizarClasificaEliminacion(partido, tarjeta);
+
     if (!bloqueado) {
       inputLocal.addEventListener("input", () => {
         localStorage.setItem(crearClaveEliminacion(partido.id, "local"), inputLocal.value);
+        actualizarClasificaEliminacion(partido, tarjeta);
         actualizarContadorEliminacion();
       });
 
       inputVisita.addEventListener("input", () => {
         localStorage.setItem(crearClaveEliminacion(partido.id, "visita"), inputVisita.value);
+        actualizarClasificaEliminacion(partido, tarjeta);
         actualizarContadorEliminacion();
       });
 
@@ -1879,14 +1954,20 @@ function actualizarContadorEliminacion() {
 
     const inputLocal = document.getElementById(`${partido.id}_elim_local`);
     const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
-    const clasifica = obtenerClasificaSeleccionado(partido.id);
 
     if (!inputLocal || !inputVisita) return;
+
+    const clasificaAutomatico = obtenerClasificadoAutomaticoEliminacion(
+      partido,
+      inputLocal.value,
+      inputVisita.value
+    );
+    const clasificaManual = obtenerClasificaSeleccionado(partido.id);
 
     if (
       inputLocal.value !== "" &&
       inputVisita.value !== "" &&
-      clasifica
+      (clasificaAutomatico || clasificaManual)
     ) {
       completados++;
     }
@@ -2183,6 +2264,13 @@ function recargarPronosticosEliminacionDesdeLocalStorage() {
     radiosClasifica.forEach((radio) => {
       radio.checked = radio.value === clasificaGuardado;
     });
+
+    const tarjeta = inputLocal?.closest(".knockout-prediction-card") ||
+      inputVisita?.closest(".knockout-prediction-card");
+
+    if (tarjeta) {
+      actualizarClasificaEliminacion(partido, tarjeta);
+    }
   });
 
   actualizarContadorEliminacion();
@@ -2219,6 +2307,13 @@ function limpiarFormulario() {
     radiosClasifica.forEach((radio) => {
       radio.checked = false;
     });
+
+    const tarjeta = inputLocal?.closest(".knockout-prediction-card") ||
+      inputVisita?.closest(".knockout-prediction-card");
+
+    if (tarjeta) {
+      actualizarClasificaEliminacion(partido, tarjeta);
+    }
 
     localStorage.removeItem(crearClaveEliminacion(partido.id, "local"));
     localStorage.removeItem(crearClaveEliminacion(partido.id, "visita"));
@@ -2291,18 +2386,30 @@ async function enviarEliminacion() {
 
     const golesLocal = document.getElementById(`${partido.id}_elim_local`).value;
     const golesVisita = document.getElementById(`${partido.id}_elim_visita`).value;
+    const clasificaAutomatico = obtenerClasificadoAutomaticoEliminacion(
+      partido,
+      golesLocal,
+      golesVisita
+    );
     const clasificaSeleccionado = obtenerClasificaSeleccionado(partido.id);
+    const clasifica = clasificaAutomatico || clasificaSeleccionado?.value || "";
 
     const localVacio = golesLocal === "";
     const visitaVacia = golesVisita === "";
-    const clasificaVacio = !clasificaSeleccionado;
 
-    if (localVacio && visitaVacia && clasificaVacio) {
+    if (localVacio && visitaVacia && !clasifica) {
       continue;
     }
 
-    if (localVacio || visitaVacia || clasificaVacio) {
-      alert(`Te falta completar goles y clasificado en ${localMostrado} vs ${visitaMostrada} ⚽`);
+    if (localVacio || visitaVacia) {
+      alert(`Te falta completar goles en ${localMostrado} vs ${visitaMostrada} ⚽`);
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = "Guardar eliminación";
+      return;
+    }
+
+    if (!clasifica) {
+      alert(`El partido ${localMostrado} vs ${visitaMostrada} está empatado. Elige quién clasifica ⚽`);
       btnEnviar.disabled = false;
       btnEnviar.textContent = "Guardar eliminación";
       return;
@@ -2317,7 +2424,7 @@ async function enviarEliminacion() {
       golesLocal: Number(golesLocal),
       golesVisita: Number(golesVisita),
       visita: visitaMostrada,
-      clasifica: clasificaSeleccionado.value
+      clasifica
     });
   }
 
