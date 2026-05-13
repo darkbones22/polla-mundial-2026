@@ -1505,11 +1505,17 @@ function mostrarRanking(ranking) {
 
   rankingContent.className = "ranking-list";
 
-  rankingContent.innerHTML = rankingOrdenado
+  const leyendaRanking = `
+    <div class="ranking-legend">
+      Gr: grupos · Elim: eliminación · Ex: exactos · PP: partidos puntuados
+    </div>
+  `;
+
+  rankingContent.innerHTML = leyendaRanking + rankingOrdenado
     .map((participante, index) => {
       const posicion = index + 1;
       const puntos = obtenerPuntosSegunTipo(participante);
-      const detalle = obtenerDetalleSegunTipo(participante);
+      const detalle = obtenerDetalleRankingCompacto(participante);
 
       return `
         <article class="ranking-item">
@@ -1573,6 +1579,20 @@ function obtenerExactosSegunTipo(participante) {
   }
 
   return (participante.exactosGrupos || 0) + (participante.exactosEliminacion || 0);
+}
+
+function obtenerDetalleRankingCompacto(participante) {
+  const exactos =
+    (participante.exactosGrupos || 0) + (participante.exactosEliminacion || 0);
+  const partidosPuntuados =
+    (participante.partidosGrupos || 0) + (participante.partidosEliminacion || 0);
+
+  return `
+    <span class="ranking-highlight">Gr:</span> ${escapeHTML(participante.puntosGrupos || 0)} ·
+    <span class="ranking-highlight">Elim:</span> ${escapeHTML(participante.puntosEliminacion || 0)} ·
+    <span class="ranking-highlight">Ex:</span> ${escapeHTML(exactos)} ·
+    <span class="ranking-highlight">PP:</span> ${escapeHTML(partidosPuntuados)}
+  `;
 }
 
 function obtenerDetalleSegunTipo(participante) {

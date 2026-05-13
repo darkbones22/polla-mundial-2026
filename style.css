@@ -517,21 +517,39 @@ body {
 
   .group-prediction-card,
   .knockout-prediction-card {
-    grid-template-columns: 1fr;
-    gap: 6px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px 8px;
     padding: 7px 9px;
   }
 
   .group-prediction-card .match-info,
-  .knockout-prediction-card .match-info,
-  .match-status {
-    justify-self: center;
-    text-align: center;
+  .knockout-prediction-card .match-info {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    text-align: left;
   }
 
-  .match-status {
-    white-space: normal;
-    max-width: 100%;
+  .group-prediction-card .match-row,
+  .knockout-prediction-card .match-row {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .group-prediction-card .match-status,
+  .knockout-prediction-card .match-status {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    text-align: right;
+    white-space: nowrap;
+    max-width: 132px;
+  }
+
+  .knockout-prediction-card .classify-box {
+    grid-column: 1 / -1;
+    grid-row: 3;
   }
 
   .result-card {
@@ -878,10 +896,12 @@ body {
 }
 
 .global-polla-selector label {
-  flex: 0 0 auto;
-  font-weight: bold;
-  color: white;
-  font-size: 13px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
   white-space: nowrap;
 }
 
@@ -1055,8 +1075,8 @@ body {
 @media (max-width: 600px) {
   .app-header {
     flex-direction: column;
-    gap: 10px;
-    padding: 14px 12px;
+    gap: 8px;
+    padding: 12px 12px;
     border-radius: 16px;
     margin-bottom: 12px;
   }
@@ -1074,20 +1094,20 @@ body {
   }
 
   .app-header h1 {
-    margin: 6px 0;
-    font-size: 26px;
+    margin: 4px 0;
+    font-size: 24px;
     line-height: 1.1;
   }
 
   .app-header p {
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.25;
   }
 
   .app-header .badge {
-    padding: 6px 10px;
-    font-size: 12px;
-    margin-bottom: 6px;
+    padding: 5px 9px;
+    font-size: 11px;
+    margin-bottom: 4px;
   }
 
   .global-polla-selector {
@@ -1168,6 +1188,14 @@ body {
   color: #64748b;
   margin-top: 2px;
   overflow-wrap: anywhere;
+}
+
+.ranking-legend {
+  padding: 0 2px 2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1.3;
 }
 
 .ranking-points {
@@ -1252,6 +1280,13 @@ body {
   white-space: nowrap;
 }
 
+.classify-option:has(input:checked) {
+  border-color: #38bdf8;
+  background: #e0f2fe;
+  color: #075985;
+  font-weight: bold;
+}
+
 .knockout-message {
   background: white;
   padding: 12px;
@@ -1274,12 +1309,51 @@ body {
   .menu-button {
     min-height: 34px;
     padding: 6px 7px;
-    font-size: 11px;
+    font-size: 0;
     border-radius: 9px;
   }
 
+  .menu-button::after {
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+  #tabPronosticos::after {
+    content: "Grupos";
+  }
+
+  #tabEliminacion::after {
+    content: "Eliminación";
+  }
+
+  #tabRanking::after {
+    content: "Ranking";
+  }
+
+  #tabResultados::after {
+    content: "Resultados";
+  }
+
   .classify-options {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .classify-label {
+    font-size: 10px;
+    margin-bottom: 3px;
+  }
+
+  .classify-option {
+    justify-content: center;
+    min-height: 30px;
+    padding: 5px 6px;
+    font-size: 10px;
+  }
+
+  .classify-option input {
+    width: 14px;
+    height: 14px;
   }
 }
 
@@ -1290,9 +1364,9 @@ body {
   }
 
   .app-header {
-    padding: 12px 10px;
+    padding: 10px;
     border-radius: 15px;
-    gap: 7px;
+    gap: 6px;
   }
 
   .app-header h1 {
@@ -1326,8 +1400,12 @@ body {
   .menu-button {
     min-height: 32px;
     padding: 5px 6px;
-    font-size: 10px;
+    font-size: 0;
     line-height: 1.1;
+  }
+
+  .menu-button::after {
+    font-size: 10px;
   }
 
   .matches,
