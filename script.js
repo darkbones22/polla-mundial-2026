@@ -1533,16 +1533,100 @@ function mostrarRanking(ranking) {
 
   rankingContent.className = "ranking-list";
 
-  const leyendaRanking = `
-    <div class="ranking-legend">
-      Gr: grupos · Elim: eliminación · Ex: exactos · PP: partidos puntuados
-    </div>
-  `;
+  const leyendaRanking = "";
 
   rankingContent.innerHTML = leyendaRanking + rankingOrdenado
     .map((participante, index) => {
       const posicion = index + 1;
       const puntos = obtenerPuntosSegunTipo(participante);
+
+      if (tipoRankingActual === "total") {
+        const detalleId = `rankingDetalle_${index}`;
+
+        return `
+          <article
+            class="ranking-item ranking-total-item"
+            role="button"
+            tabindex="0"
+            aria-expanded="false"
+            aria-controls="${detalleId}"
+          >
+            <div class="ranking-position">${posicion}</div>
+
+            <div class="ranking-main">
+              <div class="ranking-name">${escapeHTML(participante.nombre)}</div>
+              <div id="${detalleId}" class="ranking-total-detail hidden">
+                ${obtenerDetalleRankingTotalCompleto(participante)}
+              </div>
+            </div>
+
+            <div class="ranking-points ranking-points-inline">
+              ${escapeHTML(puntos)} <span>pts</span>
+            </div>
+
+            <div class="ranking-chevron" aria-hidden="true"></div>
+          </article>
+        `;
+      }
+
+      if (tipoRankingActual === "grupos") {
+        const detalleId = `rankingDetalleGrupos_${index}`;
+
+        return `
+          <article
+            class="ranking-item ranking-total-item ranking-groups-item"
+            role="button"
+            tabindex="0"
+            aria-expanded="false"
+            aria-controls="${detalleId}"
+          >
+            <div class="ranking-position">${posicion}</div>
+
+            <div class="ranking-main">
+              <div class="ranking-name">${escapeHTML(participante.nombre)}</div>
+              <div id="${detalleId}" class="ranking-total-detail hidden">
+                ${obtenerDetalleRankingGruposCompleto(participante)}
+              </div>
+            </div>
+
+            <div class="ranking-points ranking-points-inline">
+              ${escapeHTML(puntos)} <span>pts</span>
+            </div>
+
+            <div class="ranking-chevron" aria-hidden="true"></div>
+          </article>
+        `;
+      }
+
+      if (tipoRankingActual === "eliminacion") {
+        const detalleId = `rankingDetalleEliminacion_${index}`;
+
+        return `
+          <article
+            class="ranking-item ranking-total-item ranking-elimination-item"
+            role="button"
+            tabindex="0"
+            aria-expanded="false"
+            aria-controls="${detalleId}"
+          >
+            <div class="ranking-position">${posicion}</div>
+
+            <div class="ranking-main">
+              <div class="ranking-name">${escapeHTML(participante.nombre)}</div>
+              <div id="${detalleId}" class="ranking-total-detail hidden">
+                ${obtenerDetalleRankingEliminacionCompleto(participante)}
+              </div>
+            </div>
+
+            <div class="ranking-points ranking-points-inline">
+              ${escapeHTML(puntos)} <span>pts</span>
+            </div>
+
+            <div class="ranking-chevron" aria-hidden="true"></div>
+          </article>
+        `;
+      }
+
       const detalle = tipoRankingActual === "total"
         ? obtenerDetalleRankingCompacto(participante)
         : obtenerDetalleSegunTipo(participante);
@@ -1567,6 +1651,14 @@ function mostrarRanking(ranking) {
       `;
     })
     .join("");
+
+  if (
+    tipoRankingActual === "total" ||
+    tipoRankingActual === "grupos" ||
+    tipoRankingActual === "eliminacion"
+  ) {
+    configurarDetalleRankingDesplegable();
+  }
 }
 
 function cambiarTipoRanking(tipo) {
@@ -1623,6 +1715,62 @@ function obtenerDetalleRankingCompacto(participante) {
     <span class="ranking-highlight">Ex:</span> ${escapeHTML(exactos)} ·
     <span class="ranking-highlight">PP:</span> ${escapeHTML(partidosPuntuados)}
   `;
+}
+
+function obtenerDetalleRankingTotalCompleto(participante) {
+  const exactos =
+    (participante.exactosGrupos || 0) + (participante.exactosEliminacion || 0);
+  const partidosPuntuados =
+    (participante.partidosGrupos || 0) + (participante.partidosEliminacion || 0);
+
+  return `
+    <p>Cantidad de puntos obtenidos en Fase de grupos: ${escapeHTML(participante.puntosGrupos || 0)}</p>
+    <p>Cantidad de puntos obtenidos en Fase de eliminación: ${escapeHTML(participante.puntosEliminacion || 0)}</p>
+    <p>Cantidad de partidos exactos: ${escapeHTML(exactos)}</p>
+    <p>Predicciones enviadas: ${escapeHTML(partidosPuntuados)}</p>
+  `;
+}
+
+function obtenerDetalleRankingGruposCompleto(participante) {
+  return `
+    <p>Resultado exacto / pleno: ${escapeHTML(participante.exactosGrupos || 0)}</p>
+    <p>Acertó ganador/empate: ${escapeHTML(participante.ganadorEmpateGrupos || 0)}</p>
+    <p>Acertó diferencia de gol: ${escapeHTML(participante.diferenciaGrupos || 0)}</p>
+    <p>Predicciones enviadas: ${escapeHTML(participante.partidosGrupos || 0)}</p>
+  `;
+}
+
+function obtenerDetalleRankingEliminacionCompleto(participante) {
+  return `
+    <p>Resultado exacto / pleno: ${escapeHTML(participante.exactosEliminacion || 0)}</p>
+    <p>Acertó ganador/empate: ${escapeHTML(participante.ganadorEmpateEliminacion || 0)}</p>
+    <p>Acertó quién clasifica: ${escapeHTML(participante.clasificados || 0)}</p>
+    <p>Predicciones enviadas: ${escapeHTML(participante.partidosEliminacion || 0)}</p>
+  `;
+}
+
+function configurarDetalleRankingDesplegable() {
+  document.querySelectorAll(".ranking-total-item").forEach((item) => {
+    const alternarDetalle = () => {
+      const abierto = item.getAttribute("aria-expanded") === "true";
+      const detalle = item.querySelector(".ranking-total-detail");
+
+      item.setAttribute("aria-expanded", abierto ? "false" : "true");
+      item.classList.toggle("open", !abierto);
+
+      if (detalle) {
+        detalle.classList.toggle("hidden", abierto);
+      }
+    };
+
+    item.addEventListener("click", alternarDetalle);
+    item.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        alternarDetalle();
+      }
+    });
+  });
 }
 
 function obtenerDetalleSegunTipo(participante) {
