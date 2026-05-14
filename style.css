@@ -485,7 +485,11 @@ body {
   }
 
   .save-bar {
-    position: static;
+    position: relative;
+    bottom: auto;
+    z-index: auto;
+    background: transparent;
+    backdrop-filter: none;
     padding: 6px 0 8px;
     margin-top: 10px;
   }
@@ -494,6 +498,7 @@ body {
 @media (max-width: 600px) {
   .app {
     padding: 14px;
+    padding-bottom: 14px;
   }
 
   .hero h1 {
@@ -1318,23 +1323,25 @@ body {
   }
 
   .menu-button {
-    min-height: 34px;
-    padding: 6px 7px;
+    min-height: 40px;
+    padding: 6px 8px;
     font-size: 0;
     border-radius: 9px;
   }
 
   .menu-button::after {
-    font-size: 11px;
-    line-height: 1.1;
+    display: block;
+    font-size: 10px;
+    line-height: 1.12;
+    white-space: normal;
   }
 
   #tabPronosticos::after {
-    content: "Pronósticos grupos";
+    content: "Pronósticos fase de grupos";
   }
 
   #tabEliminacion::after {
-    content: "Eliminación";
+    content: "Pronósticos fase de eliminación";
   }
 
   #tabRanking::after {
@@ -1371,7 +1378,7 @@ body {
 @media (max-width: 430px) {
   .app {
     padding: 10px;
-    padding-bottom: 104px;
+    padding-bottom: 10px;
   }
 
   .app-header {
@@ -1409,14 +1416,14 @@ body {
   }
 
   .menu-button {
-    min-height: 32px;
+    min-height: 38px;
     padding: 5px 6px;
     font-size: 0;
     line-height: 1.1;
   }
 
   .menu-button::after {
-    font-size: 10px;
+    font-size: 9.5px;
   }
 
   .matches,
