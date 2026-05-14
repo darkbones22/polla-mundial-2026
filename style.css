@@ -1150,6 +1150,11 @@ body {
   flex-direction: column;
 }
 
+.info-card h3::after {
+  content: "";
+  display: none;
+}
+
 .info-card-score {
   border-left-color: #1d4ed8;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
@@ -1653,25 +1658,111 @@ body {
   }
 
   .info-section {
-    padding: 10px;
+    padding: 8px;
   }
 
-  .info-grid,
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
   .info-score-grid {
     grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .info-card {
-    padding: 9px;
+    padding: 0;
+    border-left-width: 3px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(30, 64, 175, 0.05);
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .info-card-hero {
+    padding: 0;
+  }
+
+  .info-card h3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+    padding: 9px 10px;
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  .info-card h3::after {
+    display: block;
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid #2563eb;
+    border-bottom: 2px solid #2563eb;
+    transform: rotate(45deg);
+    transition: transform 0.16s ease;
+  }
+
+  .info-card.info-open h3::after {
+    transform: rotate(225deg);
+  }
+
+  .info-card > :not(h3) {
+    display: none;
+  }
+
+  .info-card.info-open > p,
+  .info-card.info-open > .info-score-grid,
+  .info-card.info-open > .status-guide {
+    display: block;
+    padding: 0 10px 9px;
+  }
+
+  .info-card.info-open > .info-score-grid,
+  .info-card.info-open > .status-guide {
+    display: grid;
+  }
+
+  .info-card p {
+    font-size: 10.5px;
+    line-height: 1.35;
+  }
+
+  .info-score-box {
+    padding: 7px;
+    border-radius: 8px;
+  }
+
+  .info-score-grid strong,
+  .info-score-grid ul {
+    font-size: 10.5px;
+  }
+
+  .info-score-grid ul {
+    padding-left: 14px;
+    line-height: 1.35;
+  }
+
+  .info-score-grid ul + p,
+  .info-score-box p {
+    font-size: 9.5px;
   }
 
   .status-guide {
     grid-template-columns: 1fr;
-    gap: 4px;
+    gap: 3px;
+  }
+
+  .status-guide .match-status {
+    font-size: 8.5px;
   }
 
   .status-guide p {
-    margin-bottom: 3px;
+    margin-bottom: 2px;
+    font-size: 10px;
   }
 
   .classify-options {
@@ -1749,16 +1840,21 @@ body {
   }
 
   .info-header h2 {
-    font-size: 17px;
+    font-size: 16px;
+  }
+
+  .info-header p {
+    font-size: 11px;
   }
 
   .info-card h3 {
-    font-size: 12px;
+    padding: 8px 9px;
+    font-size: 11px;
   }
 
   .info-card p,
   .info-score-grid ul {
-    font-size: 10px;
+    font-size: 9.8px;
   }
 
   .matches,

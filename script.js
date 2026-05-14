@@ -1406,7 +1406,51 @@ function mostrarSeccion(seccion) {
   if (seccion === "informacion") {
     seccionInformacion.classList.remove("hidden");
     tabInformacion.classList.add("active");
+    configurarAcordeonesInformacion();
   }
+}
+
+function configurarAcordeonesInformacion() {
+  const tarjetas = document.querySelectorAll("#seccionInformacion .info-card");
+
+  tarjetas.forEach((tarjeta) => {
+    if (tarjeta.dataset.infoAccordionReady === "true") {
+      return;
+    }
+
+    tarjeta.dataset.infoAccordionReady = "true";
+    tarjeta.setAttribute("role", "button");
+    tarjeta.setAttribute("tabindex", "0");
+    tarjeta.setAttribute("aria-expanded", "false");
+
+    const alternarTarjeta = () => {
+      if (!window.matchMedia("(max-width: 600px)").matches) {
+        return;
+      }
+
+      const estabaAbierta = tarjeta.classList.contains("info-open");
+
+      tarjetas.forEach((otraTarjeta) => {
+        otraTarjeta.classList.remove("info-open");
+        otraTarjeta.setAttribute("aria-expanded", "false");
+      });
+
+      if (!estabaAbierta) {
+        tarjeta.classList.add("info-open");
+        tarjeta.setAttribute("aria-expanded", "true");
+      }
+    };
+
+    tarjeta.addEventListener("click", alternarTarjeta);
+    tarjeta.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+
+      event.preventDefault();
+      alternarTarjeta();
+    });
+  });
 }
 
 function cambiarUsuario() {
