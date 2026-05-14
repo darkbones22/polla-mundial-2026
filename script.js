@@ -1041,36 +1041,58 @@ function abrirApp(validacionCodigo) {
   actualizarContadorPronosticos();
 }
 
-async function iniciarSesionGuardada() {
+function obtenerSesionGuardada() {
   const usuarioGuardado = localStorage.getItem("usuario") || "";
   const codigoGuardado = localStorage.getItem("codigoUsuario") || "";
 
-  if (!usuarioGuardado || !codigoGuardado) return;
+  if (!usuarioGuardado.trim() || !codigoGuardado.trim()) return null;
+
+  return {
+    usuario: usuarioGuardado.trim(),
+    codigo: codigoGuardado.trim().toLowerCase()
+  };
+}
+
+async function iniciarSesionGuardada() {
+  const sesionGuardada = obtenerSesionGuardada();
+
+  if (!sesionGuardada) return false;
 
   const btnIngresar = document.getElementById("btnIngresar");
+  const inputUsuario = document.getElementById("usuario");
+  const inputCodigoUsuario = document.getElementById("codigoUsuario");
+
+  inputUsuario.value = sesionGuardada.usuario;
+  inputCodigoUsuario.value = sesionGuardada.codigo;
 
   btnIngresar.disabled = true;
   btnIngresar.textContent = "Cargando pronósticos... ⏳";
 
   try {
-    const validacionCodigo = await validarCodigoConServidor(codigoGuardado);
+    const validacionCodigo = await validarCodigoConServidor(sesionGuardada.codigo);
 
     if (!validacionCodigo.ok) {
+      localStorage.removeItem("usuario");
+      localStorage.removeItem("codigoUsuario");
+      document.getElementById("loginView").classList.remove("hidden");
       btnIngresar.disabled = false;
       btnIngresar.textContent = "Ingresar";
-      return;
+      return false;
     }
 
-    await sincronizarPronosticosUsuarioDesdeServidor(codigoGuardado);
+    await sincronizarPronosticosUsuarioDesdeServidor(sesionGuardada.codigo);
     mostrarPollasDelParticipante(validacionCodigo);
     abrirApp(validacionCodigo);
 
+    return true;
   } catch (error) {
     console.error(error);
+    document.getElementById("loginView").classList.remove("hidden");
   }
 
   btnIngresar.disabled = false;
   btnIngresar.textContent = "Ingresar";
+  return false;
 }
 
 function mostrarResumenPollas(pollas) {
@@ -1379,6 +1401,12 @@ function mostrarSeccion(seccion) {
 }
 
 function cambiarUsuario() {
+  localStorage.removeItem("usuario");
+  localStorage.removeItem("codigoUsuario");
+
+  document.getElementById("usuario").value = "";
+  document.getElementById("codigoUsuario").value = "";
+
   document.getElementById("appView").classList.add("hidden");
   document.getElementById("loginView").classList.remove("hidden");
 
@@ -2469,6 +2497,12 @@ async function enviarEliminacion() {
 }
 
 async function inicializarApp() {
+  const sesionGuardada = obtenerSesionGuardada();
+
+  if (sesionGuardada) {
+    document.getElementById("loginView").classList.add("hidden");
+  }
+
   const [cargaPartidos, cargaResultados] = await Promise.allSettled([
     cargarPartidosConServidor(),
     cargarResultadosConServidor()
@@ -2501,7 +2535,10 @@ async function inicializarApp() {
   renderizarPartidos();
   renderizarResultadosGrupos();
   actualizarContadorPronosticos();
-  iniciarSesionGuardada();
+
+  if (sesionGuardada) {
+    await iniciarSesionGuardada();
+  }
 }
 
 // Iniciar página
