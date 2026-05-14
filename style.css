@@ -317,6 +317,13 @@ body {
   white-space: nowrap;
 }
 
+.result-detail-note {
+  margin: 2px 0 0;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
 .result-detail-close {
   flex: 0 0 auto;
   width: 22px;

@@ -180,6 +180,38 @@ let partidos = [
 // =======================
 
 const HORAS_ANTES_BLOQUEO = 3;
+const CLAVE_SESION_USUARIO = "usuario";
+const CLAVE_SESION_CODIGO = "codigoUsuario";
+const CLAVE_SESION_ACTIVA = "sesionIniciada";
+const CLAVES_SESION_ANTIGUAS_LOCALSTORAGE = [
+  "usuario",
+  "codigoUsuario",
+  "codigo",
+  "participante",
+  "usuarioActual",
+  "currentUser",
+  "activeUser"
+];
+
+function limpiarClavesSesionAntiguasLocalStorage() {
+  CLAVES_SESION_ANTIGUAS_LOCALSTORAGE.forEach((clave) => {
+    localStorage.removeItem(clave);
+  });
+}
+
+function guardarSesionActual(usuario, codigoUsuario) {
+  sessionStorage.setItem(CLAVE_SESION_USUARIO, usuario);
+  sessionStorage.setItem(CLAVE_SESION_CODIGO, codigoUsuario);
+  sessionStorage.setItem(CLAVE_SESION_ACTIVA, "true");
+  limpiarClavesSesionAntiguasLocalStorage();
+}
+
+function limpiarSesionActual() {
+  sessionStorage.removeItem(CLAVE_SESION_USUARIO);
+  sessionStorage.removeItem(CLAVE_SESION_CODIGO);
+  sessionStorage.removeItem(CLAVE_SESION_ACTIVA);
+  limpiarClavesSesionAntiguasLocalStorage();
+}
 
 function escapeHTML(texto) {
   return String(texto ?? "")
@@ -470,7 +502,7 @@ function renderizarResultadosGrupos() {
       </div>
 
       <div class="result-hint">
-        ${resultadoFinalizado ? "Ver detalle de puntos" : "El resultado a\u00fan no est\u00e1 disponible."}
+        ${resultadoFinalizado ? "Ver detalle de puntos" : "Ver pron\u00f3sticos registrados"}
       </div>
     `;
 
@@ -482,7 +514,7 @@ function renderizarResultadosGrupos() {
     contenedorResultados.appendChild(panelDetalle);
 
     const alternarDetalle = () => {
-      manejarClickDetalleResultado(partido, resultadoFinalizado);
+      manejarClickDetalleResultado(partido);
     };
 
     tarjeta.addEventListener("click", alternarDetalle);
@@ -526,7 +558,7 @@ function marcarTarjetaResultadoActiva(partidoId) {
   }
 }
 
-async function manejarClickDetalleResultado(partido, resultadoFinalizado) {
+async function manejarClickDetalleResultado(partido) {
   const panel = obtenerPanelDetalleResultado(partido.id);
 
   if (!panel) return;
@@ -541,15 +573,6 @@ async function manejarClickDetalleResultado(partido, resultadoFinalizado) {
   cerrarDetallesResultado();
   marcarTarjetaResultadoActiva(partido.id);
   panel.classList.remove("hidden");
-
-  if (!resultadoFinalizado) {
-    panel.innerHTML = `
-      <div class="result-detail-message">
-        El resultado a\u00fan no est\u00e1 disponible.
-      </div>
-    `;
-    return;
-  }
 
   const idPolla = obtenerPollaGlobalSeleccionada();
 
@@ -580,6 +603,15 @@ async function manejarClickDetalleResultado(partido, resultadoFinalizado) {
       return;
     }
 
+    respuesta.partido = {
+      ...(respuesta.partido || {}),
+      local: (respuesta.partido && respuesta.partido.local) || partido.local,
+      visita: (respuesta.partido && respuesta.partido.visita) || partido.visita,
+      grupo: (respuesta.partido && respuesta.partido.grupo) || partido.grupo,
+      fecha: (respuesta.partido && respuesta.partido.fecha) || partido.fecha,
+      hora: (respuesta.partido && respuesta.partido.hora) || partido.hora
+    };
+
     mostrarDetallePartido(panel, respuesta);
   } catch (error) {
     panel.innerHTML = `
@@ -598,17 +630,28 @@ function obtenerTextoDetallePuntos(participante) {
   const pronostico = participante.pronostico || {};
   const golesLocal = pronostico.golesLocal ?? "";
   const golesVisita = pronostico.golesVisita ?? "";
+  const clasifica = pronostico.clasifica ? ` \u00b7 Clasifica: ${pronostico.clasifica}` : "";
 
-  return `Pron\u00f3stico: ${golesLocal} - ${golesVisita}`;
+  return `Pron\u00f3stico: ${golesLocal} - ${golesVisita}${clasifica}`;
 }
 
 function mostrarDetallePartido(panel, respuesta) {
   const partido = respuesta.partido || {};
   const participantes = respuesta.participantes || [];
   const nombrePolla = respuesta.polla ? respuesta.polla.nombre : obtenerNombrePollaPorId(obtenerPollaGlobalSeleccionada());
-  const local = obtenerNombreEquipo(partido.local);
-  const visita = obtenerNombreEquipo(partido.visita);
-  const marcador = `${partido.golesLocalReal} - ${partido.golesVisitaReal}`;
+  const resultadoFinalizado = respuesta.resultadoFinalizado !== false;
+  const local = obtenerNombreEquipo(partido.local || "Local");
+  const visita = obtenerNombreEquipo(partido.visita || "Visita");
+  const encabezadoPartido = resultadoFinalizado
+    ? `${partido.golesLocalReal} - ${partido.golesVisitaReal}`
+    : "vs";
+  const avisoPendiente = resultadoFinalizado
+    ? ""
+    : `
+        <p class="result-detail-note">
+          Pron\u00f3sticos registrados. Los puntos se calcular\u00e1n cuando el resultado sea final.
+        </p>
+      `;
 
   const filas = participantes.length
     ? participantes.map((participante, index) => `
@@ -626,7 +669,8 @@ function mostrarDetallePartido(panel, respuesta) {
     <div class="result-detail-header">
       <div>
         <span class="result-detail-kicker">${escapeHTML(nombrePolla)}</span>
-        <h3>${escapeHTML(local)} ${escapeHTML(marcador)} ${escapeHTML(visita)}</h3>
+        <h3>${escapeHTML(local)} ${escapeHTML(encabezadoPartido)} ${escapeHTML(visita)}</h3>
+        ${avisoPendiente}
       </div>
       <button class="result-detail-close" type="button" aria-label="Cerrar detalle">×</button>
     </div>
@@ -1009,8 +1053,7 @@ async function iniciarSesion() {
     return;
   }
 
-  localStorage.setItem("usuario", usuario);
-  localStorage.setItem("codigoUsuario", codigoUsuario);
+  guardarSesionActual(usuario, codigoUsuario);
 
   btnIngresar.textContent = "Cargando pronósticos... ⏳";
 
@@ -1042,10 +1085,11 @@ function abrirApp(validacionCodigo) {
 }
 
 function obtenerSesionGuardada() {
-  const usuarioGuardado = localStorage.getItem("usuario") || "";
-  const codigoGuardado = localStorage.getItem("codigoUsuario") || "";
+  const sesionActiva = sessionStorage.getItem(CLAVE_SESION_ACTIVA) === "true";
+  const usuarioGuardado = sessionStorage.getItem(CLAVE_SESION_USUARIO) || "";
+  const codigoGuardado = sessionStorage.getItem(CLAVE_SESION_CODIGO) || "";
 
-  if (!usuarioGuardado.trim() || !codigoGuardado.trim()) return null;
+  if (!sesionActiva || !usuarioGuardado.trim() || !codigoGuardado.trim()) return null;
 
   return {
     usuario: usuarioGuardado.trim(),
@@ -1072,8 +1116,9 @@ async function iniciarSesionGuardada() {
     const validacionCodigo = await validarCodigoConServidor(sesionGuardada.codigo);
 
     if (!validacionCodigo.ok) {
-      localStorage.removeItem("usuario");
-      localStorage.removeItem("codigoUsuario");
+      limpiarSesionActual();
+      inputUsuario.value = "";
+      inputCodigoUsuario.value = "";
       document.getElementById("loginView").classList.remove("hidden");
       btnIngresar.disabled = false;
       btnIngresar.textContent = "Ingresar";
@@ -1087,6 +1132,8 @@ async function iniciarSesionGuardada() {
     return true;
   } catch (error) {
     console.error(error);
+    inputUsuario.value = "";
+    inputCodigoUsuario.value = "";
     document.getElementById("loginView").classList.remove("hidden");
   }
 
@@ -1454,8 +1501,7 @@ function configurarAcordeonesInformacion() {
 }
 
 function cambiarUsuario() {
-  localStorage.removeItem("usuario");
-  localStorage.removeItem("codigoUsuario");
+  limpiarSesionActual();
 
   document.getElementById("usuario").value = "";
   document.getElementById("codigoUsuario").value = "";
@@ -2331,15 +2377,10 @@ mostrarPollasDelParticipante(validacionCodigo);
 const inputUsuario = document.getElementById("usuario");
 const inputCodigoUsuario = document.getElementById("codigoUsuario");
 
-inputUsuario.value = localStorage.getItem("usuario") || "";
-inputCodigoUsuario.value = localStorage.getItem("codigoUsuario") || "";
-
-inputUsuario.addEventListener("input", () => {
-  localStorage.setItem("usuario", inputUsuario.value);
-});
+inputUsuario.value = "";
+inputCodigoUsuario.value = "";
 
 inputCodigoUsuario.addEventListener("input", () => {
-  localStorage.setItem("codigoUsuario", inputCodigoUsuario.value);
   recargarPronosticosGruposDesdeLocalStorage();
   recargarPronosticosEliminacionDesdeLocalStorage();
   actualizarContadorPronosticos();
@@ -2698,10 +2739,15 @@ async function enviarEliminacion() {
 }
 
 async function inicializarApp() {
+  limpiarClavesSesionAntiguasLocalStorage();
+
   const sesionGuardada = obtenerSesionGuardada();
 
   if (sesionGuardada) {
     document.getElementById("loginView").classList.add("hidden");
+  } else {
+    document.getElementById("appView").classList.add("hidden");
+    document.getElementById("loginView").classList.remove("hidden");
   }
 
   const [cargaPartidos, cargaResultados] = await Promise.allSettled([
