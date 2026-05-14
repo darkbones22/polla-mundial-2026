@@ -1613,28 +1613,42 @@ body {
 
 @media (max-width: 600px) {
   .main-menu {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    grid-template-columns: none;
     gap: 6px;
-    padding: 7px;
-    border-radius: 12px;
+    padding: 6px;
+    border-radius: 999px;
     margin-bottom: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
     position: static;
     top: auto;
     z-index: auto;
   }
 
+  .main-menu::-webkit-scrollbar {
+    display: none;
+  }
+
   .menu-button {
-    min-height: 40px;
-    padding: 6px 8px;
+    flex: 0 0 auto;
+    min-width: max-content;
+    min-height: 34px;
+    padding: 7px 12px;
     font-size: 0;
-    border-radius: 9px;
+    border-radius: 999px;
+    scroll-snap-align: start;
   }
 
   .menu-button::after {
     display: block;
-    font-size: 10px;
-    line-height: 1.12;
-    white-space: normal;
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   #tabPronosticos::after {
@@ -1653,8 +1667,28 @@ body {
     content: "Resultados";
   }
 
+  #tabPronosticos::after {
+    content: "Grupos";
+  }
+
+  #tabEliminacion::after {
+    content: "Eliminacion";
+  }
+
+  #tabInformacion::after {
+    content: "Info";
+  }
+
   #tabInformacion::after {
     content: "Información";
+  }
+
+  #tabInformacion::after {
+    content: "Info";
+  }
+
+  #tabEliminacion::after {
+    content: "Eliminaci\00F3n";
   }
 
   .info-section {
@@ -1824,19 +1858,19 @@ body {
 
   .main-menu {
     gap: 5px;
-    padding: 6px;
+    padding: 5px;
     margin-bottom: 8px;
   }
 
   .menu-button {
-    min-height: 40px;
-    padding: 5px 5px;
+    min-height: 32px;
+    padding: 6px 11px;
     font-size: 0;
-    line-height: 1.1;
+    line-height: 1;
   }
 
   .menu-button::after {
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .info-header h2 {
