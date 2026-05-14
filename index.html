@@ -112,6 +112,10 @@
       <button id="tabResultados" class="menu-button" onclick="mostrarSeccion('resultados')">
         Resultados
       </button>
+
+      <button id="tabInformacion" class="menu-button" onclick="mostrarSeccion('informacion')">
+        Información
+      </button>
     </nav>
 
     <!-- SECCIÓN PRONÓSTICOS -->
@@ -193,6 +197,88 @@
 
         <div id="rankingContent" class="ranking-placeholder">
           Selecciona una polla para ver el ranking 🏅
+        </div>
+      </section>
+    </section>
+
+    <!-- SECCIÃ“N INFORMACIÃ“N -->
+    <section id="seccionInformacion" class="page-section hidden">
+      <section class="info-section">
+        <div class="info-header">
+          <h2>Información de la polla</h2>
+          <p>Revisa cómo participar, cómo se calculan los puntos y qué significa cada estado.</p>
+        </div>
+
+        <div class="info-grid">
+          <article class="info-card info-card-hero">
+            <h3>¿En qué consiste?</h3>
+            <p>La polla consiste en predecir los resultados de los partidos del Mundial 2026. Cada participante completa sus pronósticos y suma puntos según sus aciertos. El ranking se actualiza de acuerdo con los resultados reales ingresados en la app.</p>
+          </article>
+
+          <article class="info-card info-card-phase">
+            <h3>Fase de grupos</h3>
+            <p>En la fase de grupos debes predecir el marcador de cada partido. Puedes editar tus pronósticos mientras el partido esté disponible. Cuando el partido se cierre, tu pronóstico queda bloqueado.</p>
+          </article>
+
+          <article class="info-card info-card-phase">
+            <h3>Fase de eliminación</h3>
+            <p>En la fase de eliminación también debes predecir el marcador. Si predices un ganador, la app asigna automáticamente que ese equipo clasifica. Si predices un empate, deberás elegir manualmente qué equipo clasifica.</p>
+          </article>
+
+          <article class="info-card info-card-score">
+            <h3>¿Cómo se ganan puntos?</h3>
+            <div class="info-score-grid">
+              <div class="info-score-box">
+                <strong>Fase de grupos</strong>
+                <ul>
+                  <li>Resultado exacto / pleno: 10 puntos.</li>
+                  <li>Acertar ganador o empate: 3 puntos.</li>
+                  <li>Acertar goles del local: 2 puntos.</li>
+                  <li>Acertar goles del visitante: 2 puntos.</li>
+                  <li>Acertar diferencia de gol: 1 punto.</li>
+                </ul>
+                <p>Si el marcador es exacto, se considera pleno de 10 puntos.</p>
+              </div>
+
+              <div class="info-score-box">
+                <strong>Fase de eliminación</strong>
+                <ul>
+                  <li>Resultado exacto / pleno: 10 puntos.</li>
+                  <li>Acertar ganador o empate: 3 puntos.</li>
+                  <li>Acertar goles del local: 2 puntos.</li>
+                  <li>Acertar goles del visitante: 2 puntos.</li>
+                  <li>Acertar diferencia de gol: 1 punto.</li>
+                  <li>Acertar quién clasifica: 3 puntos.</li>
+                </ul>
+                <p>Si el marcador es exacto, suma 10 puntos y puede sumar 3 más si también acierta quién clasifica.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="info-card">
+            <h3>Ranking</h3>
+            <p>El ranking muestra el puntaje acumulado de cada participante. Puedes revisar el ranking total, el ranking de fase de grupos y el ranking de fase de eliminación.</p>
+            <p>En Total, Grupos y Eliminación puedes hacer click en cada participante para ver el detalle de sus puntos.</p>
+          </article>
+
+          <article class="info-card">
+            <h3>Estados de partidos</h3>
+            <div class="status-guide">
+              <span class="match-status disponible">✅ Disponible</span>
+              <p>Puedes editar tu pronóstico.</p>
+              <span class="match-status bloqueado">🔒 Cerrado</span>
+              <p>El partido ya no se puede editar.</p>
+              <span class="match-status pendiente">⏳ Pendiente</span>
+              <p>El partido aún no está disponible o falta información.</p>
+              <span class="match-status finalizado">🏁 Finalizado</span>
+              <p>El resultado real ya fue ingresado.</p>
+            </div>
+          </article>
+
+          <article class="info-card">
+            <h3>Guardar pronósticos</h3>
+            <p>Recuerda guardar tus pronósticos antes de salir. En las secciones de grupos y eliminación encontrarás el botón para guardar tus cambios.</p>
+          </article>
         </div>
       </section>
     </section>

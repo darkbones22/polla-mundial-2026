@@ -1354,21 +1354,25 @@ function mostrarSeccion(seccion) {
   const seccionEliminacion = document.getElementById("seccionEliminacion");
   const seccionResultados = document.getElementById("seccionResultados");
   const seccionRanking = document.getElementById("seccionRanking");
+  const seccionInformacion = document.getElementById("seccionInformacion");
 
   const tabPronosticos = document.getElementById("tabPronosticos");
   const tabEliminacion = document.getElementById("tabEliminacion");
   const tabResultados = document.getElementById("tabResultados");
   const tabRanking = document.getElementById("tabRanking");
+  const tabInformacion = document.getElementById("tabInformacion");
 
   seccionPronosticos.classList.add("hidden");
   seccionEliminacion.classList.add("hidden");
   seccionResultados.classList.add("hidden");
   seccionRanking.classList.add("hidden");
+  seccionInformacion.classList.add("hidden");
 
   tabPronosticos.classList.remove("active");
   tabEliminacion.classList.remove("active");
   tabResultados.classList.remove("active");
   tabRanking.classList.remove("active");
+  tabInformacion.classList.remove("active");
 
   if (seccion === "pronosticos") {
     seccionPronosticos.classList.remove("hidden");
@@ -1397,6 +1401,11 @@ function mostrarSeccion(seccion) {
     tabRanking.classList.add("active");
 
     cargarRankingSeleccionado();
+  }
+
+  if (seccion === "informacion") {
+    seccionInformacion.classList.remove("hidden");
+    tabInformacion.classList.add("active");
   }
 }
 
