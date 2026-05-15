@@ -63,17 +63,22 @@ Columnas:
 - Goles Visita
 - Visita
 
-### Resultados
+### Partidos
 
 Columnas:
 
 - Partido ID
 - Grupo
+- Fecha
+- Hora
 - Local
+- Visita
 - Goles Local Real
 - Goles Visita Real
-- Visita
 - Estado
+
+Esta es la hoja oficial para fixture, horarios, estado y resultados reales de fase de grupos.
+La hoja `Resultados` de fase de grupos queda sin uso por compatibilidad histórica.
 
 ### Llaves
 
@@ -87,7 +92,12 @@ Columnas:
 - Local
 - Visita Placeholder
 - Visita
+- Goles Local Real
+- Goles Visita Real
+- Clasifica Real
 - Estado
+
+Esta es la hoja oficial para fixture, horarios, equipos/placeholders, estado, resultados reales y clasificado real de eliminación directa.
 
 ### Pronosticos_Eliminacion
 
@@ -104,18 +114,7 @@ Columnas:
 - Visita
 - Clasifica
 
-### Resultados_Eliminacion
-
-Columnas:
-
-- Partido ID
-- Ronda
-- Local
-- Goles Local Real
-- Goles Visita Real
-- Visita
-- Clasifica Real
-- Estado
+La hoja `Resultados_Eliminacion` queda sin uso por compatibilidad histórica.
 
 ## Estados de partidos de eliminación
 
@@ -124,7 +123,7 @@ Columnas:
 - Cerrado: no se puede editar.
 - Finalizado: ya tiene resultado real.
 
-Además, los partidos se bloquean automáticamente 3 horas antes de comenzar.
+Además, los partidos se bloquean automáticamente 1 hora antes de comenzar.
 
 ## Reglas de puntaje fase de grupos
 

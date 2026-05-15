@@ -179,7 +179,9 @@ let partidos = [
 // REGLAS DE LA POLLA
 // =======================
 
-const HORAS_ANTES_BLOQUEO = 3;
+const HORAS_ANTES_BLOQUEO = 1;
+const TOTAL_PARTIDOS_GRUPOS = 72;
+const TOTAL_PRONOSTICOS_ELIMINACION = 32;
 const CLAVE_SESION_USUARIO = "usuario";
 const CLAVE_SESION_CODIGO = "codigoUsuario";
 const CLAVE_SESION_ACTIVA = "sesionIniciada";
@@ -238,6 +240,7 @@ function estaBloqueado(partido) {
 const contenedorPartidos = document.getElementById("partidos");
 const contenedorResultados = document.getElementById("resultadosGrupos");
 let resultadosGrupos = {};
+let resultadosEliminacion = {};
 let detalleResultadoAbierto = "";
 
 function obtenerFechaHoraPartido(partido) {
@@ -259,20 +262,21 @@ function formatearFechaEncabezado(fecha) {
 
 function obtenerEstadoVisualGrupo(partido) {
   const estado = String(partido.estado || "").trim().toLowerCase();
+  const tieneResultadoFinal = resultadoGrupoFinalizadoValido(partido.id);
 
-  if (estado === "cerrado" || estado === "finalizado") {
+  if (tieneResultadoFinal) {
     return {
       bloqueado: true,
       motivo: "estado",
-      clase: estado === "finalizado" ? "finalizado" : "bloqueado",
-      texto: estado === "finalizado" ? "\uD83C\uDFC1 Finalizado" : "\uD83D\uDD12 Cerrado"
+      clase: "finalizado",
+      texto: "\uD83C\uDFC1 Finalizado"
     };
   }
 
-  if (estaBloqueado(partido)) {
+  if (estado === "cerrado" || estado === "finalizado" || estaBloqueado(partido)) {
     return {
       bloqueado: true,
-      motivo: "horario",
+      motivo: estado === "cerrado" || estado === "finalizado" ? "estado" : "horario",
       clase: "bloqueado",
       texto: "\uD83D\uDD12 Cerrado"
     };
@@ -288,8 +292,9 @@ function obtenerEstadoVisualGrupo(partido) {
 
 function obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora) {
   const estado = String(partido.estado || "").trim().toLowerCase();
+  const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
 
-  if (estado === "finalizado") {
+  if (resultadoFinalizado) {
     return {
       bloqueado: true,
       clase: "finalizado",
@@ -305,7 +310,7 @@ function obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora) {
     };
   }
 
-  if (estado === "cerrado" || bloqueadoPorHora) {
+  if (estado === "cerrado" || estado === "finalizado" || bloqueadoPorHora) {
     return {
       bloqueado: true,
       clase: "bloqueado",
@@ -334,14 +339,72 @@ function guardarResultadosEnMemoria(resultados) {
   });
 }
 
+function guardarResultadosEliminacionEnMemoria(resultados) {
+  resultadosEliminacion = {};
+
+  resultados.forEach((resultado) => {
+    if (!resultado.id) return;
+
+    resultadosEliminacion[resultado.id] = resultado;
+  });
+}
+
+function resultadoGrupoFinalizadoValido(partidoId) {
+  const resultado = resultadosGrupos[partidoId];
+
+  return Boolean(
+    resultado &&
+    String(resultado.estado || "").trim().toLowerCase() === "finalizado" &&
+    resultado.golesLocalReal !== "" &&
+    resultado.golesLocalReal !== null &&
+    resultado.golesLocalReal !== undefined &&
+    resultado.golesVisitaReal !== "" &&
+    resultado.golesVisitaReal !== null &&
+    resultado.golesVisitaReal !== undefined
+  );
+}
+
+function resultadoEliminacionFinalizadoValido(partidoId) {
+  const resultado = resultadosEliminacion[partidoId];
+
+  return Boolean(
+    resultado &&
+    String(resultado.estado || "").trim().toLowerCase() === "finalizado" &&
+    resultado.golesLocalReal !== "" &&
+    resultado.golesLocalReal !== null &&
+    resultado.golesLocalReal !== undefined &&
+    resultado.golesVisitaReal !== "" &&
+    resultado.golesVisitaReal !== null &&
+    resultado.golesVisitaReal !== undefined
+  );
+}
+
 function partidoDisponibleParaPronosticar(partido) {
   return !obtenerEstadoVisualGrupo(partido).bloqueado;
+}
+
+function obtenerOrdenEstadoGrupo(partido) {
+  const estadoVisual = obtenerEstadoVisualGrupo(partido);
+
+  if (!estadoVisual.bloqueado) return 0;
+  if (estadoVisual.clase === "finalizado") return 2;
+  return 1;
 }
 
 function ordenarPartidosPorFechaHora(listaPartidos) {
   return [...listaPartidos].sort((a, b) => {
     const fechaA = obtenerFechaHoraPartido(a);
     const fechaB = obtenerFechaHoraPartido(b);
+
+    if (a.fecha !== b.fecha) {
+      return fechaA - fechaB;
+    }
+
+    const ordenEstado = obtenerOrdenEstadoGrupo(a) - obtenerOrdenEstadoGrupo(b);
+
+    if (ordenEstado !== 0) {
+      return ordenEstado;
+    }
 
     return fechaA - fechaB;
   });
@@ -350,14 +413,12 @@ function ordenarPartidosPorFechaHora(listaPartidos) {
 function renderizarPartidos() {
   contenedorPartidos.innerHTML = "";
 
-  const partidosOrdenados = ordenarPartidosPorFechaHora(
-    partidos.filter(partidoDisponibleParaPronosticar)
-  );
+  const partidosOrdenados = ordenarPartidosPorFechaHora(partidos);
 
   if (partidosOrdenados.length === 0) {
     contenedorPartidos.innerHTML = `
       <div class="empty-state">
-        No hay partidos disponibles para pronosticar por ahora.
+        No hay partidos cargados por ahora.
       </div>
     `;
     return;
@@ -455,8 +516,9 @@ function renderizarResultadosGrupos() {
   const partidosCerrados = ordenarPartidosPorFechaHora(
     partidos.filter((partido) => !partidoDisponibleParaPronosticar(partido))
   );
+  const llavesCerradas = obtenerLlavesEliminacionParaResultados();
 
-  if (partidosCerrados.length === 0) {
+  if (partidosCerrados.length === 0 && llavesCerradas.length === 0) {
     contenedorResultados.innerHTML = `
       <div class="empty-state">
         Todavía no hay resultados disponibles.
@@ -467,11 +529,7 @@ function renderizarResultadosGrupos() {
 
   partidosCerrados.forEach((partido) => {
     const resultado = resultadosGrupos[partido.id];
-    const resultadoFinalizado =
-      resultado &&
-      String(resultado.estado || "").trim().toLowerCase() === "finalizado" &&
-      resultado.golesLocalReal !== "" &&
-      resultado.golesVisitaReal !== "";
+    const resultadoFinalizado = resultadoGrupoFinalizadoValido(partido.id);
 
     const marcador = resultadoFinalizado
       ? `${escapeHTML(resultado.golesLocalReal)} - ${escapeHTML(resultado.golesVisitaReal)}`
@@ -487,7 +545,7 @@ function renderizarResultadosGrupos() {
     tarjeta.className = "match-card result-card partido-bloqueado";
     tarjeta.setAttribute("role", "button");
     tarjeta.setAttribute("tabindex", "0");
-    tarjeta.setAttribute("aria-expanded", detalleResultadoAbierto === partido.id ? "true" : "false");
+    tarjeta.setAttribute("aria-expanded", detalleResultadoAbierto === obtenerClaveDetalleResultado(partido.id, "grupos") ? "true" : "false");
 
     tarjeta.innerHTML = `
       <div class="match-info">
@@ -510,11 +568,11 @@ function renderizarResultadosGrupos() {
 
     const panelDetalle = document.createElement("section");
     panelDetalle.className = "result-detail-panel hidden";
-    panelDetalle.id = `detalle_${partido.id}`;
+    panelDetalle.id = obtenerIdPanelDetalleResultado(partido.id, "grupos");
     contenedorResultados.appendChild(panelDetalle);
 
     const alternarDetalle = () => {
-      manejarClickDetalleResultado(partido);
+      manejarClickDetalleResultado(partido, "grupos");
     };
 
     tarjeta.addEventListener("click", alternarDetalle);
@@ -525,6 +583,8 @@ function renderizarResultadosGrupos() {
       }
     });
   });
+
+  renderizarResultadosEliminacion(llavesCerradas);
 }
 
 function cerrarDetallesResultado() {
@@ -539,17 +599,25 @@ function cerrarDetallesResultado() {
   });
 }
 
-function obtenerPanelDetalleResultado(partidoId) {
-  return document.getElementById(`detalle_${partidoId}`);
+function obtenerClaveDetalleResultado(partidoId, tipo = "grupos") {
+  return `${tipo}_${partidoId}`;
 }
 
-function marcarTarjetaResultadoActiva(partidoId) {
+function obtenerIdPanelDetalleResultado(partidoId, tipo = "grupos") {
+  return `detalle_${tipo}_${partidoId}`;
+}
+
+function obtenerPanelDetalleResultado(partidoId, tipo = "grupos") {
+  return document.getElementById(obtenerIdPanelDetalleResultado(partidoId, tipo));
+}
+
+function marcarTarjetaResultadoActiva(partidoId, tipo = "grupos") {
   document.querySelectorAll(".result-card").forEach((tarjeta) => {
     tarjeta.classList.remove("active");
     tarjeta.setAttribute("aria-expanded", "false");
   });
 
-  const panel = obtenerPanelDetalleResultado(partidoId);
+  const panel = obtenerPanelDetalleResultado(partidoId, tipo);
   const tarjeta = panel ? panel.previousElementSibling : null;
 
   if (tarjeta) {
@@ -558,20 +626,21 @@ function marcarTarjetaResultadoActiva(partidoId) {
   }
 }
 
-async function manejarClickDetalleResultado(partido) {
-  const panel = obtenerPanelDetalleResultado(partido.id);
+async function manejarClickDetalleResultado(partido, tipo = "grupos") {
+  const panel = obtenerPanelDetalleResultado(partido.id, tipo);
+  const claveDetalle = obtenerClaveDetalleResultado(partido.id, tipo);
 
   if (!panel) return;
 
-  if (detalleResultadoAbierto === partido.id && !panel.classList.contains("hidden")) {
+  if (detalleResultadoAbierto === claveDetalle && !panel.classList.contains("hidden")) {
     detalleResultadoAbierto = "";
     cerrarDetallesResultado();
     return;
   }
 
-  detalleResultadoAbierto = partido.id;
+  detalleResultadoAbierto = claveDetalle;
   cerrarDetallesResultado();
-  marcarTarjetaResultadoActiva(partido.id);
+  marcarTarjetaResultadoActiva(partido.id, tipo);
   panel.classList.remove("hidden");
 
   const idPolla = obtenerPollaGlobalSeleccionada();
@@ -592,7 +661,7 @@ async function manejarClickDetalleResultado(partido) {
   `;
 
   try {
-    const respuesta = await cargarDetallePartidoConServidor(partido.id, "grupos");
+    const respuesta = await cargarDetallePartidoConServidor(partido.id, tipo);
 
     if (!respuesta.ok) {
       panel.innerHTML = `
@@ -607,7 +676,10 @@ async function manejarClickDetalleResultado(partido) {
       ...(respuesta.partido || {}),
       local: (respuesta.partido && respuesta.partido.local) || partido.local,
       visita: (respuesta.partido && respuesta.partido.visita) || partido.visita,
+      localPlaceholder: (respuesta.partido && respuesta.partido.localPlaceholder) || partido.localPlaceholder,
+      visitaPlaceholder: (respuesta.partido && respuesta.partido.visitaPlaceholder) || partido.visitaPlaceholder,
       grupo: (respuesta.partido && respuesta.partido.grupo) || partido.grupo,
+      ronda: (respuesta.partido && respuesta.partido.ronda) || partido.ronda,
       fecha: (respuesta.partido && respuesta.partido.fecha) || partido.fecha,
       hora: (respuesta.partido && respuesta.partido.hora) || partido.hora
     };
@@ -640,8 +712,8 @@ function mostrarDetallePartido(panel, respuesta) {
   const participantes = respuesta.participantes || [];
   const nombrePolla = respuesta.polla ? respuesta.polla.nombre : obtenerNombrePollaPorId(obtenerPollaGlobalSeleccionada());
   const resultadoFinalizado = respuesta.resultadoFinalizado !== false;
-  const local = obtenerNombreEquipo(partido.local || "Local");
-  const visita = obtenerNombreEquipo(partido.visita || "Visita");
+  const local = obtenerNombreEquipo(partido.local || partido.localPlaceholder || "Local");
+  const visita = obtenerNombreEquipo(partido.visita || partido.visitaPlaceholder || "Visita");
   const encabezadoPartido = resultadoFinalizado
     ? `${partido.golesLocalReal} - ${partido.golesVisitaReal}`
     : "vs";
@@ -750,8 +822,16 @@ function cargarPartidosConServidor() {
 }
 
 function cargarResultadosConServidor() {
+  return cargarResultadosPorTipoConServidor("grupos");
+}
+
+function cargarResultadosEliminacionConServidor() {
+  return cargarResultadosPorTipoConServidor("eliminacion");
+}
+
+function cargarResultadosPorTipoConServidor(tipo) {
   return new Promise((resolve, reject) => {
-    const callbackName = `resultados_${Date.now()}_${Math.random()
+    const callbackName = `resultados_${tipo}_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2)}`;
 
@@ -781,7 +861,13 @@ function cargarResultadosConServidor() {
       reject(new Error("No se pudieron cargar los resultados."));
     };
 
-    script.src = `${WEB_APP_URL}?action=resultados&callback=${callbackName}`;
+    const params = new URLSearchParams({
+      action: "resultados",
+      tipo,
+      callback: callbackName
+    });
+
+    script.src = `${WEB_APP_URL}?${params.toString()}`;
 
     document.body.appendChild(script);
   });
@@ -1498,6 +1584,7 @@ function configurarAcordeonesInformacion() {
       alternarTarjeta();
     });
   });
+
 }
 
 function cambiarUsuario() {
@@ -1870,6 +1957,95 @@ function configurarDetalleRankingDesplegable() {
       }
     });
   });
+
+}
+
+function obtenerLlavesEliminacionParaResultados() {
+  return llavesEliminacion.filter((partido) => {
+    const bloqueadoPorHora = estaBloqueado({
+      fecha: partido.fecha,
+      hora: partido.hora
+    });
+    const estadoVisual = obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora);
+
+    return estadoVisual.bloqueado;
+  });
+}
+
+function renderizarResultadosEliminacion(llavesCerradas) {
+  if (!contenedorResultados || llavesCerradas.length === 0) return;
+
+  let rondaActual = "";
+
+  llavesCerradas.forEach((partido) => {
+    if (partido.ronda !== rondaActual) {
+      rondaActual = partido.ronda;
+
+      const tituloRonda = document.createElement("h2");
+      tituloRonda.className = "group-title";
+      tituloRonda.textContent = rondaActual;
+      contenedorResultados.appendChild(tituloRonda);
+    }
+
+    const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
+    const marcador = resultadoFinalizado
+      ? `${escapeHTML(partido.golesLocalReal)} - ${escapeHTML(partido.golesVisitaReal)}`
+      : "Resultado pendiente";
+    const localMostrado = partido.local || partido.localPlaceholder;
+    const visitaMostrada = partido.visita || partido.visitaPlaceholder;
+    const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
+    const horaSegura = escapeHTML(partido.hora);
+    const localSeguro = escapeHTML(localMostrado);
+    const visitaSeguro = escapeHTML(visitaMostrada);
+    const clasificaSeguro = resultadoFinalizado && partido.clasifica
+      ? `<div class="result-qualified">Clasifica: ${escapeHTML(partido.clasifica)}</div>`
+      : "";
+
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "match-card result-card partido-bloqueado";
+    tarjeta.setAttribute("role", "button");
+    tarjeta.setAttribute("tabindex", "0");
+    tarjeta.setAttribute("aria-expanded", detalleResultadoAbierto === obtenerClaveDetalleResultado(partido.id, "eliminacion") ? "true" : "false");
+
+    tarjeta.innerHTML = `
+      <div class="match-info">
+        <span class="group-badge">${escapeHTML(partido.ronda)}</span>
+        ${fechaSegura} &middot; ${horaSegura} hrs
+      </div>
+
+      <div class="result-row">
+        <div class="team local">${localSeguro}</div>
+        <div>
+          <div class="${resultadoFinalizado ? "result-score" : "result-pending"}">${marcador}</div>
+          ${clasificaSeguro}
+        </div>
+        <div class="team visitante">${visitaSeguro}</div>
+      </div>
+
+      <div class="result-hint">
+        ${resultadoFinalizado ? "Ver detalle de puntos" : "Ver pron\u00f3sticos registrados"}
+      </div>
+    `;
+
+    contenedorResultados.appendChild(tarjeta);
+
+    const panelDetalle = document.createElement("section");
+    panelDetalle.className = "result-detail-panel hidden";
+    panelDetalle.id = obtenerIdPanelDetalleResultado(partido.id, "eliminacion");
+    contenedorResultados.appendChild(panelDetalle);
+
+    const alternarDetalle = () => {
+      manejarClickDetalleResultado(partido, "eliminacion");
+    };
+
+    tarjeta.addEventListener("click", alternarDetalle);
+    tarjeta.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        alternarDetalle();
+      }
+    });
+  });
 }
 
 function obtenerDetalleSegunTipo(participante) {
@@ -2223,10 +2399,6 @@ function actualizarContadorEliminacion() {
   let completados = 0;
 
   llavesEliminacion.forEach((partido) => {
-    const estadoNormalizado = partido.estado.trim().toLowerCase();
-
-    if (estadoNormalizado !== "abierto") return;
-
     const inputLocal = document.getElementById(`${partido.id}_elim_local`);
     const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
 
@@ -2251,7 +2423,7 @@ function actualizarContadorEliminacion() {
   const contador = document.getElementById("contadorEliminacion");
 
   if (contador) {
-    contador.textContent = `Pronósticos de eliminación completados: ${completados}`;
+    contador.textContent = `Pron\u00f3sticos completados: ${completados} de ${TOTAL_PRONOSTICOS_ELIMINACION}`;
   }
 }
 
@@ -2400,8 +2572,6 @@ function actualizarContadorPronosticos() {
   let completados = 0;
 
   partidos.forEach((partido) => {
-    if (!partidoDisponibleParaPronosticar(partido)) return;
-
     const inputLocal = document.getElementById(`${partido.id}_local`);
     const inputVisita = document.getElementById(`${partido.id}_visita`);
 
@@ -2415,8 +2585,7 @@ function actualizarContadorPronosticos() {
   const contador = document.getElementById("contadorPronosticos");
 
   if (contador) {
-    const disponibles = partidos.filter(partidoDisponibleParaPronosticar).length;
-    contador.textContent = `Pronósticos completados: ${completados} de ${disponibles}`;
+    contador.textContent = `Pron\u00f3sticos completados: ${completados} de ${TOTAL_PARTIDOS_GRUPOS}`;
   }
 }
 
@@ -2498,8 +2667,6 @@ function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsu
 
 function recargarPronosticosGruposDesdeLocalStorage() {
   partidos.forEach((partido) => {
-    if (!partidoDisponibleParaPronosticar(partido)) return;
-
     const inputLocal = document.getElementById(`${partido.id}_local`);
     const inputVisita = document.getElementById(`${partido.id}_visita`);
 
@@ -2750,9 +2917,11 @@ async function inicializarApp() {
     document.getElementById("loginView").classList.remove("hidden");
   }
 
-  const [cargaPartidos, cargaResultados] = await Promise.allSettled([
+  const [cargaPartidos, cargaResultados, cargaResultadosEliminacion, cargaLlaves] = await Promise.allSettled([
     cargarPartidosConServidor(),
-    cargarResultadosConServidor()
+    cargarResultadosConServidor(),
+    cargarResultadosEliminacionConServidor(),
+    cargarLlavesConServidor()
   ]);
 
   if (
@@ -2761,6 +2930,7 @@ async function inicializarApp() {
     Array.isArray(cargaPartidos.value.partidos)
   ) {
     partidos = cargaPartidos.value.partidos;
+    guardarResultadosEnMemoria(partidos);
   }
 
   if (
@@ -2771,12 +2941,36 @@ async function inicializarApp() {
     guardarResultadosEnMemoria(cargaResultados.value.resultados);
   }
 
+  if (
+    cargaResultadosEliminacion.status === "fulfilled" &&
+    cargaResultadosEliminacion.value.ok &&
+    Array.isArray(cargaResultadosEliminacion.value.resultados)
+  ) {
+    guardarResultadosEliminacionEnMemoria(cargaResultadosEliminacion.value.resultados);
+  }
+
+  if (
+    cargaLlaves.status === "fulfilled" &&
+    cargaLlaves.value.ok &&
+    Array.isArray(cargaLlaves.value.llaves)
+  ) {
+    llavesEliminacion = cargaLlaves.value.llaves;
+  }
+
   if (cargaPartidos.status === "rejected") {
     console.error(cargaPartidos.reason);
   }
 
   if (cargaResultados.status === "rejected") {
     console.error(cargaResultados.reason);
+  }
+
+  if (cargaResultadosEliminacion.status === "rejected") {
+    console.error(cargaResultadosEliminacion.reason);
+  }
+
+  if (cargaLlaves.status === "rejected") {
+    console.error(cargaLlaves.reason);
   }
 
   renderizarPartidos();
