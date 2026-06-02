@@ -21,6 +21,25 @@ La app permite:
 - `script.js`: lógica del frontend, render de partidos, login, ranking, eliminación y conexión con Apps Script.
 - `apps-script/Code.gs`: código del backend en Google Apps Script.
 
+## Capa API experimental
+
+El archivo `api-client.js` deja preparada una capa de comunicacion para alternar entre Apps Script actual y Node.js + Supabase.
+
+Por defecto queda:
+
+```js
+const API_MODE = "apps-script";
+```
+
+Para pruebas locales con Node/Supabase se puede cambiar temporalmente a:
+
+```js
+const API_MODE = "node";
+const NODE_API_BASE_URL = "http://localhost:3001";
+```
+
+Apps Script sigue siendo el modo activo de la app actual. El archivo `api-client.js` ya se carga antes de `script.js`, pero no reemplaza todavia las llamadas existentes.
+
 ## Google Sheets
 
 El proyecto usa estas hojas:
