@@ -1004,12 +1004,13 @@ function cargarPronosticosUsuarioConServidor(codigoUsuario) {
 
 async function guardarPronosticosConServidor(datosGuardado) {
   const tipo = datosGuardado.tipo || "grupos";
+  const apiMode = window.PollaApiClient?.API_MODE;
 
-  console.info("[Guardar pronósticos] API_MODE:", window.PollaApiClient?.API_MODE);
+  console.info("[Guardar pronósticos] API_MODE:", apiMode);
   console.info("[Guardar pronósticos] destino:", window.PollaApiClient?.NODE_API_BASE_URL);
   console.info("[Guardar pronósticos] tipo:", tipo);
 
-  if (window.PollaApiClient?.API_MODE === "node") {
+  if (apiMode === "node") {
     const idPolla = obtenerPollaGlobalSeleccionada();
 
     if (!idPolla) {
@@ -1035,47 +1036,47 @@ async function guardarPronosticosConServidor(datosGuardado) {
     }
 
     return window.PollaApiClient.apiGuardarPronosticosGrupos(idPolla, datosGuardado.pronosticos || []);
-  }
+  } else {
+    console.warn("[Guardar pronósticos] usando fallback Apps Script");
 
-  console.warn("[Guardar pronósticos] usando fallback Apps Script");
+    return new Promise((resolve, reject) => {
+      const callbackName = `guardarPronosticos_${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2)}`;
 
-  return new Promise((resolve, reject) => {
-    const callbackName = `guardarPronosticos_${Date.now()}_${Math.random()
-      .toString(36)
-      .substring(2)}`;
+      const script = document.createElement("script");
 
-    const script = document.createElement("script");
+      const timeout = setTimeout(() => {
+        limpiar();
+        reject(new Error("Tiempo de espera agotado."));
+      }, 20000);
 
-    const timeout = setTimeout(() => {
-      limpiar();
-      reject(new Error("Tiempo de espera agotado."));
-    }, 20000);
+      function limpiar() {
+        clearTimeout(timeout);
+        delete window[callbackName];
 
-    function limpiar() {
-      clearTimeout(timeout);
-      delete window[callbackName];
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
       }
-    }
 
-    window[callbackName] = (respuesta) => {
-      limpiar();
-      resolve(respuesta);
-    };
+      window[callbackName] = (respuesta) => {
+        limpiar();
+        resolve(respuesta);
+      };
 
-    script.onerror = () => {
-      limpiar();
-      reject(new Error("No se pudieron guardar los pronósticos."));
-    };
+      script.onerror = () => {
+        limpiar();
+        reject(new Error("No se pudieron guardar los pronósticos."));
+      };
 
-    const data = encodeURIComponent(JSON.stringify(datosGuardado));
+      const data = encodeURIComponent(JSON.stringify(datosGuardado));
 
-    script.src = `${WEB_APP_URL}?action=guardarPronosticos&data=${data}&callback=${callbackName}`;
+      script.src = `${WEB_APP_URL}?action=guardarPronosticos&data=${data}&callback=${callbackName}`;
 
-    document.body.appendChild(script);
-  });
+      document.body.appendChild(script);
+    });
+  }
 }
 
 function mostrarPollasDelParticipante(validacionCodigo) {
