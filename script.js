@@ -212,7 +212,48 @@ function limpiarSesionActual() {
   sessionStorage.removeItem(CLAVE_SESION_USUARIO);
   sessionStorage.removeItem(CLAVE_SESION_CODIGO);
   sessionStorage.removeItem(CLAVE_SESION_ACTIVA);
+  window.PollaApiClient?.limpiarTokenNode?.();
   limpiarClavesSesionAntiguasLocalStorage();
+}
+
+function apiClientEnModoNode() {
+  return window.PollaApiClient?.API_MODE === "node";
+}
+
+function tieneTokenNode() {
+  const tokenPresente = Boolean(sessionStorage.getItem("polla_mundial_node_token"));
+
+  console.info("[Sesión Node] token presente:", tokenPresente);
+
+  return window.PollaApiClient?.tieneTokenNode
+    ? window.PollaApiClient.tieneTokenNode()
+    : tokenPresente;
+}
+
+function esRespuestaSesionNodeInvalida(respuesta) {
+  if (!apiClientEnModoNode() || !respuesta || respuesta.ok !== false) return false;
+
+  const error = String(respuesta.error || respuesta.mensaje || "").toLowerCase();
+
+  return respuesta.status === 401 ||
+    error.includes("401") ||
+    error.includes("unauthorized") ||
+    error.includes("token") ||
+    error.includes("sesion invalida") ||
+    error.includes("sesión inválida") ||
+    error.includes("expirada");
+}
+
+function manejarSesionNodeInvalida() {
+  limpiarSesionActual();
+
+  document.getElementById("appView")?.classList.add("hidden");
+  document.getElementById("loginView")?.classList.remove("hidden");
+  document.getElementById("usuario").value = "";
+  document.getElementById("codigoUsuario").value = "";
+  limpiarInfoPollas();
+
+  alert("Sesión inválida o expirada. Vuelve a iniciar sesión.");
 }
 
 function escapeHTML(texto) {
@@ -927,6 +968,10 @@ function cargarDetallePartidoConServidor(partidoId, tipo) {
 }
 
 function validarCodigoConServidor(codigoUsuario) {
+  if (apiClientEnModoNode()) {
+    return window.PollaApiClient.apiLogin(codigoUsuario);
+  }
+
   return new Promise((resolve, reject) => {
     const callbackName = `validarCodigo_${Date.now()}_${Math.random()
       .toString(36)
@@ -1215,6 +1260,12 @@ function obtenerSesionGuardada() {
   const codigoGuardado = sessionStorage.getItem(CLAVE_SESION_CODIGO) || "";
 
   if (!sesionActiva || !usuarioGuardado.trim() || !codigoGuardado.trim()) return null;
+
+  if (apiClientEnModoNode() && !tieneTokenNode()) {
+    console.warn("[Sesión Node] sesión local sin token Node, se requiere login nuevamente");
+    limpiarSesionActual();
+    return null;
+  }
 
   return {
     usuario: usuarioGuardado.trim(),
@@ -2559,6 +2610,13 @@ mostrarPollasDelParticipante(validacionCodigo);
     });
 
     if (!respuesta.ok) {
+      if (esRespuestaSesionNodeInvalida(respuesta)) {
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = "Guardar mis pronósticos";
+        manejarSesionNodeInvalida();
+        return;
+      }
+
       alert(respuesta.error || respuesta.mensaje || "No se pudieron guardar los pronósticos. Intenta nuevamente.");
       btnEnviar.disabled = false;
       btnEnviar.textContent = "Guardar mis pronósticos";
@@ -2922,6 +2980,13 @@ async function enviarEliminacion() {
     });
 
     if (!respuesta.ok) {
+      if (esRespuestaSesionNodeInvalida(respuesta)) {
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = "Guardar eliminación";
+        manejarSesionNodeInvalida();
+        return;
+      }
+
       alert(respuesta.error || "No se pudo guardar la eliminación. Intenta nuevamente.");
       btnEnviar.disabled = false;
       btnEnviar.textContent = "Guardar eliminación";

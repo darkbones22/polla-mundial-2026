@@ -20,6 +20,10 @@
     sessionStorage.removeItem(TOKEN_STORAGE_KEY);
   }
 
+  function tieneTokenNode() {
+    return Boolean(obtenerTokenNode());
+  }
+
   function llamarAppsScript(action, parametros = {}) {
     return new Promise((resolve, reject) => {
       const callbackName = `apiClient_${action}_${Date.now()}_${Math.random()
@@ -79,11 +83,18 @@
       headers,
       body: opciones.body ? JSON.stringify(opciones.body) : undefined
     });
-    const data = await respuesta.json();
+    let data = {};
+
+    try {
+      data = await respuesta.json();
+    } catch (error) {
+      data = {};
+    }
 
     if (!respuesta.ok) {
       return {
         ok: false,
+        status: respuesta.status,
         error: data.error || "Error al conectar con Node API."
       };
     }
@@ -311,6 +322,7 @@
   global.PollaApiClient = {
     API_MODE,
     NODE_API_BASE_URL,
+    tieneTokenNode,
     limpiarTokenNode,
     apiLogin,
     apiObtenerPollas,
