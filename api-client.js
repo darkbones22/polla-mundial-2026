@@ -1,8 +1,6 @@
-// Capa API preparada para alternar entre Apps Script y Node/Supabase.
-// Por defecto queda en Apps Script para no alterar la app productiva.
+// Capa API del frontend hacia Render + Supabase.
 (function crearApiClient(global) {
   const API_MODE = "node";
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0LDbeRCQxYDp18grZApWUPQJDYEpBBODYorhPl7FeACkpytoytAVcRx0P7Szx580V2g/exec";
   const NODE_API_BASE_URL = "https://polla-mundial-2026-backend.onrender.com";
   const TOKEN_STORAGE_KEY = "polla_mundial_node_token";
 
@@ -22,46 +20,6 @@
 
   function tieneTokenNode() {
     return Boolean(obtenerTokenNode());
-  }
-
-  function llamarAppsScript(action, parametros = {}) {
-    return new Promise((resolve, reject) => {
-      const callbackName = `apiClient_${action}_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2)}`;
-      const script = document.createElement("script");
-
-      const limpiar = () => {
-        delete global[callbackName];
-        script.remove();
-      };
-
-      const timeout = setTimeout(() => {
-        limpiar();
-        reject(new Error("No hubo respuesta de Apps Script."));
-      }, 20000);
-
-      global[callbackName] = (respuesta) => {
-        clearTimeout(timeout);
-        limpiar();
-        resolve(respuesta);
-      };
-
-      const query = new URLSearchParams({
-        action,
-        callback: callbackName,
-        ...parametros
-      });
-
-      script.onerror = () => {
-        clearTimeout(timeout);
-        limpiar();
-        reject(new Error("No se pudo conectar con Apps Script."));
-      };
-
-      script.src = `${APPS_SCRIPT_URL}?${query.toString()}`;
-      document.body.appendChild(script);
-    });
   }
 
   async function llamarNodeApi(ruta, opciones = {}) {
@@ -103,7 +61,10 @@
   }
 
   function adaptarLoginNode(respuesta) {
-    if (!respuesta.ok) return respuesta;
+    if (!respuesta.ok) {
+      limpiarTokenNode();
+      return respuesta;
+    }
 
     guardarTokenNode(respuesta.token);
 
@@ -184,139 +145,78 @@
   }
 
   async function apiLogin(codigo) {
-    if (API_MODE === "node") {
-      const respuesta = await llamarNodeApi("/api/login", {
-        method: "POST",
-        body: { codigo }
-      });
-      return adaptarLoginNode(respuesta);
-    }
-
-    return llamarAppsScript("validarCodigo", { codigo });
+    const respuesta = await llamarNodeApi("/api/login", {
+      method: "POST",
+      body: { codigo }
+    });
+    return adaptarLoginNode(respuesta);
   }
 
   async function apiObtenerPollas() {
-    if (API_MODE === "node") {
-      return llamarNodeApi("/api/pollas");
-    }
-
-    return {
-      ok: false,
-      error: "Apps Script entrega las pollas dentro del login actual."
-    };
+    return llamarNodeApi("/api/pollas");
   }
 
   async function apiObtenerPartidosGrupos() {
-    if (API_MODE === "node") {
-      const respuesta = await llamarNodeApi("/api/partidos/grupos");
-      return {
-        ...respuesta,
-        partidos: (respuesta.partidos || []).map(adaptarPartidoGrupoNode)
-      };
-    }
-
-    return llamarAppsScript("partidos");
+    const respuesta = await llamarNodeApi("/api/partidos/grupos");
+    return {
+      ...respuesta,
+      partidos: (respuesta.partidos || []).map(adaptarPartidoGrupoNode)
+    };
   }
 
   async function apiObtenerPartidosEliminacion() {
-    if (API_MODE === "node") {
-      const respuesta = await llamarNodeApi("/api/partidos/eliminacion");
-      return {
-        ...respuesta,
-        llaves: (respuesta.partidos || []).map(adaptarPartidoEliminacionNode),
-        partidos: (respuesta.partidos || []).map(adaptarPartidoEliminacionNode)
-      };
-    }
-
-    return llamarAppsScript("llaves");
+    const respuesta = await llamarNodeApi("/api/partidos/eliminacion");
+    return {
+      ...respuesta,
+      llaves: (respuesta.partidos || []).map(adaptarPartidoEliminacionNode),
+      partidos: (respuesta.partidos || []).map(adaptarPartidoEliminacionNode)
+    };
   }
 
   async function apiObtenerPronosticosGrupos(pollaId) {
-    if (API_MODE === "node") {
-      return llamarNodeApi(`/api/pronosticos/grupos?pollaId=${encodeURIComponent(pollaId)}`);
-    }
-
-    return {
-      ok: false,
-      error: "Apps Script carga pronosticos existentes por codigo con pronosticosUsuario."
-    };
+    return llamarNodeApi(`/api/pronosticos/grupos?pollaId=${encodeURIComponent(pollaId)}`);
   }
 
   async function apiObtenerPronosticosEliminacion(pollaId) {
-    if (API_MODE === "node") {
-      return llamarNodeApi(`/api/pronosticos/eliminacion?pollaId=${encodeURIComponent(pollaId)}`);
-    }
-
-    return {
-      ok: false,
-      error: "Apps Script carga pronosticos existentes por codigo con pronosticosUsuario."
-    };
+    return llamarNodeApi(`/api/pronosticos/eliminacion?pollaId=${encodeURIComponent(pollaId)}`);
   }
 
   async function apiGuardarPronosticosGrupos(pollaId, pronosticos) {
-    if (API_MODE === "node") {
-      return llamarNodeApi("/api/pronosticos/grupos", {
-        method: "POST",
-        body: {
-          pollaId,
-          pronosticos: (pronosticos || []).map(adaptarPronosticoGrupoParaNode)
-        }
-      });
-    }
-
-    return llamarAppsScript("guardarPronosticos", {
-      data: JSON.stringify({ tipo: "grupos", pronosticos })
+    return llamarNodeApi("/api/pronosticos/grupos", {
+      method: "POST",
+      body: {
+        pollaId,
+        pronosticos: (pronosticos || []).map(adaptarPronosticoGrupoParaNode)
+      }
     });
   }
 
   async function apiGuardarPronosticosEliminacion(pollaId, pronosticos) {
-    if (API_MODE === "node") {
-      return llamarNodeApi("/api/pronosticos/eliminacion", {
-        method: "POST",
-        body: {
-          pollaId,
-          pronosticos: (pronosticos || []).map(adaptarPronosticoEliminacionParaNode)
-        }
-      });
-    }
-
-    return llamarAppsScript("guardarPronosticos", {
-      data: JSON.stringify({ tipo: "eliminacion", pronosticos })
+    return llamarNodeApi("/api/pronosticos/eliminacion", {
+      method: "POST",
+      body: {
+        pollaId,
+        pronosticos: (pronosticos || []).map(adaptarPronosticoEliminacionParaNode)
+      }
     });
   }
 
   async function apiObtenerResultados(tipo) {
-    if (API_MODE === "node") {
-      const respuesta = await llamarNodeApi(`/api/resultados?tipo=${encodeURIComponent(tipo)}`);
-      return {
-        ...respuesta,
-        resultados: (respuesta.resultados || []).map((resultado) => adaptarResultadoNode(resultado, tipo))
-      };
-    }
-
-    return llamarAppsScript("resultados", { tipo });
+    const respuesta = await llamarNodeApi(`/api/resultados?tipo=${encodeURIComponent(tipo)}`);
+    return {
+      ...respuesta,
+      resultados: (respuesta.resultados || []).map((resultado) => adaptarResultadoNode(resultado, tipo))
+    };
   }
 
   async function apiObtenerRanking(pollaId) {
-    if (API_MODE === "node") {
-      return llamarNodeApi(`/api/ranking?pollaId=${encodeURIComponent(pollaId)}`);
-    }
-
-    return llamarAppsScript("ranking", { polla: pollaId });
+    return llamarNodeApi(`/api/ranking?pollaId=${encodeURIComponent(pollaId)}`);
   }
 
   async function apiObtenerDetallePartido(pollaId, partidoId, tipo) {
-    if (API_MODE === "node") {
-      return llamarNodeApi(
-        `/api/detalle-partido?pollaId=${encodeURIComponent(pollaId)}&partidoId=${encodeURIComponent(partidoId)}&tipo=${encodeURIComponent(tipo)}`
-      );
-    }
-
-    return llamarAppsScript("detallePartido", {
-      idPolla: pollaId,
-      partidoId,
-      tipo
-    });
+    return llamarNodeApi(
+      `/api/detalle-partido?pollaId=${encodeURIComponent(pollaId)}&partidoId=${encodeURIComponent(partidoId)}&tipo=${encodeURIComponent(tipo)}`
+    );
   }
 
   global.PollaApiClient = {

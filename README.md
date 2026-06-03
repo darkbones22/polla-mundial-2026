@@ -1,54 +1,49 @@
 # Polla Mundial 2026
 
-Aplicación web gratuita para administrar pollas del Mundial 2026.
+AplicaciÃ³n web gratuita para administrar pollas del Mundial 2026.
 
 ## Estructura general
 
 La app permite:
 
-- Login con nombre y código de participante.
-- Participación en una o más pollas.
-- Pronósticos de fase de grupos.
-- Pronósticos de eliminación directa.
+- Login con nombre y cÃ³digo de participante.
+- ParticipaciÃ³n en una o mÃ¡s pollas.
+- PronÃ³sticos de fase de grupos.
+- PronÃ³sticos de eliminaciÃ³n directa.
 - Ranking por polla.
-- Ranking separado por Total, Grupos y Eliminación.
-- Guardado de pronósticos en Google Sheets mediante Google Apps Script.
+- Ranking separado por Total, Grupos y EliminaciÃ³n.
+- Guardado de pronosticos en Render + Supabase.
 
 ## Archivos principales
 
 - `index.html`: estructura visual de la app.
-- `style.css`: estilos generales, responsive y diseño de tarjetas.
-- `script.js`: lógica del frontend, render de partidos, login, ranking, eliminación y conexión con Apps Script.
-- `apps-script/Code.gs`: código del backend en Google Apps Script.
+- `style.css`: estilos generales, responsive y diseÃ±o de tarjetas.
+- `script.js`: logica del frontend, render de partidos, login, ranking, eliminacion y conexion con Render + Supabase.
+- `api-client.js`: capa API del frontend hacia el backend Node/Supabase publicado en Render.
+- `apps-script/Code.gs`: codigo historico de Google Apps Script. Queda obsoleto y no esta conectado a la app web.
 
-## Capa API experimental
+## Backend
 
-El archivo `api-client.js` deja preparada una capa de comunicacion para alternar entre Apps Script actual y Node.js + Supabase.
+La app web usa Render + Supabase como backend principal.
 
-Por defecto queda:
-
-```js
-const API_MODE = "apps-script";
-```
-
-Para pruebas locales con Node/Supabase se puede cambiar temporalmente a:
+El frontend apunta a:
 
 ```js
 const API_MODE = "node";
-const NODE_API_BASE_URL = "http://localhost:3001";
+const NODE_API_BASE_URL = "https://polla-mundial-2026-backend.onrender.com";
 ```
 
-Apps Script sigue siendo el modo activo de la app actual. El archivo `api-client.js` ya se carga antes de `script.js`, pero no reemplaza todavia las llamadas existentes.
+Google Sheets / Apps Script queda obsoleto y no es usado por el frontend. La carpeta `apps-script/` se conserva por referencia historica, pero la app web ya no llama a ese codigo.
 
-## Google Sheets
+## Modelo de datos historico
 
-El proyecto usa estas hojas:
+La version anterior usaba estas hojas de Google Sheets. Hoy estos datos viven en Supabase:
 
 ### Participantes
 
 Columnas:
 
-- Código
+- CÃ³digo
 - Nombre
 - Activo
 
@@ -64,7 +59,7 @@ Columnas:
 
 Columnas:
 
-- Código
+- CÃ³digo
 - ID Polla
 - Activo
 
@@ -72,9 +67,9 @@ Columnas:
 
 Columnas:
 
-- Fecha envío
+- Fecha envÃ­o
 - Usuario
-- Código
+- CÃ³digo
 - Partido ID
 - Grupo
 - Local
@@ -97,7 +92,7 @@ Columnas:
 - Estado
 
 Esta es la hoja oficial para fixture, horarios, estado y resultados reales de fase de grupos.
-La hoja `Resultados` de fase de grupos queda sin uso por compatibilidad histórica.
+La hoja `Resultados` de fase de grupos queda sin uso por compatibilidad histÃ³rica.
 
 ### Llaves
 
@@ -116,15 +111,15 @@ Columnas:
 - Clasifica Real
 - Estado
 
-Esta es la hoja oficial para fixture, horarios, equipos/placeholders, estado, resultados reales y clasificado real de eliminación directa.
+Esta es la hoja oficial para fixture, horarios, equipos/placeholders, estado, resultados reales y clasificado real de eliminaciÃ³n directa.
 
 ### Pronosticos_Eliminacion
 
 Columnas:
 
-- Fecha envío
+- Fecha envÃ­o
 - Usuario
-- Código
+- CÃ³digo
 - Partido ID
 - Ronda
 - Local
@@ -133,16 +128,16 @@ Columnas:
 - Visita
 - Clasifica
 
-La hoja `Resultados_Eliminacion` queda sin uso por compatibilidad histórica.
+La hoja `Resultados_Eliminacion` queda sin uso por compatibilidad histÃ³rica.
 
-## Estados de partidos de eliminación
+## Estados de partidos de eliminaciÃ³n
 
-- Pendiente: todavía no se puede pronosticar.
+- Pendiente: todavÃ­a no se puede pronosticar.
 - Abierto: se puede pronosticar.
 - Cerrado: no se puede editar.
 - Finalizado: ya tiene resultado real.
 
-Además, los partidos se bloquean automáticamente 1 hora antes de comenzar.
+AdemÃ¡s, los partidos se bloquean automÃ¡ticamente 1 hora antes de comenzar.
 
 ## Reglas de puntaje fase de grupos
 
@@ -153,11 +148,11 @@ Además, los partidos se bloquean automáticamente 1 hora antes de comenzar.
   - +2 por acertar goles del visitante.
   - +1 por acertar diferencia de gol.
 
-## Reglas de puntaje eliminación directa
+## Reglas de puntaje eliminaciÃ³n directa
 
 - 10 puntos por marcador exacto.
 - +3 bonus si acierta el equipo que clasifica.
-- Máximo posible: 13 puntos.
+- MÃ¡ximo posible: 13 puntos.
 
 Si no es exacto:
 
@@ -169,9 +164,7 @@ Si no es exacto:
 
 ## Pendientes principales
 
-- Cargar pronósticos existentes desde Google Sheets al iniciar sesión.
-- Mejorar feedback real al guardar, evitando depender de `no-cors`.
-- Pulir diseño móvil.
+- Pulir diseÃ±o mÃ³vil.
 - Destacar usuario actual en ranking.
-- Agregar explicación de reglas dentro de la app.
-- Crear vista de administración o instrucciones para abrir/cerrar partidos.
+- Agregar explicaciÃ³n de reglas dentro de la app.
+- Crear vista de administraciÃ³n o instrucciones para abrir/cerrar partidos.
