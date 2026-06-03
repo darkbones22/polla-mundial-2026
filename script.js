@@ -1002,7 +1002,43 @@ function cargarPronosticosUsuarioConServidor(codigoUsuario) {
   });
 }
 
-function guardarPronosticosConServidor(datosGuardado) {
+async function guardarPronosticosConServidor(datosGuardado) {
+  const tipo = datosGuardado.tipo || "grupos";
+
+  console.info("[Guardar pronósticos] API_MODE:", window.PollaApiClient?.API_MODE);
+  console.info("[Guardar pronósticos] destino:", window.PollaApiClient?.NODE_API_BASE_URL);
+  console.info("[Guardar pronósticos] tipo:", tipo);
+
+  if (window.PollaApiClient?.API_MODE === "node") {
+    const idPolla = obtenerPollaGlobalSeleccionada();
+
+    if (!idPolla) {
+      return {
+        ok: false,
+        error: "Selecciona una polla antes de guardar."
+      };
+    }
+
+    if (tipo === "eliminacion") {
+      const pronosticosEliminacion = (datosGuardado.pronosticos || []).map((pronostico) => ({
+        ...pronostico,
+        clasificadoLado: pronostico.clasificadoLado || (
+          pronostico.clasifica === pronostico.local
+            ? "local"
+            : pronostico.clasifica === pronostico.visita
+              ? "visita"
+              : undefined
+        )
+      }));
+
+      return window.PollaApiClient.apiGuardarPronosticosEliminacion(idPolla, pronosticosEliminacion);
+    }
+
+    return window.PollaApiClient.apiGuardarPronosticosGrupos(idPolla, datosGuardado.pronosticos || []);
+  }
+
+  console.warn("[Guardar pronósticos] usando fallback Apps Script");
+
   return new Promise((resolve, reject) => {
     const callbackName = `guardarPronosticos_${Date.now()}_${Math.random()
       .toString(36)
