@@ -1,9 +1,9 @@
 // Capa API preparada para alternar entre Apps Script y Node/Supabase.
 // Por defecto queda en Apps Script para no alterar la app productiva.
 (function crearApiClient(global) {
-  const API_MODE = "apps-script";
+  const API_MODE = "node";
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0LDbeRCQxYDp18grZApWUPQJDYEpBBODYorhPl7FeACkpytoytAVcRx0P7Szx580V2g/exec";
-  const NODE_API_BASE_URL = "http://localhost:3001";
+  const NODE_API_BASE_URL = "https://polla-mundial-2026-backend.onrender.com";
   const TOKEN_STORAGE_KEY = "polla_mundial_node_token";
 
   function obtenerTokenNode() {
