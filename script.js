@@ -1,16 +1,16 @@
 // =======================
-// CONFIGURACIÃ“N GENERAL
+// CONFIGURACI?N GENERAL
 // =======================
 
 const equipos = {
   // Grupo A
-  A1: "MÃ©xico", 
-  A2: "SudÃ¡frica", 
+  A1: "México", 
+  A2: "Sudáfrica", 
   A3: "Corea del Sur", 
-  A4: "RepÃºblica Checa",
+  A4: "República Checa",
 
   // Grupo B
-  B1: "CanadÃ¡", 
+  B1: "Canadá", 
   B2: "Bosnia y Herzegovina", 
   B3: "Catar", 
   B4: "Suiza",
@@ -18,14 +18,14 @@ const equipos = {
   // Grupo C
   C1: "Brasil", 
   C2: "Marruecos", 
-  C3: "HaitÃ­", 
+  C3: "Haití", 
   C4: "Escocia",
 
   // Grupo D
   D1: "EE.UU.", 
   D2: "Paraguay", 
   D3: "Australia", 
-  D4: "TurquÃ­a",
+  D4: "Turquía",
 
   // Grupo E
   E1: "Alemania", 
@@ -34,21 +34,21 @@ const equipos = {
   E4: "Ecuador",
 
   // Grupo F
-  F1: "PaÃ­ses Bajos", 
-  F2: "JapÃ³n", 
+  F1: "Países Bajos", 
+  F2: "Japón", 
   F3: "Suecia", 
-  F4: "TÃºnez",
+  F4: "Túnez",
 
   // Grupo G
-  G1: "BÃ©lgica", 
+  G1: "Bélgica", 
   G2: "Egipto", 
-  G3: "IrÃ¡n", 
+  G3: "Irán", 
   G4: "Nueva Zelanda",
 
   // Grupo H
-  H1: "EspaÃ±a", 
+  H1: "España", 
   H2: "Cabo Verde", 
-  H3: "Arabia SaudÃ­", 
+  H3: "Arabia Saudí", 
   H4: "Uruguay",
 
   // Grupo I
@@ -66,14 +66,14 @@ const equipos = {
   // Grupo K
   K1: "Portugal", 
   K2: "RD Congo", 
-  K3: "UzbekistÃ¡n", 
+  K3: "Uzbekistán", 
   K4: "Colombia",
 
   // Grupo L
   L1: "Inglaterra", 
   L2: "Croacia", 
   L3: "Ghana", 
-  L4: "PanamÃ¡",
+  L4: "Panamá",
 };
 
 let partidos = [
@@ -223,7 +223,7 @@ function apiClientEnModoNode() {
 function tieneTokenNode() {
   const tokenPresente = Boolean(sessionStorage.getItem("polla_mundial_node_token"));
 
-  console.info("[SesiÃ³n Node] token presente:", tokenPresente);
+  console.info("[Sesión Node] token presente:", tokenPresente);
 
   return window.PollaApiClient?.tieneTokenNode
     ? window.PollaApiClient.tieneTokenNode()
@@ -239,9 +239,9 @@ function esRespuestaSesionNodeInvalida(respuesta) {
     error.includes("401") ||
     error.includes("unauthorized") ||
     error.includes("token") ||
-    error.includes("sesion invalida") ||
-    error.includes("sesiÃ³n invÃ¡lida") ||
-    error.includes("expirada");
+    error.includes("sesion invalid") ||
+    error.includes("sesión inválid") ||
+    error.includes("expirad");
 }
 
 function manejarSesionNodeInvalida() {
@@ -253,7 +253,7 @@ function manejarSesionNodeInvalida() {
   document.getElementById("codigoUsuario").value = "";
   limpiarInfoPollas();
 
-  alert("SesiÃ³n invÃ¡lida o expirada. Vuelve a iniciar sesiÃ³n.");
+  alert("Sesión inválida o expirada. Vuelve a iniciar sesión.");
 }
 
 function escapeHTML(texto) {
@@ -284,12 +284,56 @@ let resultadosGrupos = {};
 let resultadosEliminacion = {};
 let detalleResultadoAbierto = "";
 
+function obtenerFechaISO(valor) {
+  const texto = String(valor || "").trim();
+
+  if (!texto) return "";
+
+  return texto.includes("T")
+    ? texto.split("T")[0]
+    : texto.split(" ")[0];
+}
+
+function obtenerHoraISO(valor) {
+  const texto = String(valor || "").trim();
+
+  if (!texto) return "";
+
+  const parteHora = texto.includes("T")
+    ? texto.split("T")[1]
+    : texto.includes(" ")
+      ? texto.split(" ")[1]
+      : texto;
+
+  return String(parteHora || "").slice(0, 5);
+}
+
+function crearFechaLocal(fecha) {
+  const fechaLimpia = obtenerFechaISO(fecha);
+
+  if (!fechaLimpia) return null;
+
+  const fechaObj = new Date(`${fechaLimpia}T00:00:00`);
+
+  return Number.isNaN(fechaObj.getTime()) ? null : fechaObj;
+}
+
 function obtenerFechaHoraPartido(partido) {
-  return new Date(`${partido.fecha}T${partido.hora}:00`);
+  if (partido.fechaHora) {
+    const fecha = obtenerFechaISO(partido.fechaHora);
+    const hora = obtenerHoraISO(partido.fechaHora) || "00:00";
+
+    return new Date(`${fecha}T${hora}:00`);
+  }
+
+  return new Date(`${obtenerFechaISO(partido.fecha)}T${obtenerHoraISO(partido.hora) || "00:00"}:00`);
 }
 
 function formatearFechaEncabezado(fecha) {
-  const fechaObj = new Date(fecha + "T00:00:00");
+  const fechaObj = crearFechaLocal(fecha);
+
+  if (!fechaObj) return "";
+
   const fechaTexto = fechaObj.toLocaleDateString("es-CL", {
     weekday: "long",
     day: "numeric",
@@ -528,10 +572,10 @@ function renderizarPartidos() {
     `;
 
     const inputLocal = tarjeta.querySelector(`#${partido.id}_local`);
-    const inputVisita = tarjeta.querySelector(`#${partido.id}_visita`);
+    const inputVisita = tarjeta.querySelector(`#${partido.id}_visit`);
 
     inputLocal.value = localStorage.getItem(crearClavePronostico(partido.id, "local")) || "";
-    inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visita")) || "";
+    inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visit")) || "";
 
     if (!bloqueado) {
         inputLocal.addEventListener("input", () => {
@@ -540,7 +584,7 @@ function renderizarPartidos() {
         });
 
         inputVisita.addEventListener("input", () => {
-            localStorage.setItem(crearClavePronostico(partido.id, "visita"), inputVisita.value);
+            localStorage.setItem(crearClavePronostico(partido.id, "visit"), inputVisita.value);
             actualizarContadorPronosticos();
         });
     }
@@ -562,7 +606,7 @@ function renderizarResultadosGrupos() {
   if (partidosCerrados.length === 0 && llavesCerradas.length === 0) {
     contenedorResultados.innerHTML = `
       <div class="empty-state">
-        TodavÃ­a no hay resultados disponibles.
+        Todavía no hay resultados disponibles.
       </div>
     `;
     return;
@@ -754,7 +798,7 @@ function mostrarDetallePartido(panel, respuesta) {
   const nombrePolla = respuesta.polla ? respuesta.polla.nombre : obtenerNombrePollaPorId(obtenerPollaGlobalSeleccionada());
   const resultadoFinalizado = respuesta.resultadoFinalizado !== false;
   const local = obtenerNombreEquipo(partido.local || partido.localPlaceholder || "Local");
-  const visita = obtenerNombreEquipo(partido.visita || partido.visitaPlaceholder || "Visita");
+  const visita = obtenerNombreEquipo(partido.visita || partido.visitaPlaceholder || "Visit");
   const encabezadoPartido = resultadoFinalizado
     ? `${partido.golesLocalReal} - ${partido.golesVisitaReal}`
     : "vs";
@@ -774,18 +818,21 @@ function mostrarDetallePartido(panel, respuesta) {
             <span>${escapeHTML(obtenerTextoDetallePuntos(participante))}</span>
           </div>
           <strong class="result-detail-points">${escapeHTML(participante.puntos || 0)} pts</strong>
-        </li>
-      `).join("")
+        </li>`).join("")
     : `<li class="result-detail-row empty">No hay participantes activos en esta polla.</li>`;
 
   panel.innerHTML = `
     <div class="result-detail-header">
       <div>
         <span class="result-detail-kicker">${escapeHTML(nombrePolla)}</span>
-        <h3>${escapeHTML(local)} ${escapeHTML(encabezadoPartido)} ${escapeHTML(visita)}</h3>
+        <div class="result-detail-match">
+          <strong>${escapeHTML(local)}</strong>
+          <span>${escapeHTML(encabezadoPartido)}</span>
+          <strong>${escapeHTML(visita)}</strong>
+        </div>
         ${avisoPendiente}
       </div>
-      <button class="result-detail-close" type="button" aria-label="Cerrar detalle">Ã—</button>
+      <button class="result-detail-close" type="button" aria-label="Cerrar detalle">&times;</button>
     </div>
 
     <ul class="result-detail-list">
@@ -805,7 +852,9 @@ function mostrarDetallePartido(panel, respuesta) {
 }
 
 function formatearFecha(fecha) {
-  const fechaObj = new Date(fecha + "T00:00:00");
+  const fechaObj = crearFechaLocal(fecha);
+
+  if (!fechaObj) return "";
 
   return fechaObj.toLocaleDateString("es-CL", {
     weekday: "short",
@@ -815,7 +864,7 @@ function formatearFecha(fecha) {
 }
 
 // =======================
-// ENVIAR PRONÃ“STICOS
+// ENVIAR PRON?STICOS
 // =======================
 
 let llavesEliminacion = [];
@@ -867,7 +916,7 @@ async function cargarPronosticosUsuarioConServidor() {
   if (!idPolla) {
     return {
       ok: false,
-      error: "Selecciona una polla para cargar pronósticos."
+      error: "Selecciona una polla para cargar pronsticos."
     };
   }
 
@@ -911,8 +960,8 @@ async function guardarPronosticosConServidor(datosGuardado) {
   const idPolla = obtenerPollaGlobalSeleccionada();
   const pronosticos = datosGuardado.pronosticos || [];
 
-  console.info("[Guardar pronósticos] usando Node/Supabase");
-  console.info("[Guardar pronósticos] tipo:", tipo);
+  console.info("[Guardar pronsticos] usando Node/Supabase");
+  console.info("[Guardar pronsticos] tipo:", tipo);
 
   if (!idPolla) {
     return {
@@ -950,7 +999,7 @@ function mostrarPollasDelParticipante(validacionCodigo) {
     .join("");
 
   infoPollas.innerHTML = `
-    <strong>âœ… CÃ³digo validado</strong>
+    <strong>Código validado</strong>
     <div>Participas en:</div>
     <ul>${listaPollas}</ul>
   `;
@@ -965,7 +1014,7 @@ function mostrarErrorCodigo(mensaje) {
   infoPollas.classList.add("error");
 
   infoPollas.innerHTML = `
-    <strong>âš ï¸ CÃ³digo no vÃ¡lido</strong>
+    <strong>Código no válido</strong>
     <div>${escapeHTML(mensaje)}</div>
   `;
 }
@@ -1005,24 +1054,24 @@ async function iniciarSesion() {
   const btnIngresar = document.getElementById("btnIngresar");
 
   if (!usuario) {
-    alert("Ingresa tu nombre ðŸ˜Š");
+    alert("Ingresa tu nombre");
     return;
   }
 
   if (!codigoUsuario) {
-    alert("Ingresa tu cÃ³digo de participante ðŸ”");
+    alert("Ingresa tu código de participante");
     return;
   }
 
   btnIngresar.disabled = true;
-  btnIngresar.textContent = "Validando cÃ³digo... ðŸ”";
+  btnIngresar.textContent = "Validando código...";
 
   let validacionCodigo;
 
   try {
     validacionCodigo = await validarCodigoConServidor(codigoUsuario);
   } catch (error) {
-    mostrarErrorCodigo("No se pudo validar el cÃ³digo. Intenta nuevamente.");
+    mostrarErrorCodigo("No se pudo validar el código. Intenta nuevamente.");
     btnIngresar.disabled = false;
     btnIngresar.textContent = "Ingresar";
     return;
@@ -1037,7 +1086,7 @@ async function iniciarSesion() {
 
   guardarSesionActual(usuario, codigoUsuario);
 
-  btnIngresar.textContent = "Cargando pronÃ³sticos... â³";
+  btnIngresar.textContent = "Cargando pronósticos... ⏳";
 
   mostrarPollasDelParticipante(validacionCodigo);
   abrirApp(validacionCodigo);
@@ -1058,7 +1107,7 @@ function abrirApp(validacionCodigo) {
   document.getElementById("loginView").classList.add("hidden");
   document.getElementById("appView").classList.remove("hidden");
 
-  document.getElementById("usuarioActivo").textContent = `Hola, ${usuario} Â· CÃ³digo: ${codigoUsuario}`;
+  document.getElementById("usuarioActivo").textContent = `Hola, ${usuario} · Código: ${codigoUsuario}`;
 
   mostrarResumenPollas(validacionCodigo.pollas);
   llenarSelectorPollaGlobal(validacionCodigo.pollas);
@@ -1077,7 +1126,7 @@ function obtenerSesionGuardada() {
   if (!sesionActiva || !usuarioGuardado.trim() || !codigoGuardado.trim()) return null;
 
   if (apiClientEnModoNode() && !tieneTokenNode()) {
-    console.warn("[SesiÃ³n Node] sesiÃ³n local sin token Node, se requiere login nuevamente");
+    console.warn("[Sesión Node] sesión local sin token Node, se requiere login nuevamente");
     limpiarSesionActual();
     return null;
   }
@@ -1101,7 +1150,7 @@ async function iniciarSesionGuardada() {
   inputCodigoUsuario.value = sesionGuardada.codigo;
 
   btnIngresar.disabled = true;
-  btnIngresar.textContent = "Cargando pronÃ³sticos... â³";
+  btnIngresar.textContent = "Cargando pronósticos... ⏳";
 
   try {
     const validacionCodigo = await validarCodigoConServidor(sesionGuardada.codigo);
@@ -1544,12 +1593,12 @@ async function cargarRankingSeleccionado() {
 
   if (!idPolla) {
     rankingContent.className = "ranking-placeholder";
-    rankingContent.textContent = "Selecciona una polla para ver el ranking ðŸ…";
+    rankingContent.textContent = "Selecciona una polla para ver el ranking";
     return;
   }
 
   rankingContent.className = "ranking-placeholder";
-  rankingContent.textContent = "Cargando ranking... â³";
+  rankingContent.textContent = "Cargando ranking... ⏳";
 
   try {
     const respuesta = await cargarRankingConServidor();
@@ -1583,7 +1632,7 @@ function mostrarRanking(ranking) {
 
   if (!ranking || ranking.length === 0) {
     rankingContent.className = "ranking-empty";
-    rankingContent.textContent = "TodavÃ­a no hay puntajes para esta polla.";
+    rankingContent.textContent = "Todavía no hay puntajes para esta polla.";
     return;
   }
 
@@ -1782,9 +1831,9 @@ function obtenerDetalleRankingCompacto(participante) {
     (participante.partidosGrupos || 0) + (participante.partidosEliminacion || 0);
 
   return `
-    <span class="ranking-highlight">Gr:</span> ${escapeHTML(participante.puntosGrupos || 0)} Â·
-    <span class="ranking-highlight">Elim:</span> ${escapeHTML(participante.puntosEliminacion || 0)} Â·
-    <span class="ranking-highlight">Ex:</span> ${escapeHTML(exactos)} Â·
+    <span class="ranking-highlight">Gr:</span> ${escapeHTML(participante.puntosGrupos || 0)} ·
+    <span class="ranking-highlight">Elim:</span> ${escapeHTML(participante.puntosEliminacion || 0)} ·
+    <span class="ranking-highlight">Ex:</span> ${escapeHTML(exactos)} ·
     <span class="ranking-highlight">PP:</span> ${escapeHTML(partidosPuntuados)}
   `;
 }
@@ -1797,7 +1846,7 @@ function obtenerDetalleRankingTotalCompleto(participante) {
 
   return `
     <p>Cantidad de puntos obtenidos en Fase de grupos: ${escapeHTML(participante.puntosGrupos || 0)}</p>
-    <p>Cantidad de puntos obtenidos en Fase de eliminaciÃ³n: ${escapeHTML(participante.puntosEliminacion || 0)}</p>
+    <p>Cantidad de puntos obtenidos en Fase de eliminación: ${escapeHTML(participante.puntosEliminacion || 0)}</p>
     <p>Cantidad de partidos exactos: ${escapeHTML(exactos)}</p>
     <p>Predicciones enviadas: ${escapeHTML(partidosPuntuados)}</p>
   `;
@@ -1806,8 +1855,8 @@ function obtenerDetalleRankingTotalCompleto(participante) {
 function obtenerDetalleRankingGruposCompleto(participante) {
   return `
     <p>Resultado exacto / pleno: ${escapeHTML(participante.exactosGrupos || 0)}</p>
-    <p>AcertÃ³ ganador/empate: ${escapeHTML(participante.ganadorEmpateGrupos || 0)}</p>
-    <p>AcertÃ³ diferencia de gol: ${escapeHTML(participante.diferenciaGrupos || 0)}</p>
+    <p>Acertó ganador/empate: ${escapeHTML(participante.ganadorEmpateGrupos || 0)}</p>
+    <p>Acertó diferencia de gol: ${escapeHTML(participante.diferenciaGrupos || 0)}</p>
     <p>Predicciones enviadas: ${escapeHTML(participante.partidosGrupos || 0)}</p>
   `;
 }
@@ -1815,8 +1864,8 @@ function obtenerDetalleRankingGruposCompleto(participante) {
 function obtenerDetalleRankingEliminacionCompleto(participante) {
   return `
     <p>Resultado exacto / pleno: ${escapeHTML(participante.exactosEliminacion || 0)}</p>
-    <p>AcertÃ³ ganador/empate: ${escapeHTML(participante.ganadorEmpateEliminacion || 0)}</p>
-    <p>AcertÃ³ quiÃ©n clasifica: ${escapeHTML(participante.clasificados || 0)}</p>
+    <p>Acertó ganador/empate: ${escapeHTML(participante.ganadorEmpateEliminacion || 0)}</p>
+    <p>Acertó quién clasifica: ${escapeHTML(participante.clasificados || 0)}</p>
     <p>Predicciones enviadas: ${escapeHTML(participante.partidosEliminacion || 0)}</p>
   `;
 }
@@ -1938,33 +1987,33 @@ function obtenerDetalleSegunTipo(participante) {
   if (tipoRankingActual === "grupos") {
     return `
       <span class="ranking-highlight">Grupos:</span>
-      Exactos: ${escapeHTML(participante.exactosGrupos || 0)} Â·
-      Ganador/empate: ${escapeHTML(participante.ganadorEmpateGrupos || 0)} Â·
-      Goles local: ${escapeHTML(participante.golesLocalGrupos || 0)} Â·
-      Goles visita: ${escapeHTML(participante.golesVisitaGrupos || 0)} Â·
-      Diferencia: ${escapeHTML(participante.diferenciaGrupos || 0)} Â·
+      Exactos: ${escapeHTML(participante.exactosGrupos || 0)} ·
+      Ganador/empate: ${escapeHTML(participante.ganadorEmpateGrupos || 0)} ·
+      Goles local: ${escapeHTML(participante.golesLocalGrupos || 0)} ·
+      Goles visita: ${escapeHTML(participante.golesVisitaGrupos || 0)} ·
+      Diferencia: ${escapeHTML(participante.diferenciaGrupos || 0)} ·
       Partidos: ${escapeHTML(participante.partidosGrupos || 0)}
     `;
   }
 
   if (tipoRankingActual === "eliminacion") {
     return `
-      <span class="ranking-highlight">EliminaciÃ³n:</span>
-      Exactos: ${escapeHTML(participante.exactosEliminacion || 0)} Â·
-      Clasificados: ${escapeHTML(participante.clasificados || 0)} Â·
-      Ganador/empate: ${escapeHTML(participante.ganadorEmpateEliminacion || 0)} Â·
-      Goles local: ${escapeHTML(participante.golesLocalEliminacion || 0)} Â·
-      Goles visita: ${escapeHTML(participante.golesVisitaEliminacion || 0)} Â·
-      Diferencia: ${escapeHTML(participante.diferenciaEliminacion || 0)} Â·
+      <span class="ranking-highlight">Eliminación:</span>
+      Exactos: ${escapeHTML(participante.exactosEliminacion || 0)} ·
+      Clasificados: ${escapeHTML(participante.clasificados || 0)} ·
+      Ganador/empate: ${escapeHTML(participante.ganadorEmpateEliminacion || 0)} ·
+      Goles local: ${escapeHTML(participante.golesLocalEliminacion || 0)} ·
+      Goles visita: ${escapeHTML(participante.golesVisitaEliminacion || 0)} ·
+      Diferencia: ${escapeHTML(participante.diferenciaEliminacion || 0)} ·
       Partidos: ${escapeHTML(participante.partidosEliminacion || 0)}
     `;
   }
 
   return `
     <span class="ranking-highlight">Total:</span>
-    Grupos: ${escapeHTML(participante.puntosGrupos || 0)} pts Â·
-    EliminaciÃ³n: ${escapeHTML(participante.puntosEliminacion || 0)} pts Â·
-    Exactos: ${escapeHTML((participante.exactosGrupos || 0) + (participante.exactosEliminacion || 0))} Â·
+    Grupos: ${escapeHTML(participante.puntosGrupos || 0)} pts ·
+    Eliminación: ${escapeHTML(participante.puntosEliminacion || 0)} pts ·
+    Exactos: ${escapeHTML((participante.exactosGrupos || 0) + (participante.exactosEliminacion || 0))} ·
     Partidos puntuados: ${escapeHTML((participante.partidosGrupos || 0) + (participante.partidosEliminacion || 0))}
   `;
 }
@@ -2017,7 +2066,7 @@ function actualizarClasificaEliminacion(partido, tarjeta) {
     });
 
     localStorage.setItem(
-      crearClaveEliminacion(partido.id, "clasifica"),
+      crearClaveEliminacion(partido.id, "clasific"),
       clasificadoAutomatico
     );
 
@@ -2033,11 +2082,11 @@ function actualizarClasificaEliminacion(partido, tarjeta) {
 
     if (clasificaManual) {
       localStorage.setItem(
-        crearClaveEliminacion(partido.id, "clasifica"),
+        crearClaveEliminacion(partido.id, "clasific"),
         clasificaManual.value
       );
     } else {
-      localStorage.removeItem(crearClaveEliminacion(partido.id, "clasifica"));
+      localStorage.removeItem(crearClaveEliminacion(partido.id, "clasific"));
     }
   }
 
@@ -2046,7 +2095,7 @@ function actualizarClasificaEliminacion(partido, tarjeta) {
       radio.checked = false;
     });
 
-    localStorage.removeItem(crearClaveEliminacion(partido.id, "clasifica"));
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "clasific"));
   }
 }
 
@@ -2061,7 +2110,7 @@ async function cargarYRenderizarEliminacion() {
 
   contenedor.innerHTML = `
     <div class="knockout-message">
-      Cargando partidos de eliminaciÃ³n... â³
+      Cargando partidos de eliminación... ⏳
     </div>
   `;
 
@@ -2099,7 +2148,7 @@ function renderizarEliminacion() {
   if (!llavesEliminacion || llavesEliminacion.length === 0) {
     contenedor.innerHTML = `
       <div class="knockout-message">
-        TodavÃ­a no hay partidos de eliminaciÃ³n cargados.
+        Todavía no hay partidos de eliminación cargados.
       </div>
     `;
     return;
@@ -2142,7 +2191,7 @@ function renderizarEliminacion() {
 
     tarjeta.innerHTML = `
       <div class="match-info">
-        ${fechaSegura} Â· ${horaSegura} hrs
+        ${fechaSegura} · ${horaSegura} hrs
       </div>
 
       <div class="match-row">
@@ -2172,7 +2221,7 @@ function renderizarEliminacion() {
       </div>
 
       <div class="classify-box">
-        <span class="classify-label">Â¿QuiÃ©n clasifica?</span>
+        <span class="classify-label">¿Quién clasifica?</span>
 
         <div class="classify-options">
           <label class="classify-option">
@@ -2208,9 +2257,9 @@ function renderizarEliminacion() {
     const radiosClasifica = tarjeta.querySelectorAll('input[type="radio"]');
 
     inputLocal.value = localStorage.getItem(crearClaveEliminacion(partido.id, "local")) || "";
-    inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
+    inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visit")) || "";
 
-    const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasifica"));
+    const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasific"));
 
     radiosClasifica.forEach((radio) => {
       if (radio.value === clasificaGuardado) {
@@ -2228,14 +2277,14 @@ function renderizarEliminacion() {
       });
 
       inputVisita.addEventListener("input", () => {
-        localStorage.setItem(crearClaveEliminacion(partido.id, "visita"), inputVisita.value);
+        localStorage.setItem(crearClaveEliminacion(partido.id, "visit"), inputVisita.value);
         actualizarClasificaEliminacion(partido, tarjeta);
         actualizarContadorEliminacion();
       });
 
       radiosClasifica.forEach((radio) => {
         radio.addEventListener("change", () => {
-          localStorage.setItem(crearClaveEliminacion(partido.id, "clasifica"), radio.value);
+          localStorage.setItem(crearClaveEliminacion(partido.id, "clasific"), radio.value);
           actualizarContadorEliminacion();
         });
       });
@@ -2252,7 +2301,7 @@ function actualizarContadorEliminacion() {
 
   llavesEliminacion.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
+    const inputVisita = document.getElementById(`${partido.id}_elim_visit`);
 
     if (!inputLocal || !inputVisita) return;
 
@@ -2285,26 +2334,26 @@ async function enviar() {
     const btnEnviar = document.getElementById("btnEnviar");
 
   if (!usuario) {
-    alert("Ingresa tu nombre antes de guardar ðŸ˜Š");
+    alert("Ingresa tu nombre antes de guardar");
     return;
   }
 
   if (!codigoUsuario) {
-  alert("Ingresa tu cÃ³digo de participante antes de guardar ðŸ”");
+  alert("Ingresa tu código de participante antes de guardar");
   return;
 }
 
 btnEnviar.disabled = true;
-btnEnviar.textContent = "Validando cÃ³digo... ðŸ”";
+btnEnviar.textContent = "Validando código...";
 
 let validacionCodigo;
 
 try {
   validacionCodigo = await validarCodigoConServidor(codigoUsuario);
 } catch (error) {
-  alert("No se pudo validar el cÃ³digo. Intenta nuevamente.");
+  alert("No se pudo validar el código. Intenta nuevamente.");
   btnEnviar.disabled = false;
-  btnEnviar.textContent = "Guardar mis pronÃ³sticos";
+  btnEnviar.textContent = "Guardar mis pronósticos";
   return;
 }
 
@@ -2312,7 +2361,7 @@ if (!validacionCodigo.ok) {
   mostrarErrorCodigo(validacionCodigo.error);
   alert(validacionCodigo.error);
   btnEnviar.disabled = false;
-  btnEnviar.textContent = "Guardar mis pronÃ³sticos";
+  btnEnviar.textContent = "Guardar mis pronósticos";
   return;
 }
 
@@ -2326,7 +2375,7 @@ mostrarPollasDelParticipante(validacionCodigo);
     }
 
     const golesLocal = document.getElementById(`${partido.id}_local`).value;
-    const golesVisita = document.getElementById(`${partido.id}_visita`).value;
+    const golesVisita = document.getElementById(`${partido.id}_visit`).value;
 
     const localVacio = golesLocal === "";
     const visitaVacia = golesVisita === "";
@@ -2336,9 +2385,9 @@ mostrarPollasDelParticipante(validacionCodigo);
     }
 
     if (localVacio || visitaVacia) {
-      alert(`Te falta completar ambos goles en ${obtenerNombreEquipo(partido.local)} vs ${obtenerNombreEquipo(partido.visita)} âš½`);
+      alert(`Te falta completar ambos goles en ${obtenerNombreEquipo(partido.local)} vs ${obtenerNombreEquipo(partido.visita)}`);
       btnEnviar.disabled = false;
-      btnEnviar.textContent = "Guardar mis pronÃ³sticos";
+      btnEnviar.textContent = "Guardar mis pronósticos";
       return;
     }
 
@@ -2355,14 +2404,14 @@ mostrarPollasDelParticipante(validacionCodigo);
   }
 
   if (pronosticos.length === 0) {
-    alert("Completa al menos un partido disponible antes de guardar ðŸ˜Š");
+    alert("Completa al menos un partido disponible antes de guardar");
     btnEnviar.disabled = false;
-    btnEnviar.textContent = "Guardar mis pronÃ³sticos";
+    btnEnviar.textContent = "Guardar mis pronósticos";
     return;
   }
 
   btnEnviar.disabled = true;
-  btnEnviar.textContent = "Guardando pronÃ³sticos... â³";
+  btnEnviar.textContent = "Guardando pronósticos... ⏳";
 
   try {
     const respuesta = await guardarPronosticosConServidor({
@@ -2374,35 +2423,35 @@ mostrarPollasDelParticipante(validacionCodigo);
     if (!respuesta.ok) {
       if (esRespuestaSesionNodeInvalida(respuesta)) {
         btnEnviar.disabled = false;
-        btnEnviar.textContent = "Guardar mis pronÃ³sticos";
+        btnEnviar.textContent = "Guardar mis pronósticos";
         manejarSesionNodeInvalida();
         return;
       }
 
-      alert(respuesta.error || respuesta.mensaje || "No se pudieron guardar los pronÃ³sticos. Intenta nuevamente.");
+      alert(respuesta.error || respuesta.mensaje || "No se pudieron guardar los pronósticos. Intenta nuevamente.");
       btnEnviar.disabled = false;
-      btnEnviar.textContent = "Guardar mis pronÃ³sticos";
+      btnEnviar.textContent = "Guardar mis pronósticos";
       return;
     }
 
-    alert(respuesta.mensaje || "PronÃ³sticos guardados correctamente âœ…");
-    btnEnviar.textContent = "PronÃ³sticos guardados âœ…";
+    alert(respuesta.mensaje || "Pronósticos guardados correctamente");
+    btnEnviar.textContent = "Pronósticos guardados";
 
     setTimeout(() => {
       btnEnviar.disabled = false;
-      btnEnviar.textContent = "Guardar mis pronÃ³sticos";
+      btnEnviar.textContent = "Guardar mis pronósticos";
     }, 2000);
 
   } catch (error) {
     console.error(error);
-    alert("Hubo un error al guardar los pronÃ³sticos. Intenta nuevamente.");
+    alert("Hubo un error al guardar los pronósticos. Intenta nuevamente.");
     btnEnviar.disabled = false;
-    btnEnviar.textContent = "Guardar mis pronÃ³sticos";
+    btnEnviar.textContent = "Guardar mis pronósticos";
   }
 }
 
 // =======================
-// GUARDAR USUARIO Y CÃ“DIGO
+// GUARDAR USUARIO Y C?DIGO
 // =======================
 
 const inputUsuario = document.getElementById("usuario");
@@ -2432,7 +2481,7 @@ function actualizarContadorPronosticos() {
 
   partidos.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visita`);
+    const inputVisita = document.getElementById(`${partido.id}_visit`);
 
     if (!inputLocal || !inputVisita) return;
 
@@ -2527,14 +2576,14 @@ function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsu
 function recargarPronosticosGruposDesdeLocalStorage() {
   partidos.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visita`);
+    const inputVisita = document.getElementById(`${partido.id}_visit`);
 
     if (inputLocal) {
       inputLocal.value = localStorage.getItem(crearClavePronostico(partido.id, "local")) || "";
     }
 
     if (inputVisita) {
-      inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visita")) || "";
+      inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visit")) || "";
     }
   });
 
@@ -2544,7 +2593,7 @@ function recargarPronosticosGruposDesdeLocalStorage() {
 function recargarPronosticosEliminacionDesdeLocalStorage() {
   llavesEliminacion.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
+    const inputVisita = document.getElementById(`${partido.id}_elim_visit`);
     const radiosClasifica = obtenerRadiosClasifica(partido.id);
 
     if (inputLocal) {
@@ -2552,10 +2601,10 @@ function recargarPronosticosEliminacionDesdeLocalStorage() {
     }
 
     if (inputVisita) {
-      inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
+      inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visit")) || "";
     }
 
-    const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasifica")) || "";
+    const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasific")) || "";
 
     radiosClasifica.forEach((radio) => {
       radio.checked = radio.value === clasificaGuardado;
@@ -2574,7 +2623,7 @@ function recargarPronosticosEliminacionDesdeLocalStorage() {
 
 function limpiarFormulario() {
   const confirmar = confirm(
-    "Â¿Seguro que quieres limpiar los pronÃ³sticos guardados en este dispositivo? Esto no borra lo que ya enviaste a la polla."
+    "¿Seguro que quieres limpiar los pronósticos guardados en este dispositivo? Esto no borra lo que ya enviaste a la polla."
   );
 
   if (!confirmar) return;
@@ -2582,19 +2631,19 @@ function limpiarFormulario() {
   // Limpiar fase de grupos
   partidos.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visita`);
+    const inputVisita = document.getElementById(`${partido.id}_visit`);
 
     if (inputLocal) inputLocal.value = "";
     if (inputVisita) inputVisita.value = "";
 
     localStorage.removeItem(crearClavePronostico(partido.id, "local"));
-    localStorage.removeItem(crearClavePronostico(partido.id, "visita"));
+    localStorage.removeItem(crearClavePronostico(partido.id, "visit"));
   });
 
-  // Limpiar eliminaciÃ³n directa
+  // Limpiar eliminación directa
   llavesEliminacion.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
+    const inputVisita = document.getElementById(`${partido.id}_elim_visit`);
     const radiosClasifica = obtenerRadiosClasifica(partido.id);
 
     if (inputLocal) inputLocal.value = "";
@@ -2612,14 +2661,14 @@ function limpiarFormulario() {
     }
 
     localStorage.removeItem(crearClaveEliminacion(partido.id, "local"));
-    localStorage.removeItem(crearClaveEliminacion(partido.id, "visita"));
-    localStorage.removeItem(crearClaveEliminacion(partido.id, "clasifica"));
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "visit"));
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "clasific"));
   });
 
   actualizarContadorPronosticos();
   actualizarContadorEliminacion();
 
-  alert("PronÃ³sticos limpiados en este dispositivo âœ…");
+  alert("Pronósticos limpiados en este dispositivo ?");
 }
 
 async function enviarEliminacion() {
@@ -2628,26 +2677,26 @@ async function enviarEliminacion() {
   const btnEnviar = document.getElementById("btnEnviarEliminacion");
 
   if (!usuario) {
-    alert("Ingresa tu nombre antes de guardar ðŸ˜Š");
+    alert("Ingresa tu nombre antes de guardar");
     return;
   }
 
   if (!codigoUsuario) {
-    alert("Ingresa tu cÃ³digo de participante antes de guardar ðŸ”");
+    alert("Ingresa tu código de participante antes de guardar");
     return;
   }
 
   btnEnviar.disabled = true;
-  btnEnviar.textContent = "Validando cÃ³digo... ðŸ”";
+  btnEnviar.textContent = "Validando código...";
 
   let validacionCodigo;
 
   try {
     validacionCodigo = await validarCodigoConServidor(codigoUsuario);
   } catch (error) {
-    alert("No se pudo validar el cÃ³digo. Intenta nuevamente.");
+    alert("No se pudo validar el código. Intenta nuevamente.");
     btnEnviar.disabled = false;
-    btnEnviar.textContent = "Guardar eliminaciÃ³n";
+    btnEnviar.textContent = "Guardar eliminación";
     return;
   }
 
@@ -2655,7 +2704,7 @@ async function enviarEliminacion() {
     mostrarErrorCodigo(validacionCodigo.error);
     alert(validacionCodigo.error);
     btnEnviar.disabled = false;
-    btnEnviar.textContent = "Guardar eliminaciÃ³n";
+    btnEnviar.textContent = "Guardar eliminación";
     return;
   }
 
@@ -2681,7 +2730,7 @@ async function enviarEliminacion() {
     const visitaMostrada = partido.visita || partido.visitaPlaceholder;
 
     const golesLocal = document.getElementById(`${partido.id}_elim_local`).value;
-    const golesVisita = document.getElementById(`${partido.id}_elim_visita`).value;
+    const golesVisita = document.getElementById(`${partido.id}_elim_visit`).value;
     const clasificaAutomatico = obtenerClasificadoAutomaticoEliminacion(
       partido,
       golesLocal,
@@ -2698,16 +2747,16 @@ async function enviarEliminacion() {
     }
 
     if (localVacio || visitaVacia) {
-      alert(`Te falta completar goles en ${localMostrado} vs ${visitaMostrada} âš½`);
+      alert(`Te falta completar goles en ${localMostrado} vs ${visitaMostrada}`);
       btnEnviar.disabled = false;
-      btnEnviar.textContent = "Guardar eliminaciÃ³n";
+      btnEnviar.textContent = "Guardar eliminación";
       return;
     }
 
     if (!clasifica) {
-      alert(`El partido ${localMostrado} vs ${visitaMostrada} estÃ¡ empatado. Elige quiÃ©n clasifica âš½`);
+      alert(`El partido ${localMostrado} vs ${visitaMostrada} está empatado. Elige quién clasifica`);
       btnEnviar.disabled = false;
-      btnEnviar.textContent = "Guardar eliminaciÃ³n";
+      btnEnviar.textContent = "Guardar eliminación";
       return;
     }
 
@@ -2725,13 +2774,13 @@ async function enviarEliminacion() {
   }
 
   if (pronosticos.length === 0) {
-    alert("Completa al menos un partido abierto de eliminaciÃ³n antes de guardar ðŸ˜Š");
+    alert("Completa al menos un partido abierto de eliminación antes de guardar");
     btnEnviar.disabled = false;
-    btnEnviar.textContent = "Guardar eliminaciÃ³n";
+    btnEnviar.textContent = "Guardar eliminación";
     return;
   }
 
-  btnEnviar.textContent = "Guardando eliminaciÃ³n... â³";
+  btnEnviar.textContent = "Guardando eliminación... ⏳";
 
   try {
     const respuesta = await guardarPronosticosConServidor({
@@ -2744,30 +2793,30 @@ async function enviarEliminacion() {
     if (!respuesta.ok) {
       if (esRespuestaSesionNodeInvalida(respuesta)) {
         btnEnviar.disabled = false;
-        btnEnviar.textContent = "Guardar eliminaciÃ³n";
+        btnEnviar.textContent = "Guardar eliminación";
         manejarSesionNodeInvalida();
         return;
       }
 
-      alert(respuesta.error || "No se pudo guardar la eliminaciÃ³n. Intenta nuevamente.");
+      alert(respuesta.error || "No se pudo guardar la eliminación. Intenta nuevamente.");
       btnEnviar.disabled = false;
-      btnEnviar.textContent = "Guardar eliminaciÃ³n";
+      btnEnviar.textContent = "Guardar eliminación";
       return;
     }
 
-    alert("PronÃ³sticos de eliminaciÃ³n guardados correctamente âœ…");
-    btnEnviar.textContent = "EliminaciÃ³n guardada âœ…";
+    alert("Pronósticos de eliminación guardados correctamente");
+    btnEnviar.textContent = "Eliminación guardada";
 
     setTimeout(() => {
       btnEnviar.disabled = false;
-      btnEnviar.textContent = "Guardar eliminaciÃ³n";
+      btnEnviar.textContent = "Guardar eliminación";
     }, 2000);
 
   } catch (error) {
     console.error(error);
-    alert("Hubo un error al guardar la eliminaciÃ³n. Intenta nuevamente.");
+    alert("Hubo un error al guardar la eliminación. Intenta nuevamente.");
     btnEnviar.disabled = false;
-    btnEnviar.textContent = "Guardar eliminaciÃ³n";
+    btnEnviar.textContent = "Guardar eliminación";
   }
 }
 
@@ -2843,7 +2892,7 @@ async function inicializarApp() {
   }
 
   if (cargaResultadosEliminacion.status === "fulfilled" && !cargaResultadosEliminacion.value.ok) {
-    console.error("[Resultados] No se pudieron cargar resultados de eliminación:", cargaResultadosEliminacion.value);
+    console.error("[Resultados] No se pudieron cargar resultados de eliminacin:", cargaResultadosEliminacion.value);
   }
 
   if (cargaLlaves.status === "rejected") {
@@ -2859,6 +2908,6 @@ async function inicializarApp() {
   }
 }
 
-// Iniciar pÃ¡gina
+// Iniciar página
 inicializarApp();
 

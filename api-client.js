@@ -167,6 +167,32 @@
     };
   }
 
+  function adaptarParticipanteDetalle(participante, partido) {
+    const pronosticoOriginal = participante.pronostico || null;
+    const sinPronostico = !pronosticoOriginal;
+    const clasifica = pronosticoOriginal?.clasifica || (
+      pronosticoOriginal?.clasificadoLado === "local"
+        ? partido.local || partido.localPlaceholder || ""
+        : pronosticoOriginal?.clasificadoLado === "visita"
+          ? partido.visita || partido.visitaPlaceholder || ""
+          : ""
+    );
+
+    return {
+      ...participante,
+      sinPronostico,
+      pronostico: pronosticoOriginal
+        ? {
+          ...pronosticoOriginal,
+          clasifica
+        }
+        : null,
+      detalle: participante.detalle || participante.detallePuntos || null,
+      detallePuntos: participante.detallePuntos || participante.detalle || null,
+      puntos: participante.puntos || 0
+    };
+  }
+
   async function apiLogin(codigo) {
     const respuesta = await llamarNodeApi("/api/login", {
       method: "POST",
@@ -245,10 +271,13 @@
       return respuesta;
     }
 
+    const partido = adaptarResultadoNode(respuesta.partido, tipo);
+    const participantes = respuesta.participantes || respuesta.detalle || [];
+
     return {
       ...respuesta,
-      partido: adaptarResultadoNode(respuesta.partido, tipo),
-      participantes: respuesta.participantes || respuesta.detalle || []
+      partido,
+      participantes: participantes.map((participante) => adaptarParticipanteDetalle(participante, partido))
     };
   }
 

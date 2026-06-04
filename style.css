@@ -291,21 +291,21 @@ body {
 }
 
 .result-detail-panel {
-  margin-top: -4px;
-  margin-bottom: 4px;
-  padding: 8px;
+  margin-top: -2px;
+  margin-bottom: 6px;
+  padding: 10px;
   border: 1px solid #dbeafe;
-  border-radius: 10px;
-  background: #f8fafc;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
 }
 
 .result-detail-header {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 6px;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
 }
 
 .result-detail-kicker {
@@ -316,14 +316,32 @@ body {
   font-weight: bold;
 }
 
-.result-detail-header h3 {
-  margin: 0;
+.result-detail-match {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) auto minmax(80px, 1fr);
+  gap: 8px;
+  align-items: center;
   color: #0f172a;
   font-size: 13px;
   line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.result-detail-match strong:first-child {
+  text-align: right;
+}
+
+.result-detail-match strong:last-child {
+  text-align: left;
+}
+
+.result-detail-match span {
+  min-width: 48px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: white;
+  font-weight: 800;
+  text-align: center;
 }
 
 .result-detail-note {
@@ -358,26 +376,28 @@ body {
 .result-detail-row {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  align-items: center;
-  padding: 5px 7px;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 7px 9px;
   border-radius: 8px;
   background: white;
+  border: 1px solid #e2e8f0;
 }
 
 .result-detail-row > div {
   display: flex;
-  gap: 5px;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
   min-width: 0;
 }
 
 .result-detail-row span {
-  display: inline;
+  display: block;
   margin-top: 0;
   color: #64748b;
-  font-size: 10px;
-  white-space: nowrap;
+  font-size: 11px;
+  white-space: normal;
 }
 
 .result-detail-row strong {
@@ -632,6 +652,17 @@ body {
   .result-detail-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .result-detail-match {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .result-detail-match strong:first-child,
+  .result-detail-match strong:last-child {
+    text-align: center;
   }
 
   .result-detail-row {
@@ -1703,7 +1734,7 @@ body {
   }
 
   #tabEliminacion::after {
-    content: "Eliminacion";
+    content: "Eliminación";
   }
 
   #tabInformacion::after {
