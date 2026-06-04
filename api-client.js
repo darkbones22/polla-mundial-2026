@@ -92,29 +92,48 @@
     return { fecha, hora };
   }
 
-  function adaptarPartidoGrupoNode(partido) {
-    const { fecha, hora } = separarFechaHora(partido.fechaHora);
+  function obtenerIdPartido(partido) {
+    return partido.id || partido.partidoId || partido.partido_id || "";
+  }
+
+  function obtenerFechaHoraPartidoNode(partido) {
+    const desdeFechaHora = separarFechaHora(partido.fechaHora || partido.fecha_hora);
 
     return {
-      id: partido.id,
+      fecha: partido.fecha || desdeFechaHora.fecha,
+      hora: partido.hora || desdeFechaHora.hora,
+      fechaHora: partido.fechaHora || partido.fecha_hora || [
+        partido.fecha || desdeFechaHora.fecha,
+        partido.hora || desdeFechaHora.hora
+      ].filter(Boolean).join("T")
+    };
+  }
+
+  function adaptarPartidoGrupoNode(partido) {
+    const { fecha, hora, fechaHora } = obtenerFechaHoraPartidoNode(partido);
+    const local = partido.local || partido.equipoLocal || partido.equipo_local || partido.placeholderLocal;
+    const visita = partido.visita || partido.equipoVisita || partido.equipo_visita || partido.placeholderVisita;
+
+    return {
+      id: obtenerIdPartido(partido),
       grupo: partido.grupo,
-      fechaHora: partido.fechaHora,
+      fechaHora,
       fecha,
       hora,
-      local: partido.equipoLocal,
-      visita: partido.equipoVisita,
-      equipoLocal: partido.equipoLocal,
-      equipoVisita: partido.equipoVisita,
-      golesLocalReal: partido.golesLocalReal,
-      golesVisitaReal: partido.golesVisitaReal,
+      local,
+      visita,
+      equipoLocal: local,
+      equipoVisita: visita,
+      golesLocalReal: partido.golesLocalReal ?? partido.goles_local_real,
+      golesVisitaReal: partido.golesVisitaReal ?? partido.goles_visita_real,
       estado: partido.estado
     };
   }
 
   function adaptarPartidoEliminacionNode(partido) {
-    const { fecha, hora } = separarFechaHora(partido.fechaHora);
-    const local = partido.equipoLocal || partido.placeholderLocal;
-    const visita = partido.equipoVisita || partido.placeholderVisita;
+    const { fecha, hora, fechaHora } = obtenerFechaHoraPartidoNode(partido);
+    const local = partido.local || partido.equipoLocal || partido.equipo_local || partido.placeholderLocal;
+    const visita = partido.visita || partido.equipoVisita || partido.equipo_visita || partido.placeholderVisita;
     const clasifica = partido.clasificadoRealLado === "local"
       ? local
       : partido.clasificadoRealLado === "visita"
@@ -122,21 +141,21 @@
         : "";
 
     return {
-      id: partido.id,
+      id: obtenerIdPartido(partido),
       ronda: partido.ronda,
-      fechaHora: partido.fechaHora,
+      fechaHora,
       fecha,
       hora,
       localPlaceholder: partido.placeholderLocal,
-      local: partido.equipoLocal,
+      local,
       visitaPlaceholder: partido.placeholderVisita,
-      visita: partido.equipoVisita,
+      visita,
       placeholderLocal: partido.placeholderLocal,
-      equipoLocal: partido.equipoLocal,
+      equipoLocal: local,
       placeholderVisita: partido.placeholderVisita,
-      equipoVisita: partido.equipoVisita,
-      golesLocalReal: partido.golesLocalReal,
-      golesVisitaReal: partido.golesVisitaReal,
+      equipoVisita: visita,
+      golesLocalReal: partido.golesLocalReal ?? partido.goles_local_real,
+      golesVisitaReal: partido.golesVisitaReal ?? partido.goles_visita_real,
       clasifica,
       clasificadoRealLado: partido.clasificadoRealLado,
       estado: partido.estado

@@ -512,6 +512,11 @@ function renderizarPartidos() {
   let fechaActual = "";
 
   partidosOrdenados.forEach((partido) => {
+    if (!partido || !partido.id) {
+      console.warn("[Grupos] partido sin id, omitido:", partido);
+      return;
+    }
+
     if (partido.fecha !== fechaActual) {
       fechaActual = partido.fecha;
 
@@ -528,6 +533,7 @@ function renderizarPartidos() {
     const grupoSeguro = escapeHTML(partido.grupo);
     const localSeguro = escapeHTML(obtenerNombreEquipo(partido.local));
     const visitaSeguro = escapeHTML(obtenerNombreEquipo(partido.visita));
+    const partidoIdSeguro = escapeHTML(partido.id);
 
     const tarjeta = document.createElement("article");
     tarjeta.className = bloqueado
@@ -547,7 +553,8 @@ function renderizarPartidos() {
           class="score-input" 
           type="number" 
           min="0" 
-          id="${partido.id}_local"
+          data-score="local"
+          id="${partidoIdSeguro}_local"
           placeholder="0"
           ${bloqueado ? "disabled" : ""}
         />
@@ -558,7 +565,8 @@ function renderizarPartidos() {
           class="score-input" 
           type="number" 
           min="0" 
-          id="${partido.id}_visita"
+          data-score="visita"
+          id="${partidoIdSeguro}_visita"
           placeholder="0"
           ${bloqueado ? "disabled" : ""}
         />
@@ -571,8 +579,13 @@ function renderizarPartidos() {
       </div>
     `;
 
-    const inputLocal = tarjeta.querySelector(`#${partido.id}_local`);
-    const inputVisita = tarjeta.querySelector(`#${partido.id}_visita`);
+    const inputLocal = tarjeta.querySelector('[data-score="local"]');
+    const inputVisita = tarjeta.querySelector('[data-score="visita"]');
+
+    if (!inputLocal || !inputVisita) {
+      console.warn("[Grupos] no se pudieron crear inputs para partido:", partido);
+      return;
+    }
 
     inputLocal.value = localStorage.getItem(crearClavePronostico(partido.id, "local")) || "";
     inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visita")) || "";
@@ -813,10 +826,9 @@ function mostrarDetallePartido(panel, respuesta) {
   const filas = participantes.length
     ? participantes.map((participante, index) => `
         <li class="result-detail-row">
-          <div>
-            <strong>${index + 1}. ${escapeHTML(participante.nombre)}</strong>
-            <span>${escapeHTML(obtenerTextoDetallePuntos(participante))}</span>
-          </div>
+          <span class="result-detail-position">${index + 1}.</span>
+          <strong class="result-detail-name">${escapeHTML(participante.nombre)}</strong>
+          <span class="result-detail-prediction">${escapeHTML(obtenerTextoDetallePuntos(participante))}</span>
           <strong class="result-detail-points">${escapeHTML(participante.puntos || 0)} pts</strong>
         </li>`).join("")
     : `<li class="result-detail-row empty">No hay participantes activos en esta polla.</li>`;
@@ -916,7 +928,7 @@ async function cargarPronosticosUsuarioConServidor() {
   if (!idPolla) {
     return {
       ok: false,
-      error: "Selecciona una polla para cargar pronsticos."
+      error: "Selecciona una polla para cargar pronósticos."
     };
   }
 
@@ -960,8 +972,8 @@ async function guardarPronosticosConServidor(datosGuardado) {
   const idPolla = obtenerPollaGlobalSeleccionada();
   const pronosticos = datosGuardado.pronosticos || [];
 
-  console.info("[Guardar pronsticos] usando Node/Supabase");
-  console.info("[Guardar pronsticos] tipo:", tipo);
+  console.info("[Guardar pronósticos] usando Node/Supabase");
+  console.info("[Guardar pronósticos] tipo:", tipo);
 
   if (!idPolla) {
     return {
@@ -2451,7 +2463,7 @@ mostrarPollasDelParticipante(validacionCodigo);
 }
 
 // =======================
-// GUARDAR USUARIO Y C?DIGO
+// GUARDAR USUARIO Y CÓDIGO
 // =======================
 
 const inputUsuario = document.getElementById("usuario");
@@ -2541,6 +2553,8 @@ function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsu
 
   const grupos = (pronosticosServidor && pronosticosServidor.grupos) || [];
   const eliminacion = (pronosticosServidor && pronosticosServidor.eliminacion) || [];
+
+  console.info("[Grupos] pronósticos recibidos:", grupos);
 
   grupos.forEach((pronostico) => {
     if (!pronostico.id) return;
@@ -2847,6 +2861,8 @@ async function inicializarApp() {
     cargaPartidos.value.ok &&
     Array.isArray(cargaPartidos.value.partidos)
   ) {
+    console.info("[Grupos] partidos recibidos:", cargaPartidos.value.partidos);
+    console.info("[Grupos] cantidad partidos:", cargaPartidos.value.partidos?.length);
     partidos = cargaPartidos.value.partidos;
     guardarResultadosEnMemoria(partidos);
   }
@@ -2879,6 +2895,10 @@ async function inicializarApp() {
     console.error(cargaPartidos.reason);
   }
 
+  if (cargaPartidos.status === "fulfilled" && !cargaPartidos.value.ok) {
+    console.error("[Grupos] No se pudieron cargar partidos:", cargaPartidos.value);
+  }
+
   if (cargaResultados.status === "rejected") {
     console.error(cargaResultados.reason);
   }
@@ -2892,7 +2912,7 @@ async function inicializarApp() {
   }
 
   if (cargaResultadosEliminacion.status === "fulfilled" && !cargaResultadosEliminacion.value.ok) {
-    console.error("[Resultados] No se pudieron cargar resultados de eliminacin:", cargaResultadosEliminacion.value);
+    console.error("[Resultados] No se pudieron cargar resultados de eliminación:", cargaResultadosEliminacion.value);
   }
 
   if (cargaLlaves.status === "rejected") {
