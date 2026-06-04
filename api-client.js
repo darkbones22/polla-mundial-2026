@@ -81,13 +81,26 @@
     };
   }
 
+  function separarFechaHora(fechaHora) {
+    const texto = String(fechaHora || "");
+    const partes = texto.includes("T")
+      ? texto.split("T")
+      : texto.split(" ");
+    const fecha = partes[0] || "";
+    const hora = (partes[1] || "").slice(0, 5);
+
+    return { fecha, hora };
+  }
+
   function adaptarPartidoGrupoNode(partido) {
+    const { fecha, hora } = separarFechaHora(partido.fechaHora);
+
     return {
       id: partido.id,
       grupo: partido.grupo,
       fechaHora: partido.fechaHora,
-      fecha: partido.fechaHora,
-      hora: partido.fechaHora,
+      fecha,
+      hora,
       local: partido.equipoLocal,
       visita: partido.equipoVisita,
       equipoLocal: partido.equipoLocal,
@@ -99,12 +112,21 @@
   }
 
   function adaptarPartidoEliminacionNode(partido) {
+    const { fecha, hora } = separarFechaHora(partido.fechaHora);
+    const local = partido.equipoLocal || partido.placeholderLocal;
+    const visita = partido.equipoVisita || partido.placeholderVisita;
+    const clasifica = partido.clasificadoRealLado === "local"
+      ? local
+      : partido.clasificadoRealLado === "visita"
+        ? visita
+        : "";
+
     return {
       id: partido.id,
       ronda: partido.ronda,
       fechaHora: partido.fechaHora,
-      fecha: partido.fechaHora,
-      hora: partido.fechaHora,
+      fecha,
+      hora,
       localPlaceholder: partido.placeholderLocal,
       local: partido.equipoLocal,
       visitaPlaceholder: partido.placeholderVisita,
@@ -115,6 +137,7 @@
       equipoVisita: partido.equipoVisita,
       golesLocalReal: partido.golesLocalReal,
       golesVisitaReal: partido.golesVisitaReal,
+      clasifica,
       clasificadoRealLado: partido.clasificadoRealLado,
       estado: partido.estado
     };
@@ -214,9 +237,19 @@
   }
 
   async function apiObtenerDetallePartido(pollaId, partidoId, tipo) {
-    return llamarNodeApi(
+    const respuesta = await llamarNodeApi(
       `/api/detalle-partido?pollaId=${encodeURIComponent(pollaId)}&partidoId=${encodeURIComponent(partidoId)}&tipo=${encodeURIComponent(tipo)}`
     );
+
+    if (!respuesta.ok || !respuesta.partido) {
+      return respuesta;
+    }
+
+    return {
+      ...respuesta,
+      partido: adaptarResultadoNode(respuesta.partido, tipo),
+      participantes: respuesta.participantes || respuesta.detalle || []
+    };
   }
 
   global.PollaApiClient = {

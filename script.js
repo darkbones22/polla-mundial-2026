@@ -835,8 +835,14 @@ function cargarResultadosEliminacionConServidor() {
   return cargarResultadosPorTipoConServidor("eliminacion");
 }
 
-function cargarResultadosPorTipoConServidor(tipo) {
-  return window.PollaApiClient.apiObtenerResultados(tipo);
+async function cargarResultadosPorTipoConServidor(tipo) {
+  console.info("[Resultados] tipo:", tipo);
+
+  const respuesta = await window.PollaApiClient.apiObtenerResultados(tipo);
+
+  console.info("[Resultados] respuesta:", respuesta);
+
+  return respuesta;
 }
 
 function cargarDetallePartidoConServidor(partidoId, tipo) {
@@ -845,6 +851,8 @@ function cargarDetallePartidoConServidor(partidoId, tipo) {
   if (!idPolla) {
     return Promise.reject(new Error("Selecciona una polla para ver el detalle."));
   }
+
+  console.info("[Detalle partido] tipo:", tipo, "partidoId:", partidoId, "pollaId:", idPolla);
 
   return window.PollaApiClient.apiObtenerDetallePartido(idPolla, partidoId, tipo);
 }
@@ -1500,7 +1508,11 @@ function cambiarUsuario() {
   limpiarInfoPollas();
 }
 
-function cargarRankingConServidor(idPolla) {
+function cargarRankingConServidor() {
+  const idPolla = obtenerPollaGlobalSeleccionada();
+
+  console.info("[Ranking] pollaId:", idPolla);
+
   return window.PollaApiClient.apiObtenerRanking(idPolla);
 }
 
@@ -1540,9 +1552,16 @@ async function cargarRankingSeleccionado() {
   rankingContent.textContent = "Cargando ranking... â³";
 
   try {
-    const respuesta = await cargarRankingConServidor(idPolla);
+    const respuesta = await cargarRankingConServidor();
+
+    console.info("[Ranking] respuesta:", respuesta);
 
     if (!respuesta.ok) {
+      if (esRespuestaSesionNodeInvalida(respuesta)) {
+        manejarSesionNodeInvalida();
+        return;
+      }
+
       rankingContent.className = "ranking-empty";
       rankingContent.textContent = respuesta.error || "No se pudo cargar el ranking.";
       return;
@@ -2815,8 +2834,16 @@ async function inicializarApp() {
     console.error(cargaResultados.reason);
   }
 
+  if (cargaResultados.status === "fulfilled" && !cargaResultados.value.ok) {
+    console.error("[Resultados] No se pudieron cargar resultados de grupos:", cargaResultados.value);
+  }
+
   if (cargaResultadosEliminacion.status === "rejected") {
     console.error(cargaResultadosEliminacion.reason);
+  }
+
+  if (cargaResultadosEliminacion.status === "fulfilled" && !cargaResultadosEliminacion.value.ok) {
+    console.error("[Resultados] No se pudieron cargar resultados de eliminación:", cargaResultadosEliminacion.value);
   }
 
   if (cargaLlaves.status === "rejected") {
