@@ -212,7 +212,7 @@ function obtenerNombreParticipanteValidado(validacionCodigo) {
   return validacionCodigo?.participante?.nombre || validacionCodigo?.nombre || "Participante";
 }
 
-function obtenerNombreUsuarioActual() {
+function obtenerParticipanteActual() {
   return sessionStorage.getItem(CLAVE_SESION_USUARIO) || "Participante";
 }
 
@@ -259,7 +259,6 @@ function manejarSesionNodeInvalida() {
 
   document.getElementById("appView")?.classList.add("hidden");
   document.getElementById("loginView")?.classList.remove("hidden");
-  document.getElementById("usuario").value = "";
   document.getElementById("codigoUsuario").value = "";
   limpiarInfoPollas();
 
@@ -1082,8 +1081,12 @@ async function sincronizarPronosticosUsuarioDesdeServidor(codigoUsuario) {
 }
 
 async function iniciarSesion() {
+  console.info("[Login] usando solo código");
+
   const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
   const btnIngresar = document.getElementById("btnIngresar");
+
+  console.info("[Login] código ingresado:", codigoUsuario);
 
   if (!codigoUsuario) {
     alert("Ingresa tu código de participante.");
@@ -1112,11 +1115,6 @@ async function iniciarSesion() {
   }
 
   const usuario = obtenerNombreParticipanteValidado(validacionCodigo);
-  const inputUsuario = document.getElementById("usuario");
-
-  if (inputUsuario) {
-    inputUsuario.value = usuario;
-  }
 
   guardarSesionActual(usuario, codigoUsuario);
 
@@ -1137,14 +1135,9 @@ async function iniciarSesion() {
 function abrirApp(validacionCodigo) {
   const usuario = obtenerNombreParticipanteValidado(validacionCodigo);
   const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
-  const inputUsuario = document.getElementById("usuario");
 
   document.getElementById("loginView").classList.add("hidden");
   document.getElementById("appView").classList.remove("hidden");
-
-  if (inputUsuario) {
-    inputUsuario.value = usuario;
-  }
 
   guardarSesionActual(usuario, codigoUsuario);
   document.getElementById("usuarioActivo").textContent = `Hola, ${usuario} · Código: ${codigoUsuario}`;
@@ -1184,10 +1177,8 @@ async function iniciarSesionGuardada() {
   if (!sesionGuardada) return false;
 
   const btnIngresar = document.getElementById("btnIngresar");
-  const inputUsuario = document.getElementById("usuario");
   const inputCodigoUsuario = document.getElementById("codigoUsuario");
 
-  inputUsuario.value = sesionGuardada.usuario;
   inputCodigoUsuario.value = sesionGuardada.codigo;
 
   btnIngresar.disabled = true;
@@ -1198,7 +1189,6 @@ async function iniciarSesionGuardada() {
 
     if (!validacionCodigo.ok) {
       limpiarSesionActual();
-      inputUsuario.value = "";
       inputCodigoUsuario.value = "";
       document.getElementById("loginView").classList.remove("hidden");
       btnIngresar.disabled = false;
@@ -1217,7 +1207,6 @@ async function iniciarSesionGuardada() {
     return true;
   } catch (error) {
     console.error(error);
-    inputUsuario.value = "";
     inputCodigoUsuario.value = "";
     document.getElementById("loginView").classList.remove("hidden");
   }
@@ -1994,7 +1983,6 @@ function cambiarUsuario() {
   adminPartidosActuales = [];
   actualizarVisibilidadAdmin(null);
 
-  document.getElementById("usuario").value = "";
   document.getElementById("codigoUsuario").value = "";
 
   document.getElementById("appView").classList.add("hidden");
@@ -2775,7 +2763,7 @@ function actualizarContadorEliminacion() {
 }
 
 async function enviar() {
-    const usuario = obtenerNombreUsuarioActual();
+    const usuario = obtenerParticipanteActual();
     const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
     const btnEnviar = document.getElementById("btnEnviar");
 
@@ -2903,10 +2891,8 @@ mostrarPollasDelParticipante(validacionCodigo);
 // GUARDAR USUARIO Y CÓDIGO
 // =======================
 
-const inputUsuario = document.getElementById("usuario");
 const inputCodigoUsuario = document.getElementById("codigoUsuario");
 
-inputUsuario.value = "";
 inputCodigoUsuario.value = "";
 
 inputCodigoUsuario.addEventListener("input", () => {
@@ -3127,7 +3113,7 @@ function limpiarFormulario() {
 }
 
 async function enviarEliminacion() {
-  const usuario = obtenerNombreUsuarioActual();
+  const usuario = obtenerParticipanteActual();
   const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
   const btnEnviar = document.getElementById("btnEnviarEliminacion");
 
