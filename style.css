@@ -2533,6 +2533,10 @@ body {
 }
 
 .main-menu {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.main-menu.admin-visible {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 

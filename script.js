@@ -1477,10 +1477,15 @@ function actualizarVisibilidadAdmin(validacionCodigo) {
   usuarioAdminActual = esAdminValidado(validacionCodigo);
 
   const tabAdmin = document.getElementById("tabAdmin");
+  const menuPrincipal = document.querySelector(".main-menu");
 
   if (tabAdmin) {
     tabAdmin.classList.toggle("hidden", !usuarioAdminActual);
     tabAdmin.setAttribute("aria-hidden", usuarioAdminActual ? "false" : "true");
+  }
+
+  if (menuPrincipal) {
+    menuPrincipal.classList.toggle("admin-visible", usuarioAdminActual);
   }
 }
 
@@ -1640,6 +1645,70 @@ function obtenerValorGolesAdmin(input) {
   return valor === "" ? null : Number(valor);
 }
 
+async function refrescarDatosDespuesDeAdmin(tipo) {
+  const tipoNormalizado = String(tipo || "grupos").trim().toLowerCase();
+  detalleResultadoAbierto = "";
+
+  if (tipoNormalizado === "grupos") {
+    const [cargaPartidos, cargaResultados] = await Promise.all([
+      cargarPartidosConServidor(),
+      cargarResultadosConServidor()
+    ]);
+
+    if (cargaPartidos.ok && Array.isArray(cargaPartidos.partidos)) {
+      partidos = cargaPartidos.partidos;
+    }
+
+    if (cargaResultados.ok && Array.isArray(cargaResultados.resultados)) {
+      guardarResultadosEnMemoria(cargaResultados.resultados);
+    }
+
+    renderizarPartidos();
+    recargarPronosticosGruposDesdeLocalStorage();
+    actualizarContadorPronosticos();
+  }
+
+  if (tipoNormalizado === "eliminacion") {
+    const [cargaLlaves, cargaResultados] = await Promise.all([
+      cargarLlavesConServidor(),
+      cargarResultadosEliminacionConServidor()
+    ]);
+
+    if (cargaLlaves.ok && Array.isArray(cargaLlaves.llaves)) {
+      llavesEliminacion = cargaLlaves.llaves;
+    }
+
+    if (cargaResultados.ok && Array.isArray(cargaResultados.resultados)) {
+      guardarResultadosEliminacionEnMemoria(cargaResultados.resultados);
+    }
+
+    renderizarEliminacion();
+    recargarPronosticosEliminacionDesdeLocalStorage();
+    actualizarContadorEliminacion();
+  }
+
+  renderizarResultadosGrupos();
+
+  const ranking = await cargarRankingConServidor();
+
+  if (ranking.ok) {
+    ultimoRankingCargado = ranking.ranking || [];
+
+    const seccionRanking = document.getElementById("seccionRanking");
+
+    if (seccionRanking && !seccionRanking.classList.contains("hidden")) {
+      mostrarRanking(ultimoRankingCargado);
+    }
+  }
+
+  const admin = await window.PollaApiClient.apiAdminObtenerPartidos(adminTipoActual);
+
+  if (admin.ok) {
+    adminPartidosActuales = admin.partidos || [];
+    renderizarAdminPartidos();
+  }
+}
+
 async function guardarAdminPartido(partidoId) {
   if (!usuarioAdminActual) {
     mostrarFeedbackAdmin("No autorizado.", "error");
@@ -1673,11 +1742,13 @@ async function guardarAdminPartido(partidoId) {
       return;
     }
 
-    adminPartidosActuales = adminPartidosActuales.map((partido) =>
-      partido.id === partidoId ? respuesta.partido : partido
-    );
-    mostrarFeedbackAdmin("Cambios guardados.", "success");
-    renderizarAdminPartidos();
+    try {
+      await refrescarDatosDespuesDeAdmin(adminTipoActual);
+      mostrarFeedbackAdmin("Cambios guardados.", "success");
+    } catch (errorRefresco) {
+      console.error(errorRefresco);
+      mostrarFeedbackAdmin("Cambios guardados. Recarga la página si no ves todo actualizado.", "success");
+    }
   } catch (error) {
     console.error(error);
     mostrarFeedbackAdmin("Error al guardar.", "error");
