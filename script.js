@@ -1086,7 +1086,7 @@ async function iniciarSesion() {
   const btnIngresar = document.getElementById("btnIngresar");
 
   if (!codigoUsuario) {
-    alert("Ingresa tu código de participante");
+    alert("Ingresa tu código de participante.");
     return;
   }
 
