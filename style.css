@@ -2505,3 +2505,236 @@ body {
   }
 }
 
+.app-header .global-polla-selector {
+  background: rgba(219, 234, 254, 0.16);
+  border: 1px solid rgba(219, 234, 254, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 22px rgba(15, 23, 42, 0.12);
+}
+
+.app-header .global-polla-button {
+  background: transparent;
+  border: 0;
+  color: #ffffff;
+  box-shadow: none;
+  padding: 0;
+}
+
+.app-header .global-polla-button span:first-child {
+  color: #ffffff;
+}
+
+.app-header .global-polla-arrow {
+  border-color: #dbeafe;
+}
+
+.match-status.finalizado {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.main-menu {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.admin-section {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+}
+
+.admin-header,
+.admin-toolbar,
+.admin-fields {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-header {
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.admin-header h2 {
+  margin: 0 0 3px;
+}
+
+.admin-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.admin-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.admin-toolbar label,
+.admin-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-toolbar select,
+.admin-fields select,
+.admin-fields input {
+  min-height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.admin-toolbar select {
+  min-width: 160px;
+  padding: 0 10px;
+}
+
+.admin-partidos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-partido-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(420px, 1.7fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(203, 213, 225, 0.74);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.admin-partido-main {
+  min-width: 0;
+}
+
+.admin-partido-main strong {
+  display: block;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-partido-meta {
+  display: block;
+  margin-bottom: 3px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.admin-fields {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.admin-fields input {
+  width: 70px;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.admin-fields select {
+  min-width: 120px;
+  padding: 0 8px;
+}
+
+.admin-save-button {
+  align-self: end;
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-feedback,
+.admin-empty {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-feedback.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-feedback.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 900px) {
+  .main-menu {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-partido-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-fields {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .main-menu {
+    display: flex;
+  }
+
+  .admin-section {
+    padding: 12px;
+  }
+
+  .admin-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-toolbar,
+  .admin-toolbar label,
+  .admin-toolbar select,
+  .admin-fields,
+  .admin-fields label,
+  .admin-fields select,
+  .admin-save-button {
+    width: 100%;
+  }
+
+  .admin-fields input {
+    width: 100%;
+  }
+}
+

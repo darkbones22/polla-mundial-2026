@@ -246,6 +246,8 @@ function esRespuestaSesionNodeInvalida(respuesta) {
 
 function manejarSesionNodeInvalida() {
   limpiarSesionActual();
+  usuarioAdminActual = false;
+  actualizarVisibilidadAdmin(null);
 
   document.getElementById("appView")?.classList.add("hidden");
   document.getElementById("loginView")?.classList.remove("hidden");
@@ -888,6 +890,12 @@ let llavesEliminacion = [];
 let tipoRankingActual = "total";
 let ultimoRankingCargado = [];
 let pollasUsuarioActual = [];
+let usuarioAdminActual = false;
+let adminTipoActual = "grupos";
+let adminPartidosActuales = [];
+
+const CODIGO_ADMIN = "agu-1111";
+const ESTADOS_ADMIN = ["Pendiente", "Abierto", "Cerrado", "Finalizado"];
 
 function cargarPartidosConServidor() {
   return window.PollaApiClient.apiObtenerPartidosGrupos();
@@ -1129,6 +1137,7 @@ function abrirApp(validacionCodigo) {
   mostrarResumenPollas(validacionCodigo.pollas);
   llenarSelectorPollaGlobal(validacionCodigo.pollas);
   llenarSelectorRanking(validacionCodigo.pollas);
+  actualizarVisibilidadAdmin(validacionCodigo);
   mostrarSeccion("pronosticos");
   recargarPronosticosGruposDesdeLocalStorage();
   recargarPronosticosEliminacionDesdeLocalStorage();
@@ -1457,30 +1466,257 @@ function cambiarPollaGlobal() {
   }
 }
 
+function esAdminValidado(validacionCodigo) {
+  const codigoParticipante = String(validacionCodigo?.participante?.codigoLegacy || "").trim().toLowerCase();
+  const codigoActual = obtenerCodigoActual();
+
+  return codigoParticipante === CODIGO_ADMIN || codigoActual === CODIGO_ADMIN;
+}
+
+function actualizarVisibilidadAdmin(validacionCodigo) {
+  usuarioAdminActual = esAdminValidado(validacionCodigo);
+
+  const tabAdmin = document.getElementById("tabAdmin");
+
+  if (tabAdmin) {
+    tabAdmin.classList.toggle("hidden", !usuarioAdminActual);
+    tabAdmin.setAttribute("aria-hidden", usuarioAdminActual ? "false" : "true");
+  }
+}
+
+function mostrarFeedbackAdmin(mensaje, tipo = "info") {
+  const feedback = document.getElementById("adminFeedback");
+
+  if (!feedback) return;
+
+  feedback.textContent = mensaje;
+  feedback.className = `admin-feedback ${tipo}`;
+  feedback.classList.toggle("hidden", !mensaje);
+}
+
+function manejarErrorAdmin(respuesta) {
+  if (esRespuestaSesionNodeInvalida(respuesta)) {
+    mostrarFeedbackAdmin("Sesión expirada. Vuelve a iniciar sesión.", "error");
+    manejarSesionNodeInvalida();
+    return true;
+  }
+
+  if (respuesta?.status === 403) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return true;
+  }
+
+  return false;
+}
+
+function obtenerNombreAdminPartido(partido, lado) {
+  if (lado === "local") {
+    return partido.equipoLocal || partido.local || partido.placeholderLocal || partido.localPlaceholder || "Local";
+  }
+
+  return partido.equipoVisita || partido.visita || partido.placeholderVisita || partido.visitaPlaceholder || "Visita";
+}
+
+function obtenerFechaAdminPartido(partido) {
+  const fecha = formatearFecha(partido.fecha || partido.fechaHora);
+  const hora = partido.hora || obtenerHoraISO(partido.fechaHora) || "";
+
+  return [fecha, hora ? `${hora} hrs` : ""].filter(Boolean).join(" · ");
+}
+
+function obtenerAdminPartidosFiltrados() {
+  const filtroEstado = document.getElementById("adminFiltroEstado")?.value || "";
+
+  return adminPartidosActuales.filter((partido) => !filtroEstado || partido.estado === filtroEstado);
+}
+
+function renderizarAdminPartidos() {
+  const contenedor = document.getElementById("adminPartidos");
+
+  if (!contenedor) return;
+
+  if (!usuarioAdminActual) {
+    contenedor.innerHTML = `<div class="admin-empty">No autorizado.</div>`;
+    return;
+  }
+
+  const partidosFiltrados = obtenerAdminPartidosFiltrados();
+
+  if (partidosFiltrados.length === 0) {
+    contenedor.innerHTML = `<div class="admin-empty">No hay partidos para este filtro.</div>`;
+    return;
+  }
+
+  contenedor.innerHTML = partidosFiltrados.map((partido) => {
+    const local = escapeHTML(obtenerNombreAdminPartido(partido, "local"));
+    const visita = escapeHTML(obtenerNombreAdminPartido(partido, "visita"));
+    const meta = adminTipoActual === "grupos"
+      ? `Grupo ${escapeHTML(partido.grupo || "")}`
+      : escapeHTML(partido.ronda || "");
+    const golesLocal = partido.golesLocalReal ?? "";
+    const golesVisita = partido.golesVisitaReal ?? "";
+    const estado = partido.estado || "Pendiente";
+    const opcionesEstado = ESTADOS_ADMIN.map((opcion) => `
+      <option value="${opcion}" ${opcion === estado ? "selected" : ""}>${opcion}</option>
+    `).join("");
+    const clasificado = partido.clasificadoRealLado || "";
+    const selectorClasificado = adminTipoActual === "eliminacion"
+      ? `
+          <label>
+            Clasifica
+            <select class="admin-clasificado">
+              <option value="" ${clasificado === "" ? "selected" : ""}>Sin definir</option>
+              <option value="local" ${clasificado === "local" ? "selected" : ""}>Local</option>
+              <option value="visita" ${clasificado === "visita" ? "selected" : ""}>Visita</option>
+            </select>
+          </label>
+        `
+      : "";
+
+    return `
+      <article class="admin-partido-card" data-partido-id="${escapeHTML(partido.id)}">
+        <div class="admin-partido-main">
+          <span class="admin-partido-meta">${meta} · ${escapeHTML(obtenerFechaAdminPartido(partido))}</span>
+          <strong>${local} vs ${visita}</strong>
+        </div>
+
+        <div class="admin-fields">
+          <label>
+            Local
+            <input class="admin-goles-local" type="number" min="0" value="${escapeHTML(golesLocal)}" />
+          </label>
+          <label>
+            Visita
+            <input class="admin-goles-visita" type="number" min="0" value="${escapeHTML(golesVisita)}" />
+          </label>
+          <label>
+            Estado
+            <select class="admin-estado">${opcionesEstado}</select>
+          </label>
+          ${selectorClasificado}
+          <button class="admin-save-button" type="button" onclick="guardarAdminPartido('${escapeHTML(partido.id)}')">
+            Guardar cambios
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function cargarAdminPartidos() {
+  const selectorTipo = document.getElementById("adminTipoPartidos");
+  const contenedor = document.getElementById("adminPartidos");
+
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    if (contenedor) contenedor.innerHTML = "";
+    return;
+  }
+
+  adminTipoActual = selectorTipo?.value || "grupos";
+  mostrarFeedbackAdmin("Cargando partidos...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminObtenerPartidos(adminTipoActual);
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "Error al cargar partidos.", "error");
+      }
+      return;
+    }
+
+    adminPartidosActuales = respuesta.partidos || [];
+    mostrarFeedbackAdmin("", "info");
+    renderizarAdminPartidos();
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al cargar partidos.", "error");
+  }
+}
+
+function obtenerValorGolesAdmin(input) {
+  const valor = String(input?.value || "").trim();
+  return valor === "" ? null : Number(valor);
+}
+
+async function guardarAdminPartido(partidoId) {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  const tarjeta = document.querySelector(`[data-partido-id="${CSS.escape(partidoId)}"]`);
+
+  if (!tarjeta) return;
+
+  const datos = {
+    tipo: adminTipoActual,
+    golesLocalReal: obtenerValorGolesAdmin(tarjeta.querySelector(".admin-goles-local")),
+    golesVisitaReal: obtenerValorGolesAdmin(tarjeta.querySelector(".admin-goles-visita")),
+    estado: tarjeta.querySelector(".admin-estado")?.value || "Pendiente"
+  };
+
+  if (adminTipoActual === "eliminacion") {
+    datos.clasificadoRealLado = tarjeta.querySelector(".admin-clasificado")?.value || null;
+  }
+
+  mostrarFeedbackAdmin("Guardando cambios...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminActualizarPartido(partidoId, datos);
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "Error al guardar.", "error");
+      }
+      return;
+    }
+
+    adminPartidosActuales = adminPartidosActuales.map((partido) =>
+      partido.id === partidoId ? respuesta.partido : partido
+    );
+    mostrarFeedbackAdmin("Cambios guardados.", "success");
+    renderizarAdminPartidos();
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al guardar.", "error");
+  }
+}
+
 function mostrarSeccion(seccion) {
   const seccionPronosticos = document.getElementById("seccionPronosticos");
   const seccionEliminacion = document.getElementById("seccionEliminacion");
   const seccionResultados = document.getElementById("seccionResultados");
   const seccionRanking = document.getElementById("seccionRanking");
   const seccionInformacion = document.getElementById("seccionInformacion");
+  const seccionAdmin = document.getElementById("seccionAdmin");
 
   const tabPronosticos = document.getElementById("tabPronosticos");
   const tabEliminacion = document.getElementById("tabEliminacion");
   const tabResultados = document.getElementById("tabResultados");
   const tabRanking = document.getElementById("tabRanking");
   const tabInformacion = document.getElementById("tabInformacion");
+  const tabAdmin = document.getElementById("tabAdmin");
 
   seccionPronosticos.classList.add("hidden");
   seccionEliminacion.classList.add("hidden");
   seccionResultados.classList.add("hidden");
   seccionRanking.classList.add("hidden");
   seccionInformacion.classList.add("hidden");
+  seccionAdmin?.classList.add("hidden");
 
   tabPronosticos.classList.remove("active");
   tabEliminacion.classList.remove("active");
   tabResultados.classList.remove("active");
   tabRanking.classList.remove("active");
   tabInformacion.classList.remove("active");
+  tabAdmin?.classList.remove("active");
+
+  if (seccion === "admin" && !usuarioAdminActual) {
+    mostrarSeccion("pronosticos");
+    return;
+  }
 
   if (seccion === "pronosticos") {
     seccionPronosticos.classList.remove("hidden");
@@ -1515,6 +1751,12 @@ function mostrarSeccion(seccion) {
     seccionInformacion.classList.remove("hidden");
     tabInformacion.classList.add("active");
     configurarAcordeonesInformacion();
+  }
+
+  if (seccion === "admin") {
+    seccionAdmin?.classList.remove("hidden");
+    tabAdmin?.classList.add("active");
+    cargarAdminPartidos();
   }
 }
 
@@ -1564,6 +1806,9 @@ function configurarAcordeonesInformacion() {
 
 function cambiarUsuario() {
   limpiarSesionActual();
+  usuarioAdminActual = false;
+  adminPartidosActuales = [];
+  actualizarVisibilidadAdmin(null);
 
   document.getElementById("usuario").value = "";
   document.getElementById("codigoUsuario").value = "";

@@ -300,6 +300,27 @@
     };
   }
 
+  async function apiAdminObtenerPartidos(tipo) {
+    const respuesta = await llamarNodeApi(`/api/admin/partidos?tipo=${encodeURIComponent(tipo)}`);
+    return {
+      ...respuesta,
+      partidos: (respuesta.partidos || []).map((partido) => adaptarResultadoNode(partido, tipo))
+    };
+  }
+
+  async function apiAdminActualizarPartido(id, datos) {
+    const tipo = datos?.tipo || "grupos";
+    const respuesta = await llamarNodeApi(`/api/admin/partidos/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: datos
+    });
+
+    return {
+      ...respuesta,
+      partido: respuesta.partido ? adaptarResultadoNode(respuesta.partido, tipo) : null
+    };
+  }
+
   global.PollaApiClient = {
     API_MODE,
     NODE_API_BASE_URL,
@@ -315,6 +336,8 @@
     apiGuardarPronosticosEliminacion,
     apiObtenerResultados,
     apiObtenerRanking,
-    apiObtenerDetallePartido
+    apiObtenerDetallePartido,
+    apiAdminObtenerPartidos,
+    apiAdminActualizarPartido
   };
 })(window);

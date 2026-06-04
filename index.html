@@ -116,6 +116,10 @@
       <button id="tabInformacion" class="menu-button" onclick="mostrarSeccion('informacion')">
         Información
       </button>
+
+      <button id="tabAdmin" class="menu-button admin-only hidden" onclick="mostrarSeccion('admin')">
+        Admin
+      </button>
     </nav>
 
     <!-- SECCIÓN PRONÓSTICOS -->
@@ -198,6 +202,43 @@
         <div id="rankingContent" class="ranking-placeholder">
           Selecciona una polla para ver el ranking
         </div>
+      </section>
+    </section>
+
+    <!-- SECCIÓN ADMIN -->
+    <section id="seccionAdmin" class="page-section hidden">
+      <section class="admin-section">
+        <div class="admin-header">
+          <div>
+            <h2>Admin</h2>
+            <p>Resultados y estados de partidos.</p>
+          </div>
+          <span class="admin-badge">agu-1111</span>
+        </div>
+
+        <div class="admin-toolbar">
+          <label>
+            Fase
+            <select id="adminTipoPartidos" onchange="cargarAdminPartidos()">
+              <option value="grupos">Grupos</option>
+              <option value="eliminacion">Eliminación</option>
+            </select>
+          </label>
+
+          <label>
+            Estado
+            <select id="adminFiltroEstado" onchange="renderizarAdminPartidos()">
+              <option value="">Todos</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Abierto">Abierto</option>
+              <option value="Cerrado">Cerrado</option>
+              <option value="Finalizado">Finalizado</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="adminFeedback" class="admin-feedback hidden"></div>
+        <div id="adminPartidos" class="admin-partidos"></div>
       </section>
     </section>
 
