@@ -92,6 +92,13 @@ function normalizarClasificado(valor) {
   return clasificado;
 }
 
+function normalizarEquipoReal(valor) {
+  if (valor === null || valor === undefined) return null;
+
+  const texto = String(valor).trim();
+  return texto === '' ? null : texto;
+}
+
 function validarTipo(tipo) {
   const tipoNormalizado = String(tipo || '').trim().toLowerCase();
 
@@ -147,6 +154,8 @@ export async function actualizarPartidoAdmin(id, datos) {
 
   if (tipo === 'eliminacion') {
     cambios.clasificado_real_lado = normalizarClasificado(datos?.clasificadoRealLado);
+    cambios.equipo_local = normalizarEquipoReal(datos?.equipoLocal);
+    cambios.equipo_visita = normalizarEquipoReal(datos?.equipoVisita);
   }
 
   const { data, error } = await supabase

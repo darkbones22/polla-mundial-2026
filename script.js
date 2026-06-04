@@ -208,6 +208,14 @@ function guardarSesionActual(usuario, codigoUsuario) {
   limpiarClavesSesionAntiguasLocalStorage();
 }
 
+function obtenerNombreParticipanteValidado(validacionCodigo) {
+  return validacionCodigo?.participante?.nombre || validacionCodigo?.nombre || "Participante";
+}
+
+function obtenerNombreUsuarioActual() {
+  return sessionStorage.getItem(CLAVE_SESION_USUARIO) || "Participante";
+}
+
 function limpiarSesionActual() {
   sessionStorage.removeItem(CLAVE_SESION_USUARIO);
   sessionStorage.removeItem(CLAVE_SESION_CODIGO);
@@ -1074,14 +1082,8 @@ async function sincronizarPronosticosUsuarioDesdeServidor(codigoUsuario) {
 }
 
 async function iniciarSesion() {
-  const usuario = document.getElementById("usuario").value.trim();
   const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
   const btnIngresar = document.getElementById("btnIngresar");
-
-  if (!usuario) {
-    alert("Ingresa tu nombre");
-    return;
-  }
 
   if (!codigoUsuario) {
     alert("Ingresa tu código de participante");
@@ -1109,6 +1111,13 @@ async function iniciarSesion() {
     return;
   }
 
+  const usuario = obtenerNombreParticipanteValidado(validacionCodigo);
+  const inputUsuario = document.getElementById("usuario");
+
+  if (inputUsuario) {
+    inputUsuario.value = usuario;
+  }
+
   guardarSesionActual(usuario, codigoUsuario);
 
   btnIngresar.textContent = "Cargando pronósticos... ⏳";
@@ -1126,12 +1135,18 @@ async function iniciarSesion() {
 }
 
 function abrirApp(validacionCodigo) {
-  const usuario = document.getElementById("usuario").value.trim();
+  const usuario = obtenerNombreParticipanteValidado(validacionCodigo);
   const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
+  const inputUsuario = document.getElementById("usuario");
 
   document.getElementById("loginView").classList.add("hidden");
   document.getElementById("appView").classList.remove("hidden");
 
+  if (inputUsuario) {
+    inputUsuario.value = usuario;
+  }
+
+  guardarSesionActual(usuario, codigoUsuario);
   document.getElementById("usuarioActivo").textContent = `Hola, ${usuario} · Código: ${codigoUsuario}`;
 
   mostrarResumenPollas(validacionCodigo.pollas);
@@ -1149,7 +1164,7 @@ function obtenerSesionGuardada() {
   const usuarioGuardado = sessionStorage.getItem(CLAVE_SESION_USUARIO) || "";
   const codigoGuardado = sessionStorage.getItem(CLAVE_SESION_CODIGO) || "";
 
-  if (!sesionActiva || !usuarioGuardado.trim() || !codigoGuardado.trim()) return null;
+  if (!sesionActiva || !codigoGuardado.trim()) return null;
 
   if (apiClientEnModoNode() && !tieneTokenNode()) {
     console.warn("[Sesión Node] sesión local sin token Node, se requiere login nuevamente");
@@ -1577,12 +1592,27 @@ function renderizarAdminPartidos() {
           </label>
         `
       : "";
+    const equiposEliminacion = adminTipoActual === "eliminacion"
+      ? `
+          <div class="admin-team-fields">
+            <label>
+              Local: ${escapeHTML(partido.localPlaceholder || partido.placeholderLocal || "Local")}
+              <input class="admin-equipo-local" type="text" value="${escapeHTML(partido.equipoLocal || "")}" placeholder="Equipo real local" />
+            </label>
+            <label>
+              Visita: ${escapeHTML(partido.visitaPlaceholder || partido.placeholderVisita || "Visita")}
+              <input class="admin-equipo-visita" type="text" value="${escapeHTML(partido.equipoVisita || "")}" placeholder="Equipo real visita" />
+            </label>
+          </div>
+        `
+      : "";
 
     return `
       <article class="admin-partido-card" data-partido-id="${escapeHTML(partido.id)}">
         <div class="admin-partido-main">
           <span class="admin-partido-meta">${meta} · ${escapeHTML(obtenerFechaAdminPartido(partido))}</span>
           <strong>${local} vs ${visita}</strong>
+          ${equiposEliminacion}
         </div>
 
         <div class="admin-fields">
@@ -1810,6 +1840,8 @@ async function guardarAdminPartido(partidoId) {
 
   if (adminTipoActual === "eliminacion") {
     datos.clasificadoRealLado = tarjeta.querySelector(".admin-clasificado")?.value || null;
+    datos.equipoLocal = tarjeta.querySelector(".admin-equipo-local")?.value || null;
+    datos.equipoVisita = tarjeta.querySelector(".admin-equipo-visita")?.value || null;
   }
 
   mostrarFeedbackAdmin("Guardando cambios...", "info");
@@ -2743,14 +2775,9 @@ function actualizarContadorEliminacion() {
 }
 
 async function enviar() {
-    const usuario = document.getElementById("usuario").value.trim();
+    const usuario = obtenerNombreUsuarioActual();
     const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
     const btnEnviar = document.getElementById("btnEnviar");
-
-  if (!usuario) {
-    alert("Ingresa tu nombre antes de guardar");
-    return;
-  }
 
   if (!codigoUsuario) {
   alert("Ingresa tu código de participante antes de guardar");
@@ -3100,14 +3127,9 @@ function limpiarFormulario() {
 }
 
 async function enviarEliminacion() {
-  const usuario = document.getElementById("usuario").value.trim();
+  const usuario = obtenerNombreUsuarioActual();
   const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
   const btnEnviar = document.getElementById("btnEnviarEliminacion");
-
-  if (!usuario) {
-    alert("Ingresa tu nombre antes de guardar");
-    return;
-  }
 
   if (!codigoUsuario) {
     alert("Ingresa tu código de participante antes de guardar");

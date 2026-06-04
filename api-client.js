@@ -132,8 +132,12 @@
 
   function adaptarPartidoEliminacionNode(partido) {
     const { fecha, hora, fechaHora } = obtenerFechaHoraPartidoNode(partido);
-    const local = partido.local || partido.equipoLocal || partido.equipo_local || partido.placeholderLocal;
-    const visita = partido.visita || partido.equipoVisita || partido.equipo_visita || partido.placeholderVisita;
+    const equipoLocalReal = partido.equipoLocal || partido.equipo_local || partido.local || "";
+    const equipoVisitaReal = partido.equipoVisita || partido.equipo_visita || partido.visita || "";
+    const placeholderLocal = partido.placeholderLocal || partido.placeholder_local || partido.localPlaceholder || "";
+    const placeholderVisita = partido.placeholderVisita || partido.placeholder_visita || partido.visitaPlaceholder || "";
+    const local = equipoLocalReal || placeholderLocal;
+    const visita = equipoVisitaReal || placeholderVisita;
     const clasifica = partido.clasificadoRealLado === "local"
       ? local
       : partido.clasificadoRealLado === "visita"
@@ -146,14 +150,14 @@
       fechaHora,
       fecha,
       hora,
-      localPlaceholder: partido.placeholderLocal,
+      localPlaceholder: placeholderLocal,
       local,
-      visitaPlaceholder: partido.placeholderVisita,
+      visitaPlaceholder: placeholderVisita,
       visita,
-      placeholderLocal: partido.placeholderLocal,
-      equipoLocal: local,
-      placeholderVisita: partido.placeholderVisita,
-      equipoVisita: visita,
+      placeholderLocal,
+      equipoLocal: equipoLocalReal,
+      placeholderVisita,
+      equipoVisita: equipoVisitaReal,
       golesLocalReal: partido.golesLocalReal ?? partido.goles_local_real,
       golesVisitaReal: partido.golesVisitaReal ?? partido.goles_visita_real,
       clasifica,
