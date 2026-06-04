@@ -1709,6 +1709,88 @@ async function refrescarDatosDespuesDeAdmin(tipo) {
   }
 }
 
+async function refrescarDatosAlCambiarSeccion(seccion) {
+  const codigoUsuario = obtenerCodigoActual();
+
+  if (seccion === "pronosticos") {
+    const cargaPartidos = await cargarPartidosConServidor();
+
+    if (cargaPartidos.ok && Array.isArray(cargaPartidos.partidos)) {
+      partidos = cargaPartidos.partidos;
+    }
+
+    if (codigoUsuario) {
+      await sincronizarPronosticosUsuarioDesdeServidor(codigoUsuario);
+    }
+
+    renderizarPartidos();
+    recargarPronosticosGruposDesdeLocalStorage();
+    actualizarContadorPronosticos();
+    return;
+  }
+
+  if (seccion === "eliminacion") {
+    const cargaLlaves = await cargarLlavesConServidor();
+
+    if (cargaLlaves.ok && Array.isArray(cargaLlaves.llaves)) {
+      llavesEliminacion = cargaLlaves.llaves;
+    }
+
+    if (codigoUsuario) {
+      await sincronizarPronosticosUsuarioDesdeServidor(codigoUsuario);
+    }
+
+    renderizarEliminacion();
+    recargarPronosticosEliminacionDesdeLocalStorage();
+    actualizarContadorEliminacion();
+    return;
+  }
+
+  if (seccion === "resultados") {
+    detalleResultadoAbierto = "";
+
+    const [
+      cargaPartidos,
+      cargaLlaves,
+      cargaResultados,
+      cargaResultadosEliminacion
+    ] = await Promise.all([
+      cargarPartidosConServidor(),
+      cargarLlavesConServidor(),
+      cargarResultadosConServidor(),
+      cargarResultadosEliminacionConServidor()
+    ]);
+
+    if (cargaPartidos.ok && Array.isArray(cargaPartidos.partidos)) {
+      partidos = cargaPartidos.partidos;
+    }
+
+    if (cargaLlaves.ok && Array.isArray(cargaLlaves.llaves)) {
+      llavesEliminacion = cargaLlaves.llaves;
+    }
+
+    if (cargaResultados.ok && Array.isArray(cargaResultados.resultados)) {
+      guardarResultadosEnMemoria(cargaResultados.resultados);
+    }
+
+    if (cargaResultadosEliminacion.ok && Array.isArray(cargaResultadosEliminacion.resultados)) {
+      guardarResultadosEliminacionEnMemoria(cargaResultadosEliminacion.resultados);
+    }
+
+    renderizarResultadosGrupos();
+    return;
+  }
+
+  if (seccion === "ranking") {
+    await cargarRankingSeleccionado();
+    return;
+  }
+
+  if (seccion === "admin") {
+    await cargarAdminPartidos();
+  }
+}
+
 async function guardarAdminPartido(partidoId) {
   if (!usuarioAdminActual) {
     mostrarFeedbackAdmin("No autorizado.", "error");
@@ -1755,7 +1837,7 @@ async function guardarAdminPartido(partidoId) {
   }
 }
 
-function mostrarSeccion(seccion) {
+async function mostrarSeccion(seccion) {
   const seccionPronosticos = document.getElementById("seccionPronosticos");
   const seccionEliminacion = document.getElementById("seccionEliminacion");
   const seccionResultados = document.getElementById("seccionResultados");
@@ -1785,49 +1867,48 @@ function mostrarSeccion(seccion) {
   tabAdmin?.classList.remove("active");
 
   if (seccion === "admin" && !usuarioAdminActual) {
-    mostrarSeccion("pronosticos");
+    await mostrarSeccion("pronosticos");
     return;
   }
 
-  if (seccion === "pronosticos") {
-    seccionPronosticos.classList.remove("hidden");
-    tabPronosticos.classList.add("active");
-  }
-
-  if (seccion === "eliminacion") {
-    seccionEliminacion.classList.remove("hidden");
-    tabEliminacion.classList.add("active");
-
-    if (llavesEliminacion.length === 0) {
-      cargarYRenderizarEliminacion();
-    } else {
-      renderizarEliminacion();
+  try {
+    if (seccion === "pronosticos") {
+      seccionPronosticos.classList.remove("hidden");
+      tabPronosticos.classList.add("active");
+      await refrescarDatosAlCambiarSeccion("pronosticos");
     }
-  }
 
-  if (seccion === "resultados") {
-    seccionResultados.classList.remove("hidden");
-    tabResultados.classList.add("active");
-    renderizarResultadosGrupos();
-  }
+    if (seccion === "eliminacion") {
+      seccionEliminacion.classList.remove("hidden");
+      tabEliminacion.classList.add("active");
+      await refrescarDatosAlCambiarSeccion("eliminacion");
+    }
 
-  if (seccion === "ranking") {
-    seccionRanking.classList.remove("hidden");
-    tabRanking.classList.add("active");
+    if (seccion === "resultados") {
+      seccionResultados.classList.remove("hidden");
+      tabResultados.classList.add("active");
+      await refrescarDatosAlCambiarSeccion("resultados");
+    }
 
-    cargarRankingSeleccionado();
-  }
+    if (seccion === "ranking") {
+      seccionRanking.classList.remove("hidden");
+      tabRanking.classList.add("active");
+      await refrescarDatosAlCambiarSeccion("ranking");
+    }
 
-  if (seccion === "informacion") {
-    seccionInformacion.classList.remove("hidden");
-    tabInformacion.classList.add("active");
-    configurarAcordeonesInformacion();
-  }
+    if (seccion === "informacion") {
+      seccionInformacion.classList.remove("hidden");
+      tabInformacion.classList.add("active");
+      configurarAcordeonesInformacion();
+    }
 
-  if (seccion === "admin") {
-    seccionAdmin?.classList.remove("hidden");
-    tabAdmin?.classList.add("active");
-    cargarAdminPartidos();
+    if (seccion === "admin") {
+      seccionAdmin?.classList.remove("hidden");
+      tabAdmin?.classList.add("active");
+      await refrescarDatosAlCambiarSeccion("admin");
+    }
+  } catch (error) {
+    console.error("[Navegación] No se pudo refrescar la sección:", seccion, error);
   }
 }
 
