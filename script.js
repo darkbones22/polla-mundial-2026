@@ -496,6 +496,11 @@ function ordenarPartidosPorFechaHora(listaPartidos) {
 }
 
 function renderizarPartidos() {
+  if (!contenedorPartidos) {
+    console.error("[Grupos] No existe el contenedor #partidos.");
+    return;
+  }
+
   contenedorPartidos.innerHTML = "";
 
   const partidosOrdenados = ordenarPartidosPorFechaHora(partidos);
@@ -2312,8 +2317,8 @@ function actualizarContadorEliminacion() {
   let completados = 0;
 
   llavesEliminacion.forEach((partido) => {
-    const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
+    const inputLocal = obtenerInputPorId(`${partido.id}_elim_local`);
+    const inputVisita = obtenerInputPorId(`${partido.id}_elim_visita`);
 
     if (!inputLocal || !inputVisita) return;
 
@@ -2386,8 +2391,16 @@ mostrarPollasDelParticipante(validacionCodigo);
       continue;
     }
 
-    const golesLocal = document.getElementById(`${partido.id}_local`).value;
-    const golesVisita = document.getElementById(`${partido.id}_visita`).value;
+    const inputLocal = obtenerInputPorId(`${partido.id}_local`);
+    const inputVisita = obtenerInputPorId(`${partido.id}_visita`);
+
+    if (!inputLocal || !inputVisita) {
+      console.warn("[Grupos] inputs no encontrados al guardar:", partido);
+      continue;
+    }
+
+    const golesLocal = inputLocal.value;
+    const golesVisita = inputVisita.value;
 
     const localVacio = golesLocal === "";
     const visitaVacia = golesVisita === "";
@@ -2488,12 +2501,16 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+function obtenerInputPorId(id) {
+  return document.getElementById(String(id || ""));
+}
+
 function actualizarContadorPronosticos() {
   let completados = 0;
 
   partidos.forEach((partido) => {
-    const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visita`);
+    const inputLocal = obtenerInputPorId(`${partido.id}_local`);
+    const inputVisita = obtenerInputPorId(`${partido.id}_visita`);
 
     if (!inputLocal || !inputVisita) return;
 
@@ -2589,8 +2606,8 @@ function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsu
 
 function recargarPronosticosGruposDesdeLocalStorage() {
   partidos.forEach((partido) => {
-    const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visita`);
+    const inputLocal = obtenerInputPorId(`${partido.id}_local`);
+    const inputVisita = obtenerInputPorId(`${partido.id}_visita`);
 
     if (inputLocal) {
       inputLocal.value = localStorage.getItem(crearClavePronostico(partido.id, "local")) || "";
@@ -2606,8 +2623,8 @@ function recargarPronosticosGruposDesdeLocalStorage() {
 
 function recargarPronosticosEliminacionDesdeLocalStorage() {
   llavesEliminacion.forEach((partido) => {
-    const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
+    const inputLocal = obtenerInputPorId(`${partido.id}_elim_local`);
+    const inputVisita = obtenerInputPorId(`${partido.id}_elim_visita`);
     const radiosClasifica = obtenerRadiosClasifica(partido.id);
 
     if (inputLocal) {
@@ -2644,8 +2661,8 @@ function limpiarFormulario() {
 
   // Limpiar fase de grupos
   partidos.forEach((partido) => {
-    const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visita`);
+    const inputLocal = obtenerInputPorId(`${partido.id}_local`);
+    const inputVisita = obtenerInputPorId(`${partido.id}_visita`);
 
     if (inputLocal) inputLocal.value = "";
     if (inputVisita) inputVisita.value = "";
@@ -2656,8 +2673,8 @@ function limpiarFormulario() {
 
   // Limpiar eliminación directa
   llavesEliminacion.forEach((partido) => {
-    const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
+    const inputLocal = obtenerInputPorId(`${partido.id}_elim_local`);
+    const inputVisita = obtenerInputPorId(`${partido.id}_elim_visita`);
     const radiosClasifica = obtenerRadiosClasifica(partido.id);
 
     if (inputLocal) inputLocal.value = "";
@@ -2743,8 +2760,16 @@ async function enviarEliminacion() {
     const localMostrado = partido.local || partido.localPlaceholder;
     const visitaMostrada = partido.visita || partido.visitaPlaceholder;
 
-    const golesLocal = document.getElementById(`${partido.id}_elim_local`).value;
-    const golesVisita = document.getElementById(`${partido.id}_elim_visita`).value;
+    const inputLocal = obtenerInputPorId(`${partido.id}_elim_local`);
+    const inputVisita = obtenerInputPorId(`${partido.id}_elim_visita`);
+
+    if (!inputLocal || !inputVisita) {
+      console.warn("[Eliminación] inputs no encontrados al guardar:", partido);
+      continue;
+    }
+
+    const golesLocal = inputLocal.value;
+    const golesVisita = inputVisita.value;
     const clasificaAutomatico = obtenerClasificadoAutomaticoEliminacion(
       partido,
       golesLocal,
@@ -2835,19 +2860,24 @@ async function enviarEliminacion() {
 }
 
 async function inicializarApp() {
+  console.info("[App] iniciando carga");
+  console.info("[App] api client disponible:", !!window.PollaApiClient);
+  console.info("[App] modo API:", window.PollaApiClient?.API_MODE);
   console.info("[Polla API] usando backend:", window.PollaApiClient?.NODE_API_BASE_URL);
   console.info("[Polla API] modo:", window.PollaApiClient?.API_MODE);
+
+  if (!window.PollaApiClient) {
+    throw new Error("No se cargó api-client.js.");
+  }
 
   limpiarClavesSesionAntiguasLocalStorage();
 
   const sesionGuardada = obtenerSesionGuardada();
+  const loginView = document.getElementById("loginView");
+  const appView = document.getElementById("appView");
 
-  if (sesionGuardada) {
-    document.getElementById("loginView").classList.add("hidden");
-  } else {
-    document.getElementById("appView").classList.add("hidden");
-    document.getElementById("loginView").classList.remove("hidden");
-  }
+  appView?.classList.add("hidden");
+  loginView?.classList.remove("hidden");
 
   const [cargaPartidos, cargaResultados, cargaResultadosEliminacion, cargaLlaves] = await Promise.allSettled([
     cargarPartidosConServidor(),
@@ -2929,5 +2959,10 @@ async function inicializarApp() {
 }
 
 // Iniciar página
-inicializarApp();
+inicializarApp().catch((error) => {
+  console.error("[App] error al iniciar:", error);
+  document.getElementById("appView")?.classList.add("hidden");
+  document.getElementById("loginView")?.classList.remove("hidden");
+  mostrarErrorCodigo("No se pudo cargar la app. Recarga la página e intenta nuevamente.");
+});
 
