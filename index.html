@@ -14,12 +14,12 @@
   <!-- PANTALLA DE INGRESO -->
   <main id="loginView" class="login-view">
     <section class="login-card">
-      <div class="badge">< Mundial 2026</div>
+      <div class="badge">Mundial 2026</div>
 
       <h1>Polla Mundial 2026</h1>
 
       <p>
-        Ingresa tu nombre y cdigo de participante para acceder a tus pronsticos,
+        Ingresa tu nombre y código de participante para acceder a tus pronósticos,
         rankings y pollas activas.
       </p>
 
@@ -27,11 +27,11 @@
       <input 
         type="text" 
         id="usuario" 
-        placeholder="Ej: Agustn" 
+        placeholder="Ej: Agustín" 
         autocomplete="name"
       />
 
-      <label for="codigoUsuario" class="second-label">Cdigo de participante</label>
+      <label for="codigoUsuario" class="second-label">Código de participante</label>
       <input 
         type="text" 
         id="codigoUsuario" 
@@ -40,7 +40,7 @@
       />
 
       <p class="user-help">
-        Usa siempre el mismo cdigo para editar tus pronsticos.
+        Usa siempre el mismo código para editar tus pronósticos.
       </p>
 
       <div id="infoPollas" class="pollas-info hidden"></div>
@@ -57,14 +57,14 @@
 
     <header class="app-header">
       <div class="header-title">
-        <div class="badge">< Mundial 2026</div>
+        <div class="badge">Mundial 2026</div>
         <h1>Polla Mundial 2026</h1>
         <p id="usuarioActivo"></p>
       </div>
 
       <div class="header-actions">
         <button class="small-button" onclick="limpiarFormulario()">
-          Limpiar pronsticos
+          Limpiar pronósticos
         </button>
 
         <section id="selectorPollaGlobalBox" class="global-polla-selector hidden">
@@ -98,11 +98,11 @@
 
     <nav class="main-menu">
       <button id="tabPronosticos" class="menu-button active" onclick="mostrarSeccion('pronosticos')">
-        Pronsticos Fase de grupos
+        Pronósticos fase de grupos
       </button>
 
       <button id="tabEliminacion" class="menu-button" onclick="mostrarSeccion('eliminacion')">
-        Pronstico Fase de eliminacin
+        Pronósticos fase de eliminación
       </button>
 
       <button id="tabRanking" class="menu-button" onclick="mostrarSeccion('ranking')">
@@ -114,15 +114,15 @@
       </button>
 
       <button id="tabInformacion" class="menu-button" onclick="mostrarSeccion('informacion')">
-        Informacin
+        Información
       </button>
     </nav>
 
-    <!-- SECCIN PRONSTICOS -->
+    <!-- SECCIÓN PRONÓSTICOS -->
     <section id="seccionPronosticos" class="page-section">
 
       <section class="progress-card">
-        <p id="contadorPronosticos">Pronsticos completados: 0 de 72</p>
+        <p id="contadorPronosticos">Pronósticos completados: 0 de 72</p>
       </section>
 
       <section id="partidos" class="matches"></section>
@@ -142,16 +142,16 @@
 
     </section>
 
-    <!-- SECCIN RESULTADOS -->
+    <!-- SECCIÓN RESULTADOS -->
     <section id="seccionResultados" class="page-section hidden">
       <section id="resultadosGrupos" class="matches"></section>
     </section>
 
-    <!-- SECCIN ELIMINACIN -->
+    <!-- SECCIÓN ELIMINACIÓN -->
     <section id="seccionEliminacion" class="page-section hidden">
 
       <section class="progress-card">
-        <p id="contadorEliminacion">Pronsticos completados: 0 de 32</p>
+        <p id="contadorEliminacion">Pronósticos completados: 0 de 32</p>
       </section>
 
       <section id="partidosEliminacion" class="matches"></section>
@@ -159,19 +159,19 @@
       <div class="save-bar">
         <div class="save-bar-content">
           <div class="save-text">
-            <strong>Eliminacin directa</strong>
-            <span>Recuerda elegir tambin quin clasifica.</span>
+            <strong>Eliminación directa</strong>
+            <span>Recuerda elegir también quién clasifica.</span>
           </div>
 
           <button id="btnEnviarEliminacion" class="save-button" onclick="enviarEliminacion()">
-            Guardar eliminacin
+            Guardar eliminación
           </button>
         </div>
       </div>
 
     </section>
 
-    <!-- SECCIN RANKING -->
+    <!-- SECCIÓN RANKING -->
     <section id="seccionRanking" class="page-section hidden">
       <section class="ranking-card">
         <h2>Ranking</h2>
@@ -191,42 +191,42 @@
           </button>
 
           <button id="rankingEliminacionBtn" class="ranking-tab" onclick="cambiarTipoRanking('eliminacion')">
-            Eliminacin
+            Eliminación
           </button>
         </div>
 
         <div id="rankingContent" class="ranking-placeholder">
-          Selecciona una polla para ver el ranking <
+          Selecciona una polla para ver el ranking
         </div>
       </section>
     </section>
 
-    <!-- SECCI?N INFORMACI?N -->
+    <!-- SECCIÓN INFORMACIÓN -->
     <section id="seccionInformacion" class="page-section hidden">
       <section class="info-section">
         <div class="info-header">
-          <h2>Informacin de la polla</h2>
-          <p>Revisa cmo participar, cmo se calculan los puntos y qu significa cada estado.</p>
+          <h2>Información de la polla</h2>
+          <p>Revisa cómo participar, cómo se calculan los puntos y qué significa cada estado.</p>
         </div>
 
         <div class="info-grid">
           <article class="info-card info-card-hero">
-            <h3>En qu consiste?</h3>
-            <p>La polla consiste en predecir los resultados de los partidos del Mundial 2026. Cada participante completa sus pronsticos y suma puntos segn sus aciertos. El ranking se actualiza de acuerdo con los resultados reales ingresados en la app.</p>
+            <h3>¿En qué consiste?</h3>
+            <p>La polla consiste en predecir los resultados de los partidos del Mundial 2026. Cada participante completa sus pronósticos y suma puntos según sus aciertos. El ranking se actualiza de acuerdo con los resultados reales ingresados en la app.</p>
           </article>
 
           <article class="info-card info-card-phase">
             <h3>Fase de grupos</h3>
-            <p>En la fase de grupos debes predecir el marcador de cada partido. Puedes editar tus pronsticos mientras el partido est disponible. Cuando el partido se cierre, tu pronstico queda bloqueado.</p>
+            <p>En la fase de grupos debes predecir el marcador de cada partido. Puedes editar tus pronósticos mientras el partido está disponible. Cuando el partido se cierre, tu pronóstico queda bloqueado.</p>
           </article>
 
           <article class="info-card info-card-phase">
-            <h3>Fase de eliminacin</h3>
-            <p>En la fase de eliminacin tambin debes predecir el marcador. Si predices un ganador, la app asigna automticamente que ese equipo clasifica. Si predices un empate, debers elegir manualmente qu equipo clasifica.</p>
+            <h3>Fase de eliminación</h3>
+            <p>En la fase de eliminación también debes predecir el marcador. Si predices un ganador, la app asigna automáticamente que ese equipo clasifica. Si predices un empate, deberás elegir manualmente qué equipo clasifica.</p>
           </article>
 
           <article class="info-card info-card-score">
-            <h3>Cmo se ganan puntos?</h3>
+            <h3>¿Cómo se ganan puntos?</h3>
             <div class="info-score-grid">
               <div class="info-score-box">
                 <strong>Fase de grupos</strong>
@@ -241,43 +241,43 @@
               </div>
 
               <div class="info-score-box">
-                <strong>Fase de eliminacin</strong>
+                <strong>Fase de eliminación</strong>
                 <ul>
                   <li>Resultado exacto / pleno: 10 puntos.</li>
                   <li>Acertar ganador o empate: 3 puntos.</li>
                   <li>Acertar goles del local: 2 puntos.</li>
                   <li>Acertar goles del visitante: 2 puntos.</li>
                   <li>Acertar diferencia de gol: 1 punto.</li>
-                  <li>Acertar quin clasifica: 3 puntos.</li>
+                  <li>Acertar quién clasifica: 3 puntos.</li>
                 </ul>
-                <p>Si el marcador es exacto, suma 10 puntos y puede sumar 3 ms si tambin acierta quin clasifica.</p>
+                <p>Si el marcador es exacto, suma 10 puntos y puede sumar 3 más si también acierta quién clasifica.</p>
               </div>
             </div>
           </article>
 
           <article class="info-card">
             <h3>Ranking</h3>
-            <p>El ranking muestra el puntaje acumulado de cada participante. Puedes revisar el ranking total, el ranking de fase de grupos y el ranking de fase de eliminacin.</p>
-            <p>En Total, Grupos y Eliminacin puedes hacer click en cada participante para ver el detalle de sus puntos.</p>
+            <p>El ranking muestra el puntaje acumulado de cada participante. Puedes revisar el ranking total, el ranking de fase de grupos y el ranking de fase de eliminación.</p>
+            <p>En Total, Grupos y Eliminación puedes hacer click en cada participante para ver el detalle de sus puntos.</p>
           </article>
 
           <article class="info-card">
             <h3>Estados de partidos</h3>
             <div class="status-guide">
               <span class="match-status disponible">Disponible</span>
-              <p>Puedes editar tu pronstico.</p>
+              <p>Puedes editar tu pronóstico.</p>
               <span class="match-status bloqueado">Cerrado</span>
               <p>El partido ya no se puede editar.</p>
-              <span class="match-status pendiente"> Pendiente</span>
-              <p>El partido an no est disponible o falta informacin.</p>
-              <span class="match-status finalizado">< Finalizado</span>
+              <span class="match-status pendiente">Pendiente</span>
+              <p>El partido aún no está disponible o falta información.</p>
+              <span class="match-status finalizado">Finalizado</span>
               <p>El resultado real ya fue ingresado.</p>
             </div>
           </article>
 
           <article class="info-card">
-            <h3>Guardar pronsticos</h3>
-            <p>Recuerda guardar tus pronsticos antes de salir. En las secciones de grupos y eliminacin encontrars el botn para guardar tus cambios.</p>
+            <h3>Guardar pronósticos</h3>
+            <p>Recuerda guardar tus pronósticos antes de salir. En las secciones de grupos y eliminación encontrarás el botón para guardar tus cambios.</p>
           </article>
         </div>
       </section>

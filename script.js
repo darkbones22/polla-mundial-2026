@@ -572,10 +572,10 @@ function renderizarPartidos() {
     `;
 
     const inputLocal = tarjeta.querySelector(`#${partido.id}_local`);
-    const inputVisita = tarjeta.querySelector(`#${partido.id}_visit`);
+    const inputVisita = tarjeta.querySelector(`#${partido.id}_visita`);
 
     inputLocal.value = localStorage.getItem(crearClavePronostico(partido.id, "local")) || "";
-    inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visit")) || "";
+    inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visita")) || "";
 
     if (!bloqueado) {
         inputLocal.addEventListener("input", () => {
@@ -584,7 +584,7 @@ function renderizarPartidos() {
         });
 
         inputVisita.addEventListener("input", () => {
-            localStorage.setItem(crearClavePronostico(partido.id, "visit"), inputVisita.value);
+            localStorage.setItem(crearClavePronostico(partido.id, "visita"), inputVisita.value);
             actualizarContadorPronosticos();
         });
     }
@@ -798,7 +798,7 @@ function mostrarDetallePartido(panel, respuesta) {
   const nombrePolla = respuesta.polla ? respuesta.polla.nombre : obtenerNombrePollaPorId(obtenerPollaGlobalSeleccionada());
   const resultadoFinalizado = respuesta.resultadoFinalizado !== false;
   const local = obtenerNombreEquipo(partido.local || partido.localPlaceholder || "Local");
-  const visita = obtenerNombreEquipo(partido.visita || partido.visitaPlaceholder || "Visit");
+  const visita = obtenerNombreEquipo(partido.visita || partido.visitaPlaceholder || "Visita");
   const encabezadoPartido = resultadoFinalizado
     ? `${partido.golesLocalReal} - ${partido.golesVisitaReal}`
     : "vs";
@@ -2257,7 +2257,7 @@ function renderizarEliminacion() {
     const radiosClasifica = tarjeta.querySelectorAll('input[type="radio"]');
 
     inputLocal.value = localStorage.getItem(crearClaveEliminacion(partido.id, "local")) || "";
-    inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visit")) || "";
+    inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
 
     const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasific"));
 
@@ -2277,7 +2277,7 @@ function renderizarEliminacion() {
       });
 
       inputVisita.addEventListener("input", () => {
-        localStorage.setItem(crearClaveEliminacion(partido.id, "visit"), inputVisita.value);
+        localStorage.setItem(crearClaveEliminacion(partido.id, "visita"), inputVisita.value);
         actualizarClasificaEliminacion(partido, tarjeta);
         actualizarContadorEliminacion();
       });
@@ -2301,7 +2301,7 @@ function actualizarContadorEliminacion() {
 
   llavesEliminacion.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visit`);
+    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
 
     if (!inputLocal || !inputVisita) return;
 
@@ -2375,7 +2375,7 @@ mostrarPollasDelParticipante(validacionCodigo);
     }
 
     const golesLocal = document.getElementById(`${partido.id}_local`).value;
-    const golesVisita = document.getElementById(`${partido.id}_visit`).value;
+    const golesVisita = document.getElementById(`${partido.id}_visita`).value;
 
     const localVacio = golesLocal === "";
     const visitaVacia = golesVisita === "";
@@ -2481,7 +2481,7 @@ function actualizarContadorPronosticos() {
 
   partidos.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visit`);
+    const inputVisita = document.getElementById(`${partido.id}_visita`);
 
     if (!inputLocal || !inputVisita) return;
 
@@ -2576,14 +2576,14 @@ function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsu
 function recargarPronosticosGruposDesdeLocalStorage() {
   partidos.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visit`);
+    const inputVisita = document.getElementById(`${partido.id}_visita`);
 
     if (inputLocal) {
       inputLocal.value = localStorage.getItem(crearClavePronostico(partido.id, "local")) || "";
     }
 
     if (inputVisita) {
-      inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visit")) || "";
+      inputVisita.value = localStorage.getItem(crearClavePronostico(partido.id, "visita")) || "";
     }
   });
 
@@ -2593,7 +2593,7 @@ function recargarPronosticosGruposDesdeLocalStorage() {
 function recargarPronosticosEliminacionDesdeLocalStorage() {
   llavesEliminacion.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visit`);
+    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
     const radiosClasifica = obtenerRadiosClasifica(partido.id);
 
     if (inputLocal) {
@@ -2601,7 +2601,7 @@ function recargarPronosticosEliminacionDesdeLocalStorage() {
     }
 
     if (inputVisita) {
-      inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visit")) || "";
+      inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
     }
 
     const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasific")) || "";
@@ -2631,19 +2631,19 @@ function limpiarFormulario() {
   // Limpiar fase de grupos
   partidos.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_local`);
-    const inputVisita = document.getElementById(`${partido.id}_visit`);
+    const inputVisita = document.getElementById(`${partido.id}_visita`);
 
     if (inputLocal) inputLocal.value = "";
     if (inputVisita) inputVisita.value = "";
 
     localStorage.removeItem(crearClavePronostico(partido.id, "local"));
-    localStorage.removeItem(crearClavePronostico(partido.id, "visit"));
+    localStorage.removeItem(crearClavePronostico(partido.id, "visita"));
   });
 
   // Limpiar eliminación directa
   llavesEliminacion.forEach((partido) => {
     const inputLocal = document.getElementById(`${partido.id}_elim_local`);
-    const inputVisita = document.getElementById(`${partido.id}_elim_visit`);
+    const inputVisita = document.getElementById(`${partido.id}_elim_visita`);
     const radiosClasifica = obtenerRadiosClasifica(partido.id);
 
     if (inputLocal) inputLocal.value = "";
@@ -2661,14 +2661,14 @@ function limpiarFormulario() {
     }
 
     localStorage.removeItem(crearClaveEliminacion(partido.id, "local"));
-    localStorage.removeItem(crearClaveEliminacion(partido.id, "visit"));
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "visita"));
     localStorage.removeItem(crearClaveEliminacion(partido.id, "clasific"));
   });
 
   actualizarContadorPronosticos();
   actualizarContadorEliminacion();
 
-  alert("Pronósticos limpiados en este dispositivo ?");
+  alert("Pronósticos limpiados en este dispositivo.");
 }
 
 async function enviarEliminacion() {
@@ -2730,7 +2730,7 @@ async function enviarEliminacion() {
     const visitaMostrada = partido.visita || partido.visitaPlaceholder;
 
     const golesLocal = document.getElementById(`${partido.id}_elim_local`).value;
-    const golesVisita = document.getElementById(`${partido.id}_elim_visit`).value;
+    const golesVisita = document.getElementById(`${partido.id}_elim_visita`).value;
     const clasificaAutomatico = obtenerClasificadoAutomaticoEliminacion(
       partido,
       golesLocal,
