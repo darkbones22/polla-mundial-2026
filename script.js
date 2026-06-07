@@ -1822,10 +1822,6 @@ function renderizarAdminUsuarios() {
     const pollas = participante.pollas || [];
     const pollasIds = pollas.map((polla) => polla.id);
     const expandido = usuarioAdminExpandidoId === participante.id;
-    const badgesPollas = pollas.length
-      ? pollas.map((polla) => `<span class="admin-tag">${escapeHTML(polla.nombre)}</span>`).join("")
-      : `<span class="admin-muted">Sin pollas asignadas</span>`;
-
     return `
       <article class="admin-entity-card compact ${expandido ? "expanded" : ""}" data-admin-user-id="${escapeHTML(participante.id)}">
         <button class="admin-entity-summary" type="button" onclick="toggleEditarAdminUsuario('${escapeHTML(participante.id)}')">
@@ -1839,8 +1835,6 @@ function renderizarAdminUsuarios() {
         </button>
 
         ${expandido ? `
-          <div class="admin-tag-list compact">${badgesPollas}</div>
-
           <div class="admin-edit-panel">
             <div class="admin-form-grid">
               <label>
