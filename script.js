@@ -1856,14 +1856,9 @@ function renderizarAdminUsuarios() {
               <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin(pollasIds)}</div>
             </div>
 
-            <div class="admin-action-row">
-              <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('${escapeHTML(participante.id)}')">
-                Guardar usuario
-              </button>
-              <button class="admin-secondary-button" type="button" onclick="guardarAdminUsuario('${escapeHTML(participante.id)}')">
-                Guardar pollas
-              </button>
-            </div>
+            <button class="admin-save-button compact" type="button" onclick="guardarAdminUsuario('${escapeHTML(participante.id)}')">
+              Guardar cambios
+            </button>
           </div>
         ` : ""}
       </article>
@@ -1973,8 +1968,6 @@ async function guardarAdminUsuario(id) {
 
     if (esNuevo) {
       mostrarFeedbackAdmin("Usuario creado.", "success");
-    } else if (cambiaronPollas) {
-      mostrarFeedbackAdmin("Pollas actualizadas.", "success");
     } else {
       mostrarFeedbackAdmin("Usuario actualizado.", "success");
     }
