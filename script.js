@@ -1518,6 +1518,12 @@ function manejarErrorAdmin(respuesta) {
     return true;
   }
 
+  if (respuesta?.status === 404) {
+    console.warn("[Admin] ruta no encontrada. Es probable que Render no haya redeployado las rutas admin nuevas.", respuesta);
+    mostrarFeedbackAdmin("No se encontró la ruta admin. Revisa si Render ya redeployó el backend.", "error");
+    return true;
+  }
+
   return false;
 }
 
@@ -1546,17 +1552,45 @@ function obtenerOpcionesPollasAdmin(pollasSeleccionadas = []) {
   `).join("");
 }
 
-function mostrarPanelAdmin(subtab) {
-  ["resultados", "usuarios", "pollas"].forEach((item) => {
-    const boton = document.getElementById(`adminSubtab${item.charAt(0).toUpperCase()}${item.slice(1)}`);
-    const panel = document.getElementById(`adminPanel${item.charAt(0).toUpperCase()}${item.slice(1)}`);
+function normalizarSubseccionAdmin(seccion) {
+  return ["resultados", "usuarios", "pollas"].includes(seccion) ? seccion : "resultados";
+}
 
-    boton?.classList.toggle("active", item === subtab);
-    panel?.classList.toggle("hidden", item !== subtab);
+function obtenerConfigSubseccionesAdmin() {
+  return {
+    resultados: {
+      boton: document.getElementById("adminSubtabResultados"),
+      panel: document.getElementById("adminPanelResultados")
+    },
+    usuarios: {
+      boton: document.getElementById("adminSubtabUsuarios"),
+      panel: document.getElementById("adminPanelUsuarios")
+    },
+    pollas: {
+      boton: document.getElementById("adminSubtabPollas"),
+      panel: document.getElementById("adminPanelPollas")
+    }
+  };
+}
+
+function mostrarPanelAdmin(subtab) {
+  const subtabNormalizada = normalizarSubseccionAdmin(subtab);
+  const config = obtenerConfigSubseccionesAdmin();
+
+  Object.entries(config).forEach(([item, elementos]) => {
+    const activo = item === subtabNormalizada;
+
+    elementos.boton?.classList.toggle("active", activo);
+    elementos.boton?.setAttribute("aria-selected", activo ? "true" : "false");
+    elementos.panel?.classList.toggle("hidden", !activo);
   });
 }
 
-async function cambiarSubtabAdmin(subtab) {
+async function cambiarSubseccionAdmin(seccion) {
+  const subtab = normalizarSubseccionAdmin(seccion);
+
+  console.info("[Admin] subtab:", subtab);
+
   if (!usuarioAdminActual) {
     mostrarFeedbackAdmin("No autorizado.", "error");
     return;
@@ -1578,6 +1612,19 @@ async function cambiarSubtabAdmin(subtab) {
   if (subtab === "pollas") {
     await cargarAdminPollas();
   }
+}
+
+async function cambiarSubtabAdmin(subtab) {
+  return cambiarSubseccionAdmin(subtab);
+}
+
+function inicializarSubtabsAdmin() {
+  document.querySelectorAll("[data-admin-subtab]").forEach((boton) => {
+    boton.addEventListener("click", (event) => {
+      event.preventDefault();
+      cambiarSubseccionAdmin(boton.dataset.adminSubtab);
+    });
+  });
 }
 
 async function refrescarPollasUsuarioActualDesdeAdmin() {
@@ -1706,7 +1753,13 @@ async function cargarAdminUsuarios() {
     return;
   }
 
+  const contenedor = document.getElementById("adminUsuariosLista");
+
   mostrarFeedbackAdmin("Cargando usuarios...", "info");
+  renderizarAdminUsuariosFormulario();
+  if (contenedor) {
+    contenedor.innerHTML = `<div class="admin-empty">Cargando usuarios...</div>`;
+  }
 
   try {
     const [respuestaParticipantes, respuestaPollas] = await Promise.all([
@@ -1714,9 +1767,15 @@ async function cargarAdminUsuarios() {
       window.PollaApiClient.apiAdminObtenerPollas()
     ]);
 
+    console.info("[Admin Usuarios] participantes:", respuestaParticipantes);
+    console.info("[Admin Usuarios] pollas:", respuestaPollas);
+
     if (!respuestaParticipantes.ok) {
       if (!manejarErrorAdmin(respuestaParticipantes)) {
         mostrarFeedbackAdmin(respuestaParticipantes.error || "Error al cargar usuarios.", "error");
+      }
+      if (contenedor) {
+        contenedor.innerHTML = `<div class="admin-empty">No se pudieron cargar los usuarios.</div>`;
       }
       return;
     }
@@ -1724,6 +1783,9 @@ async function cargarAdminUsuarios() {
     if (!respuestaPollas.ok) {
       if (!manejarErrorAdmin(respuestaPollas)) {
         mostrarFeedbackAdmin(respuestaPollas.error || "Error al cargar pollas.", "error");
+      }
+      if (contenedor) {
+        contenedor.innerHTML = `<div class="admin-empty">No se pudieron cargar las pollas para asignar usuarios.</div>`;
       }
       return;
     }
@@ -1735,6 +1797,9 @@ async function cargarAdminUsuarios() {
   } catch (error) {
     console.error(error);
     mostrarFeedbackAdmin("Error al cargar usuarios.", "error");
+    if (contenedor) {
+      contenedor.innerHTML = `<div class="admin-empty">No se pudieron cargar los usuarios.</div>`;
+    }
   }
 }
 
@@ -1877,14 +1942,25 @@ async function cargarAdminPollas() {
     return;
   }
 
+  const contenedor = document.getElementById("adminPollasLista");
+
   mostrarFeedbackAdmin("Cargando pollas...", "info");
+  renderizarAdminPollasFormulario();
+  if (contenedor) {
+    contenedor.innerHTML = `<div class="admin-empty">Cargando pollas...</div>`;
+  }
 
   try {
     const respuesta = await window.PollaApiClient.apiAdminObtenerPollas();
 
+    console.info("[Admin Pollas] respuesta:", respuesta);
+
     if (!respuesta.ok) {
       if (!manejarErrorAdmin(respuesta)) {
         mostrarFeedbackAdmin(respuesta.error || "Error al cargar pollas.", "error");
+      }
+      if (contenedor) {
+        contenedor.innerHTML = `<div class="admin-empty">No se pudieron cargar las pollas.</div>`;
       }
       return;
     }
@@ -1895,6 +1971,9 @@ async function cargarAdminPollas() {
   } catch (error) {
     console.error(error);
     mostrarFeedbackAdmin("Error al cargar pollas.", "error");
+    if (contenedor) {
+      contenedor.innerHTML = `<div class="admin-empty">No se pudieron cargar las pollas.</div>`;
+    }
   }
 }
 
@@ -3341,6 +3420,8 @@ document.addEventListener("keydown", (event) => {
     cerrarDropdownPollaGlobal();
   }
 });
+
+inicializarSubtabsAdmin();
 
 function obtenerInputPorId(id) {
   return document.getElementById(String(id || ""));

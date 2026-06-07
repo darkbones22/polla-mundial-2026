@@ -2580,27 +2580,36 @@ body {
   font-weight: 900;
 }
 
-.admin-subtabs {
+.admin-section .admin-subtabs {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
+  margin: 0 0 14px;
+  padding: 4px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #eff6ff;
 }
 
-.admin-subtab {
+.admin-section .admin-subtab {
   min-height: 36px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 0 14px;
-  background: #ffffff;
-  color: #334155;
+  border: 0;
+  border-radius: 11px;
+  padding: 0 16px;
+  background: transparent;
+  color: #1e3a8a;
   font-weight: 900;
   cursor: pointer;
+  transition: background 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
 }
 
-.admin-subtab.active {
-  border-color: #1d4ed8;
-  background: #1d4ed8;
+.admin-section .admin-subtab:hover {
+  background: #dbeafe;
+}
+
+.admin-section .admin-subtab.active {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
   color: #ffffff;
 }
 
