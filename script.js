@@ -1710,6 +1710,43 @@ function renderizarAdminUsuariosFormulario() {
 
   if (!contenedor) return;
 
+  const formularioCrear = mostrarFormularioCrearUsuario
+    ? `
+      <article class="admin-form-card" data-admin-user-id="nuevo">
+        <div class="admin-form-heading compact">
+          <h3>Crear usuario</h3>
+          <p>El código se normaliza en minúsculas.</p>
+        </div>
+
+        <div class="admin-edit-panel">
+          <div class="admin-form-grid">
+            <label>
+              Nombre visible
+              <input class="admin-user-nombre" type="text" placeholder="Nombre Apellido" />
+            </label>
+            <label>
+              Código
+              <input class="admin-user-codigo" type="text" placeholder="codigo-1234" />
+            </label>
+            <label class="admin-switch">
+              <input class="admin-user-activo" type="checkbox" checked />
+              <span>Activo</span>
+            </label>
+          </div>
+
+          <div class="admin-checkbox-group">
+            <strong>Pollas asignadas</strong>
+            <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin()}</div>
+          </div>
+
+          <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('nuevo')">
+            Crear usuario
+          </button>
+        </div>
+      </article>
+    `
+    : "";
+
   contenedor.innerHTML = `
     <div class="admin-list-toolbar">
       <input
@@ -1720,42 +1757,10 @@ function renderizarAdminUsuariosFormulario() {
         oninput="actualizarFiltroAdminUsuarios(this.value)"
       />
       <button class="admin-secondary-button" type="button" onclick="toggleCrearAdminUsuario()">
-        ${mostrarFormularioCrearUsuario ? "Cerrar" : "Crear usuario"}
+        ${mostrarFormularioCrearUsuario ? "Cerrar" : "+ Crear usuario"}
       </button>
     </div>
-
-    <article class="admin-form-card ${mostrarFormularioCrearUsuario ? "" : "hidden"}" data-admin-user-id="nuevo">
-      <div class="admin-form-heading compact">
-        <h3>Crear usuario</h3>
-        <p>El código se normaliza en minúsculas.</p>
-      </div>
-
-      <div class="admin-edit-panel">
-        <div class="admin-form-grid">
-          <label>
-            Nombre visible
-            <input class="admin-user-nombre" type="text" placeholder="Nombre Apellido" />
-          </label>
-          <label>
-            Código
-            <input class="admin-user-codigo" type="text" placeholder="codigo-1234" />
-          </label>
-          <label class="admin-switch">
-            <input class="admin-user-activo" type="checkbox" checked />
-            <span>Activo</span>
-          </label>
-        </div>
-
-        <div class="admin-checkbox-group">
-          <strong>Pollas asignadas</strong>
-          <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin()}</div>
-        </div>
-
-        <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('nuevo')">
-          Crear usuario
-        </button>
-      </div>
-    </article>
+    ${formularioCrear}
   `;
 }
 
@@ -1809,7 +1814,7 @@ function renderizarAdminUsuarios() {
   }
 
   if (participantesFiltrados.length === 0) {
-    contenedor.innerHTML = `<div class="admin-empty">No hay usuarios para ese filtro.</div>`;
+    contenedor.innerHTML = `<div class="admin-empty">No se encontraron usuarios.</div>`;
     return;
   }
 

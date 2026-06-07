@@ -3449,7 +3449,7 @@ body {
 }
 
 .admin-form-card.hidden {
-  display: none;
+  display: none !important;
 }
 
 .admin-form-heading.compact {
@@ -3464,7 +3464,7 @@ body {
 
 .admin-entity-summary {
   display: grid;
-  grid-template-columns: minmax(170px, 1.4fr) minmax(95px, 0.8fr) auto auto auto;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(90px, 0.7fr) auto minmax(72px, auto) auto;
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -3504,6 +3504,13 @@ body {
 }
 
 .admin-edit-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #eff6ff;
   color: #1d4ed8;
   font-size: 12px;
   font-weight: 900;
@@ -3526,6 +3533,23 @@ body {
 .admin-action-row .admin-save-button,
 .admin-action-row .admin-secondary-button {
   flex: 1 1 180px;
+}
+
+.admin-switch input[type="checkbox"],
+.admin-checkbox-option input[type="checkbox"] {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 16px !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  margin: 0;
+  padding: 0;
+  accent-color: #1d4ed8;
+}
+
+.admin-switch {
+  justify-content: flex-start;
 }
 
 .admin-partido-card {
@@ -3572,6 +3596,7 @@ body {
   .admin-entity-summary {
     min-height: 42px;
     padding: 8px;
+    gap: 5px;
   }
 
   .admin-edit-panel {
