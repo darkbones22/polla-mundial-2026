@@ -325,6 +325,49 @@
     };
   }
 
+  async function apiAdminObtenerParticipantes() {
+    return llamarNodeApi("/api/admin/participantes");
+  }
+
+  async function apiAdminCrearParticipante(datos) {
+    return llamarNodeApi("/api/admin/participantes", {
+      method: "POST",
+      body: datos
+    });
+  }
+
+  async function apiAdminActualizarParticipante(id, datos) {
+    return llamarNodeApi(`/api/admin/participantes/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: datos
+    });
+  }
+
+  async function apiAdminActualizarPollasParticipante(id, pollas) {
+    return llamarNodeApi(`/api/admin/participantes/${encodeURIComponent(id)}/pollas`, {
+      method: "PUT",
+      body: { pollas }
+    });
+  }
+
+  async function apiAdminObtenerPollas() {
+    return llamarNodeApi("/api/admin/pollas");
+  }
+
+  async function apiAdminCrearPolla(datos) {
+    return llamarNodeApi("/api/admin/pollas", {
+      method: "POST",
+      body: datos
+    });
+  }
+
+  async function apiAdminActualizarPolla(id, datos) {
+    return llamarNodeApi(`/api/admin/pollas/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: datos
+    });
+  }
+
   global.PollaApiClient = {
     API_MODE,
     NODE_API_BASE_URL,
@@ -342,6 +385,13 @@
     apiObtenerRanking,
     apiObtenerDetallePartido,
     apiAdminObtenerPartidos,
-    apiAdminActualizarPartido
+    apiAdminActualizarPartido,
+    apiAdminObtenerParticipantes,
+    apiAdminCrearParticipante,
+    apiAdminActualizarParticipante,
+    apiAdminActualizarPollasParticipante,
+    apiAdminObtenerPollas,
+    apiAdminCrearPolla,
+    apiAdminActualizarPolla
   };
 })(window);

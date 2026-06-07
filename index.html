@@ -203,34 +203,59 @@
         <div class="admin-header">
           <div>
             <h2>Admin</h2>
-            <p>Resultados y estados de partidos.</p>
+            <p>Resultados, participantes y pollas.</p>
           </div>
           <span class="admin-badge">agu-1111</span>
         </div>
 
-        <div class="admin-toolbar">
-          <label>
-            Fase
-            <select id="adminTipoPartidos" onchange="cargarAdminPartidos()">
-              <option value="grupos">Grupos</option>
-              <option value="eliminacion">Eliminación</option>
-            </select>
-          </label>
-
-          <label>
-            Estado
-            <select id="adminFiltroEstado" onchange="renderizarAdminPartidos()">
-              <option value="">Todos</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Abierto">Abierto</option>
-              <option value="Cerrado">Cerrado</option>
-              <option value="Finalizado">Finalizado</option>
-            </select>
-          </label>
+        <div class="admin-subtabs" role="tablist" aria-label="Admin">
+          <button id="adminSubtabResultados" class="admin-subtab active" type="button" onclick="cambiarSubtabAdmin('resultados')">
+            Resultados
+          </button>
+          <button id="adminSubtabUsuarios" class="admin-subtab" type="button" onclick="cambiarSubtabAdmin('usuarios')">
+            Usuarios
+          </button>
+          <button id="adminSubtabPollas" class="admin-subtab" type="button" onclick="cambiarSubtabAdmin('pollas')">
+            Pollas
+          </button>
         </div>
 
         <div id="adminFeedback" class="admin-feedback hidden"></div>
-        <div id="adminPartidos" class="admin-partidos"></div>
+
+        <section id="adminPanelResultados" class="admin-panel">
+          <div class="admin-toolbar">
+            <label>
+              Fase
+              <select id="adminTipoPartidos" onchange="cargarAdminPartidos()">
+                <option value="grupos">Grupos</option>
+                <option value="eliminacion">Eliminación</option>
+              </select>
+            </label>
+
+            <label>
+              Estado
+              <select id="adminFiltroEstado" onchange="renderizarAdminPartidos()">
+                <option value="">Todos</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Abierto">Abierto</option>
+                <option value="Cerrado">Cerrado</option>
+                <option value="Finalizado">Finalizado</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="adminPartidos" class="admin-partidos"></div>
+        </section>
+
+        <section id="adminPanelUsuarios" class="admin-panel hidden">
+          <div id="adminUsuariosForm"></div>
+          <div id="adminUsuariosLista" class="admin-entity-list"></div>
+        </section>
+
+        <section id="adminPanelPollas" class="admin-panel hidden">
+          <div id="adminPollasForm"></div>
+          <div id="adminPollasLista" class="admin-entity-list"></div>
+        </section>
       </section>
     </section>
 

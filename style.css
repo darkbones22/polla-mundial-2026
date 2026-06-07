@@ -2580,13 +2580,42 @@ body {
   font-weight: 900;
 }
 
+.admin-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-subtab {
+  min-height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-subtab.active {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.admin-panel.hidden {
+  display: none;
+}
+
 .admin-toolbar {
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
 
 .admin-toolbar label,
-.admin-fields label {
+.admin-fields label,
+.admin-form-grid label {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2597,13 +2626,153 @@ body {
 
 .admin-toolbar select,
 .admin-fields select,
-.admin-fields input {
+.admin-fields input,
+.admin-form-grid input {
   min-height: 36px;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   background: #ffffff;
   color: #0f172a;
   font-weight: 800;
+}
+
+.admin-form-card,
+.admin-entity-card {
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid rgba(203, 213, 225, 0.74);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.admin-form-heading {
+  margin-bottom: 10px;
+}
+
+.admin-form-heading h3 {
+  margin: 0 0 3px;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.admin-form-heading p,
+.admin-muted {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(150px, 0.9fr) minmax(90px, 0.4fr);
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+.admin-form-grid input {
+  width: 100%;
+  padding: 0 10px;
+}
+
+.admin-switch {
+  align-items: center;
+  flex-direction: row !important;
+  min-height: 36px;
+}
+
+.admin-switch input {
+  min-height: auto;
+  width: auto;
+}
+
+.admin-checkbox-group {
+  margin: 8px 0 12px;
+}
+
+.admin-checkbox-group > strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #334155;
+  font-size: 12px;
+}
+
+.admin-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px;
+}
+
+.admin-checkbox-option {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  padding: 6px 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-checkbox-option input {
+  margin: 0;
+}
+
+.admin-entity-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-entity-main {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.admin-entity-main strong {
+  display: block;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.admin-status,
+.admin-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.admin-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-status.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.admin-tag {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .admin-toolbar select {
@@ -2757,6 +2926,10 @@ body {
   .admin-toolbar label,
   .admin-toolbar select,
   .admin-team-fields,
+  .admin-form-grid,
+  .admin-form-grid label,
+  .admin-form-grid input,
+  .admin-checkbox-grid,
   .admin-fields,
   .admin-fields label,
   .admin-fields select,
@@ -2765,6 +2938,11 @@ body {
   }
 
   .admin-team-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-grid,
+  .admin-checkbox-grid {
     grid-template-columns: 1fr;
   }
 

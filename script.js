@@ -899,7 +899,10 @@ let ultimoRankingCargado = [];
 let pollasUsuarioActual = [];
 let usuarioAdminActual = false;
 let adminTipoActual = "grupos";
+let adminSubtabActual = "resultados";
 let adminPartidosActuales = [];
+let adminParticipantesActuales = [];
+let adminPollasActuales = [];
 
 const CODIGO_ADMIN = "agu-1111";
 const ESTADOS_ADMIN = ["Pendiente", "Abierto", "Cerrado", "Finalizado"];
@@ -1518,6 +1521,418 @@ function manejarErrorAdmin(respuesta) {
   return false;
 }
 
+function obtenerPollasSeleccionadasAdmin(contenedor) {
+  return Array.from(contenedor.querySelectorAll(".admin-polla-check:checked"))
+    .map((checkbox) => checkbox.value);
+}
+
+function obtenerOpcionesPollasAdmin(pollasSeleccionadas = []) {
+  const seleccionadas = new Set(pollasSeleccionadas);
+
+  if (adminPollasActuales.length === 0) {
+    return `<p class="admin-muted">No hay pollas disponibles.</p>`;
+  }
+
+  return adminPollasActuales.map((polla) => `
+    <label class="admin-checkbox-option">
+      <input
+        class="admin-polla-check"
+        type="checkbox"
+        value="${escapeHTML(polla.id)}"
+        ${seleccionadas.has(polla.id) ? "checked" : ""}
+      />
+      <span>${escapeHTML(polla.nombre)}</span>
+    </label>
+  `).join("");
+}
+
+function mostrarPanelAdmin(subtab) {
+  ["resultados", "usuarios", "pollas"].forEach((item) => {
+    const boton = document.getElementById(`adminSubtab${item.charAt(0).toUpperCase()}${item.slice(1)}`);
+    const panel = document.getElementById(`adminPanel${item.charAt(0).toUpperCase()}${item.slice(1)}`);
+
+    boton?.classList.toggle("active", item === subtab);
+    panel?.classList.toggle("hidden", item !== subtab);
+  });
+}
+
+async function cambiarSubtabAdmin(subtab) {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  adminSubtabActual = subtab;
+  mostrarPanelAdmin(subtab);
+
+  if (subtab === "resultados") {
+    await cargarAdminPartidos();
+    return;
+  }
+
+  if (subtab === "usuarios") {
+    await cargarAdminUsuarios();
+    return;
+  }
+
+  if (subtab === "pollas") {
+    await cargarAdminPollas();
+  }
+}
+
+async function refrescarPollasUsuarioActualDesdeAdmin() {
+  try {
+    const respuesta = await window.PollaApiClient.apiObtenerPollas();
+
+    if (respuesta.ok) {
+      const pollas = respuesta.pollas || [];
+      mostrarResumenPollas(pollas);
+      llenarSelectorPollaGlobal(pollas);
+      llenarSelectorRanking(pollas);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function renderizarAdminUsuariosFormulario() {
+  const contenedor = document.getElementById("adminUsuariosForm");
+
+  if (!contenedor) return;
+
+  contenedor.innerHTML = `
+    <article class="admin-form-card" data-admin-user-id="nuevo">
+      <div class="admin-form-heading">
+        <h3>Crear usuario</h3>
+        <p>El código se normaliza en minúsculas.</p>
+      </div>
+
+      <div class="admin-form-grid">
+        <label>
+          Nombre visible
+          <input class="admin-user-nombre" type="text" placeholder="Nombre Apellido" />
+        </label>
+        <label>
+          Código
+          <input class="admin-user-codigo" type="text" placeholder="codigo-1234" />
+        </label>
+        <label class="admin-switch">
+          <input class="admin-user-activo" type="checkbox" checked />
+          <span>Activo</span>
+        </label>
+      </div>
+
+      <div class="admin-checkbox-group">
+        <strong>Pollas asignadas</strong>
+        <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin()}</div>
+      </div>
+
+      <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('nuevo')">
+        Crear usuario
+      </button>
+    </article>
+  `;
+}
+
+function renderizarAdminUsuarios() {
+  renderizarAdminUsuariosFormulario();
+
+  const contenedor = document.getElementById("adminUsuariosLista");
+
+  if (!contenedor) return;
+
+  if (!usuarioAdminActual) {
+    contenedor.innerHTML = `<div class="admin-empty">No autorizado.</div>`;
+    return;
+  }
+
+  if (adminParticipantesActuales.length === 0) {
+    contenedor.innerHTML = `<div class="admin-empty">No hay participantes.</div>`;
+    return;
+  }
+
+  contenedor.innerHTML = adminParticipantesActuales.map((participante) => {
+    const pollas = participante.pollas || [];
+    const pollasIds = pollas.map((polla) => polla.id);
+    const badgesPollas = pollas.length
+      ? pollas.map((polla) => `<span class="admin-tag">${escapeHTML(polla.nombre)}</span>`).join("")
+      : `<span class="admin-muted">Sin pollas asignadas</span>`;
+
+    return `
+      <article class="admin-entity-card" data-admin-user-id="${escapeHTML(participante.id)}">
+        <div class="admin-entity-main">
+          <div>
+            <span class="admin-partido-meta">${escapeHTML(participante.codigoLegacy || "")}</span>
+            <strong>${escapeHTML(participante.nombre || "")}</strong>
+          </div>
+          <span class="admin-status ${participante.activo ? "active" : "inactive"}">
+            ${participante.activo ? "Activo" : "Inactivo"}
+          </span>
+        </div>
+
+        <div class="admin-tag-list">${badgesPollas}</div>
+
+        <div class="admin-form-grid">
+          <label>
+            Nombre visible
+            <input class="admin-user-nombre" type="text" value="${escapeHTML(participante.nombre || "")}" />
+          </label>
+          <label>
+            Código
+            <input class="admin-user-codigo" type="text" value="${escapeHTML(participante.codigoLegacy || "")}" />
+          </label>
+          <label class="admin-switch">
+            <input class="admin-user-activo" type="checkbox" ${participante.activo ? "checked" : ""} />
+            <span>Activo</span>
+          </label>
+        </div>
+
+        <div class="admin-checkbox-group">
+          <strong>Pollas asignadas</strong>
+          <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin(pollasIds)}</div>
+        </div>
+
+        <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('${escapeHTML(participante.id)}')">
+          Guardar usuario
+        </button>
+      </article>
+    `;
+  }).join("");
+}
+
+async function cargarAdminUsuarios() {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  mostrarFeedbackAdmin("Cargando usuarios...", "info");
+
+  try {
+    const [respuestaParticipantes, respuestaPollas] = await Promise.all([
+      window.PollaApiClient.apiAdminObtenerParticipantes(),
+      window.PollaApiClient.apiAdminObtenerPollas()
+    ]);
+
+    if (!respuestaParticipantes.ok) {
+      if (!manejarErrorAdmin(respuestaParticipantes)) {
+        mostrarFeedbackAdmin(respuestaParticipantes.error || "Error al cargar usuarios.", "error");
+      }
+      return;
+    }
+
+    if (!respuestaPollas.ok) {
+      if (!manejarErrorAdmin(respuestaPollas)) {
+        mostrarFeedbackAdmin(respuestaPollas.error || "Error al cargar pollas.", "error");
+      }
+      return;
+    }
+
+    adminParticipantesActuales = respuestaParticipantes.participantes || [];
+    adminPollasActuales = respuestaPollas.pollas || [];
+    mostrarFeedbackAdmin("", "info");
+    renderizarAdminUsuarios();
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al cargar usuarios.", "error");
+  }
+}
+
+async function guardarAdminUsuario(id) {
+  const tarjeta = document.querySelector(`[data-admin-user-id="${CSS.escape(id)}"]`);
+
+  if (!tarjeta) return;
+
+  const datos = {
+    nombre: tarjeta.querySelector(".admin-user-nombre")?.value || "",
+    codigoLegacy: tarjeta.querySelector(".admin-user-codigo")?.value || "",
+    activo: Boolean(tarjeta.querySelector(".admin-user-activo")?.checked)
+  };
+  const pollas = obtenerPollasSeleccionadasAdmin(tarjeta);
+  const esNuevo = id === "nuevo";
+
+  mostrarFeedbackAdmin(esNuevo ? "Creando usuario..." : "Guardando usuario...", "info");
+
+  try {
+    const respuesta = esNuevo
+      ? await window.PollaApiClient.apiAdminCrearParticipante({ ...datos, pollas })
+      : await window.PollaApiClient.apiAdminActualizarParticipante(id, datos);
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "Error al guardar usuario.", "error");
+      }
+      return;
+    }
+
+    if (!esNuevo) {
+      const respuestaPollas = await window.PollaApiClient.apiAdminActualizarPollasParticipante(id, pollas);
+
+      if (!respuestaPollas.ok) {
+        if (!manejarErrorAdmin(respuestaPollas)) {
+          mostrarFeedbackAdmin(respuestaPollas.error || "Usuario guardado, pero falló la asignación de pollas.", "error");
+        }
+        return;
+      }
+    }
+
+    await cargarAdminUsuarios();
+    await refrescarPollasUsuarioActualDesdeAdmin();
+    mostrarFeedbackAdmin(esNuevo ? "Usuario creado." : "Usuario actualizado.", "success");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al guardar usuario.", "error");
+  }
+}
+
+function renderizarAdminPollasFormulario() {
+  const contenedor = document.getElementById("adminPollasForm");
+
+  if (!contenedor) return;
+
+  contenedor.innerHTML = `
+    <article class="admin-form-card" data-admin-polla-id="nueva">
+      <div class="admin-form-heading">
+        <h3>Crear polla</h3>
+        <p>El idLegacy se normaliza en minúsculas.</p>
+      </div>
+
+      <div class="admin-form-grid">
+        <label>
+          Nombre de polla
+          <input class="admin-polla-nombre" type="text" placeholder="Polla nueva" />
+        </label>
+        <label>
+          idLegacy
+          <input class="admin-polla-legacy" type="text" placeholder="polla-nueva-2026" />
+        </label>
+        <label class="admin-switch">
+          <input class="admin-polla-activa" type="checkbox" checked />
+          <span>Activa</span>
+        </label>
+      </div>
+
+      <button class="admin-save-button" type="button" onclick="guardarAdminPolla('nueva')">
+        Crear polla
+      </button>
+    </article>
+  `;
+}
+
+function renderizarAdminPollas() {
+  renderizarAdminPollasFormulario();
+
+  const contenedor = document.getElementById("adminPollasLista");
+
+  if (!contenedor) return;
+
+  if (!usuarioAdminActual) {
+    contenedor.innerHTML = `<div class="admin-empty">No autorizado.</div>`;
+    return;
+  }
+
+  if (adminPollasActuales.length === 0) {
+    contenedor.innerHTML = `<div class="admin-empty">No hay pollas.</div>`;
+    return;
+  }
+
+  contenedor.innerHTML = adminPollasActuales.map((polla) => `
+    <article class="admin-entity-card" data-admin-polla-id="${escapeHTML(polla.id)}">
+      <div class="admin-entity-main">
+        <div>
+          <span class="admin-partido-meta">${escapeHTML(polla.idLegacy || "")}</span>
+          <strong>${escapeHTML(polla.nombre || "")}</strong>
+          <p class="admin-muted">${escapeHTML(polla.cantidadParticipantes || 0)} participantes</p>
+        </div>
+        <span class="admin-status ${polla.activa ? "active" : "inactive"}">
+          ${polla.activa ? "Activa" : "Inactiva"}
+        </span>
+      </div>
+
+      <div class="admin-form-grid">
+        <label>
+          Nombre de polla
+          <input class="admin-polla-nombre" type="text" value="${escapeHTML(polla.nombre || "")}" />
+        </label>
+        <label>
+          idLegacy
+          <input class="admin-polla-legacy" type="text" value="${escapeHTML(polla.idLegacy || "")}" />
+        </label>
+        <label class="admin-switch">
+          <input class="admin-polla-activa" type="checkbox" ${polla.activa ? "checked" : ""} />
+          <span>Activa</span>
+        </label>
+      </div>
+
+      <button class="admin-save-button" type="button" onclick="guardarAdminPolla('${escapeHTML(polla.id)}')">
+        Guardar cambios
+      </button>
+    </article>
+  `).join("");
+}
+
+async function cargarAdminPollas() {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  mostrarFeedbackAdmin("Cargando pollas...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminObtenerPollas();
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "Error al cargar pollas.", "error");
+      }
+      return;
+    }
+
+    adminPollasActuales = respuesta.pollas || [];
+    mostrarFeedbackAdmin("", "info");
+    renderizarAdminPollas();
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al cargar pollas.", "error");
+  }
+}
+
+async function guardarAdminPolla(id) {
+  const tarjeta = document.querySelector(`[data-admin-polla-id="${CSS.escape(id)}"]`);
+
+  if (!tarjeta) return;
+
+  const datos = {
+    nombre: tarjeta.querySelector(".admin-polla-nombre")?.value || "",
+    idLegacy: tarjeta.querySelector(".admin-polla-legacy")?.value || "",
+    activa: Boolean(tarjeta.querySelector(".admin-polla-activa")?.checked)
+  };
+  const esNueva = id === "nueva";
+
+  mostrarFeedbackAdmin(esNueva ? "Creando polla..." : "Guardando polla...", "info");
+
+  try {
+    const respuesta = esNueva
+      ? await window.PollaApiClient.apiAdminCrearPolla(datos)
+      : await window.PollaApiClient.apiAdminActualizarPolla(id, datos);
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "Error al guardar polla.", "error");
+      }
+      return;
+    }
+
+    await cargarAdminPollas();
+    await refrescarPollasUsuarioActualDesdeAdmin();
+    mostrarFeedbackAdmin(esNueva ? "Polla creada." : "Polla actualizada.", "success");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al guardar polla.", "error");
+  }
+}
+
 function obtenerNombreAdminPartido(partido, lado) {
   if (lado === "local") {
     return partido.equipoLocal || partido.local || partido.placeholderLocal || partido.localPlaceholder || "Local";
@@ -1806,6 +2221,18 @@ async function refrescarDatosAlCambiarSeccion(seccion) {
   }
 
   if (seccion === "admin") {
+    mostrarPanelAdmin(adminSubtabActual);
+
+    if (adminSubtabActual === "usuarios") {
+      await cargarAdminUsuarios();
+      return;
+    }
+
+    if (adminSubtabActual === "pollas") {
+      await cargarAdminPollas();
+      return;
+    }
+
     await cargarAdminPartidos();
   }
 }
@@ -1981,6 +2408,10 @@ function cambiarUsuario() {
   limpiarSesionActual();
   usuarioAdminActual = false;
   adminPartidosActuales = [];
+  adminParticipantesActuales = [];
+  adminPollasActuales = [];
+  adminSubtabActual = "resultados";
+  mostrarPanelAdmin(adminSubtabActual);
   actualizarVisibilidadAdmin(null);
 
   document.getElementById("codigoUsuario").value = "";
