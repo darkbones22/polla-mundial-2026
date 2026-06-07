@@ -903,6 +903,8 @@ let adminSubtabActual = "resultados";
 let adminPartidosActuales = [];
 let adminParticipantesActuales = [];
 let adminPollasActuales = [];
+let adminSubtabsInicializadas = false;
+let adminCargaSubtabActual = 0;
 
 const CODIGO_ADMIN = "agu-1111";
 const ESTADOS_ADMIN = ["Pendiente", "Abierto", "Cerrado", "Finalizado"];
@@ -1588,8 +1590,11 @@ function mostrarPanelAdmin(subtab) {
 
 async function cambiarSubseccionAdmin(seccion) {
   const subtab = normalizarSubseccionAdmin(seccion);
+  const idCarga = adminCargaSubtabActual + 1;
+  adminCargaSubtabActual = idCarga;
 
   console.info("[Admin] subtab:", subtab);
+  console.info("[Admin] renderizando subtab:", subtab);
 
   if (!usuarioAdminActual) {
     mostrarFeedbackAdmin("No autorizado.", "error");
@@ -1599,18 +1604,25 @@ async function cambiarSubseccionAdmin(seccion) {
   adminSubtabActual = subtab;
   mostrarPanelAdmin(subtab);
 
-  if (subtab === "resultados") {
-    await cargarAdminPartidos();
-    return;
-  }
+  try {
+    if (subtab === "resultados") {
+      await cargarAdminPartidos();
+      return;
+    }
 
-  if (subtab === "usuarios") {
-    await cargarAdminUsuarios();
-    return;
-  }
+    if (subtab === "usuarios") {
+      await cargarAdminUsuarios();
+      return;
+    }
 
-  if (subtab === "pollas") {
-    await cargarAdminPollas();
+    if (subtab === "pollas") {
+      await cargarAdminPollas();
+    }
+  } catch (error) {
+    if (idCarga === adminCargaSubtabActual) {
+      console.error(error);
+      mostrarFeedbackAdmin("No se pudieron cargar los datos.", "error");
+    }
   }
 }
 
@@ -1619,12 +1631,57 @@ async function cambiarSubtabAdmin(subtab) {
 }
 
 function inicializarSubtabsAdmin() {
-  document.querySelectorAll("[data-admin-subtab]").forEach((boton) => {
-    boton.addEventListener("click", (event) => {
-      event.preventDefault();
-      cambiarSubseccionAdmin(boton.dataset.adminSubtab);
-    });
+  if (adminSubtabsInicializadas) return;
+
+  const contenedor = document.querySelector(".admin-subtabs");
+
+  if (!contenedor) return;
+
+  adminSubtabsInicializadas = true;
+
+  contenedor.addEventListener("click", (event) => {
+    const boton = event.target.closest("[data-admin-subtab]");
+
+    if (!boton || !contenedor.contains(boton)) return;
+
+    event.preventDefault();
+
+    const seccion = boton.dataset.adminSubtab;
+
+    console.info("[Admin] click subtab:", seccion);
+    cambiarSubseccionAdmin(seccion);
   });
+}
+
+async function recargarAdminUsuariosDatos() {
+  const [respuestaParticipantes, respuestaPollas] = await Promise.all([
+    window.PollaApiClient.apiAdminObtenerParticipantes(),
+    window.PollaApiClient.apiAdminObtenerPollas()
+  ]);
+
+  console.info("[Admin Usuarios] participantes:", respuestaParticipantes);
+  console.info("[Admin Usuarios] pollas:", respuestaPollas);
+
+  if (!respuestaParticipantes.ok) {
+    return {
+      ok: false,
+      respuesta: respuestaParticipantes,
+      mensaje: "No se pudieron cargar los usuarios."
+    };
+  }
+
+  if (!respuestaPollas.ok) {
+    return {
+      ok: false,
+      respuesta: respuestaPollas,
+      mensaje: "No se pudieron cargar las pollas para asignar usuarios."
+    };
+  }
+
+  adminParticipantesActuales = respuestaParticipantes.participantes || [];
+  adminPollasActuales = respuestaPollas.pollas || [];
+
+  return { ok: true };
 }
 
 async function refrescarPollasUsuarioActualDesdeAdmin() {
@@ -1762,36 +1819,18 @@ async function cargarAdminUsuarios() {
   }
 
   try {
-    const [respuestaParticipantes, respuestaPollas] = await Promise.all([
-      window.PollaApiClient.apiAdminObtenerParticipantes(),
-      window.PollaApiClient.apiAdminObtenerPollas()
-    ]);
+    const resultadoCarga = await recargarAdminUsuariosDatos();
 
-    console.info("[Admin Usuarios] participantes:", respuestaParticipantes);
-    console.info("[Admin Usuarios] pollas:", respuestaPollas);
-
-    if (!respuestaParticipantes.ok) {
-      if (!manejarErrorAdmin(respuestaParticipantes)) {
-        mostrarFeedbackAdmin(respuestaParticipantes.error || "Error al cargar usuarios.", "error");
+    if (!resultadoCarga.ok) {
+      if (!manejarErrorAdmin(resultadoCarga.respuesta)) {
+        mostrarFeedbackAdmin(resultadoCarga.respuesta?.error || resultadoCarga.mensaje || "No se pudieron cargar los datos.", "error");
       }
       if (contenedor) {
-        contenedor.innerHTML = `<div class="admin-empty">No se pudieron cargar los usuarios.</div>`;
+        contenedor.innerHTML = `<div class="admin-empty">${escapeHTML(resultadoCarga.mensaje || "No se pudieron cargar los datos.")}</div>`;
       }
       return;
     }
 
-    if (!respuestaPollas.ok) {
-      if (!manejarErrorAdmin(respuestaPollas)) {
-        mostrarFeedbackAdmin(respuestaPollas.error || "Error al cargar pollas.", "error");
-      }
-      if (contenedor) {
-        contenedor.innerHTML = `<div class="admin-empty">No se pudieron cargar las pollas para asignar usuarios.</div>`;
-      }
-      return;
-    }
-
-    adminParticipantesActuales = respuestaParticipantes.participantes || [];
-    adminPollasActuales = respuestaPollas.pollas || [];
     mostrarFeedbackAdmin("", "info");
     renderizarAdminUsuarios();
   } catch (error) {
@@ -1815,6 +1854,12 @@ async function guardarAdminUsuario(id) {
   };
   const pollas = obtenerPollasSeleccionadasAdmin(tarjeta);
   const esNuevo = id === "nuevo";
+  const participanteActual = adminParticipantesActuales.find((participante) => participante.id === id);
+  const pollasActuales = new Set((participanteActual?.pollas || []).map((polla) => polla.id));
+  const pollasNuevas = new Set(pollas);
+  const cambiaronPollas = esNuevo || pollas.length !== pollasActuales.size ||
+    pollas.some((pollaId) => !pollasActuales.has(pollaId)) ||
+    Array.from(pollasActuales).some((pollaId) => !pollasNuevas.has(pollaId));
 
   mostrarFeedbackAdmin(esNuevo ? "Creando usuario..." : "Guardando usuario...", "info");
 
@@ -1841,9 +1886,29 @@ async function guardarAdminUsuario(id) {
       }
     }
 
-    await cargarAdminUsuarios();
+    mostrarFeedbackAdmin("Actualizando lista de usuarios...", "info");
+
+    const resultadoCarga = await recargarAdminUsuariosDatos();
+
+    if (!resultadoCarga.ok) {
+      if (!manejarErrorAdmin(resultadoCarga.respuesta)) {
+        mostrarFeedbackAdmin(resultadoCarga.respuesta?.error || resultadoCarga.mensaje || "No se pudieron cargar los datos.", "error");
+      }
+      return;
+    }
+
+    adminSubtabActual = "usuarios";
+    mostrarPanelAdmin("usuarios");
+    renderizarAdminUsuarios();
     await refrescarPollasUsuarioActualDesdeAdmin();
-    mostrarFeedbackAdmin(esNuevo ? "Usuario creado." : "Usuario actualizado.", "success");
+
+    if (esNuevo) {
+      mostrarFeedbackAdmin("Usuario creado.", "success");
+    } else if (cambiaronPollas) {
+      mostrarFeedbackAdmin("Pollas actualizadas.", "success");
+    } else {
+      mostrarFeedbackAdmin("Usuario actualizado.", "success");
+    }
   } catch (error) {
     console.error(error);
     mostrarFeedbackAdmin("Error al guardar usuario.", "error");

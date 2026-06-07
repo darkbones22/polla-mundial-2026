@@ -2541,6 +2541,10 @@ body {
 }
 
 .admin-section {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 18px;
@@ -2617,6 +2621,10 @@ body {
   display: none;
 }
 
+.admin-panel {
+  min-width: 0;
+}
+
 .admin-toolbar {
   flex-wrap: wrap;
   margin-bottom: 12px;
@@ -2647,6 +2655,9 @@ body {
 
 .admin-form-card,
 .admin-entity-card {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   margin-bottom: 10px;
   padding: 12px;
   border: 1px solid rgba(203, 213, 225, 0.74);
@@ -2675,13 +2686,15 @@ body {
 
 .admin-form-grid {
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(150px, 0.9fr) minmax(90px, 0.4fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(90px, 0.4fr);
   gap: 10px;
   align-items: end;
   margin-bottom: 10px;
 }
 
 .admin-form-grid input {
+  box-sizing: border-box;
+  min-width: 0;
   width: 100%;
   padding: 0 10px;
 }
@@ -2710,11 +2723,12 @@ body {
 
 .admin-checkbox-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
   gap: 6px;
 }
 
 .admin-checkbox-option {
+  min-width: 0;
   display: flex;
   gap: 7px;
   align-items: center;
@@ -2729,7 +2743,13 @@ body {
 }
 
 .admin-checkbox-option input {
+  flex: 0 0 auto;
   margin: 0;
+}
+
+.admin-checkbox-option span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .admin-entity-list {
@@ -2747,6 +2767,7 @@ body {
 
 .admin-entity-main strong {
   display: block;
+  overflow-wrap: anywhere;
   color: #0f172a;
   font-size: 15px;
 }
@@ -2797,7 +2818,7 @@ body {
 
 .admin-partido-card {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(420px, 1.7fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr);
   gap: 12px;
   align-items: center;
   padding: 10px;
@@ -2837,6 +2858,7 @@ body {
 }
 
 .admin-team-fields input {
+  box-sizing: border-box;
   min-height: 34px;
   width: 100%;
   border: 1px solid #cbd5e1;
@@ -2860,6 +2882,7 @@ body {
 }
 
 .admin-fields input {
+  box-sizing: border-box;
   width: 70px;
   padding: 0 8px;
   text-align: center;
@@ -2912,6 +2935,10 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .admin-form-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
   .admin-fields {
     justify-content: flex-start;
   }
@@ -2924,6 +2951,7 @@ body {
 
   .admin-section {
     padding: 12px;
+    border-radius: 14px;
   }
 
   .admin-header {
@@ -2931,9 +2959,28 @@ body {
     flex-direction: column;
   }
 
+  .admin-section .admin-subtabs {
+    flex-wrap: nowrap;
+    margin-right: -4px;
+    margin-left: -4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-section .admin-subtab {
+    flex: 0 0 auto;
+    min-width: 104px;
+    min-height: 42px;
+    padding: 0 14px;
+    white-space: nowrap;
+  }
+
   .admin-toolbar,
   .admin-toolbar label,
   .admin-toolbar select,
+  .admin-partido-card,
+  .admin-entity-card,
+  .admin-form-card,
   .admin-team-fields,
   .admin-form-grid,
   .admin-form-grid label,
@@ -2955,8 +3002,21 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .admin-entity-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-status {
+    align-self: flex-start;
+  }
+
   .admin-fields input {
     width: 100%;
+  }
+
+  .admin-save-button {
+    min-height: 44px;
   }
 }
 
