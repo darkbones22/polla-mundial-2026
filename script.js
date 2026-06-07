@@ -905,6 +905,12 @@ let adminParticipantesActuales = [];
 let adminPollasActuales = [];
 let adminSubtabsInicializadas = false;
 let adminCargaSubtabActual = 0;
+let usuarioAdminExpandidoId = "";
+let pollaAdminExpandidaId = "";
+let mostrarFormularioCrearUsuario = false;
+let mostrarFormularioCrearPolla = false;
+let filtroAdminUsuarios = "";
+let filtroAdminPollas = "";
 
 const CODIGO_ADMIN = "agu-1111";
 const ESTADOS_ADMIN = ["Pendiente", "Abierto", "Cerrado", "Finalizado"];
@@ -1705,37 +1711,82 @@ function renderizarAdminUsuariosFormulario() {
   if (!contenedor) return;
 
   contenedor.innerHTML = `
-    <article class="admin-form-card" data-admin-user-id="nuevo">
-      <div class="admin-form-heading">
+    <div class="admin-list-toolbar">
+      <input
+        class="admin-search-input"
+        type="search"
+        placeholder="Buscar usuario por nombre o código"
+        value="${escapeHTML(filtroAdminUsuarios)}"
+        oninput="actualizarFiltroAdminUsuarios(this.value)"
+      />
+      <button class="admin-secondary-button" type="button" onclick="toggleCrearAdminUsuario()">
+        ${mostrarFormularioCrearUsuario ? "Cerrar" : "Crear usuario"}
+      </button>
+    </div>
+
+    <article class="admin-form-card ${mostrarFormularioCrearUsuario ? "" : "hidden"}" data-admin-user-id="nuevo">
+      <div class="admin-form-heading compact">
         <h3>Crear usuario</h3>
         <p>El código se normaliza en minúsculas.</p>
       </div>
 
-      <div class="admin-form-grid">
-        <label>
-          Nombre visible
-          <input class="admin-user-nombre" type="text" placeholder="Nombre Apellido" />
-        </label>
-        <label>
-          Código
-          <input class="admin-user-codigo" type="text" placeholder="codigo-1234" />
-        </label>
-        <label class="admin-switch">
-          <input class="admin-user-activo" type="checkbox" checked />
-          <span>Activo</span>
-        </label>
-      </div>
+      <div class="admin-edit-panel">
+        <div class="admin-form-grid">
+          <label>
+            Nombre visible
+            <input class="admin-user-nombre" type="text" placeholder="Nombre Apellido" />
+          </label>
+          <label>
+            Código
+            <input class="admin-user-codigo" type="text" placeholder="codigo-1234" />
+          </label>
+          <label class="admin-switch">
+            <input class="admin-user-activo" type="checkbox" checked />
+            <span>Activo</span>
+          </label>
+        </div>
 
-      <div class="admin-checkbox-group">
-        <strong>Pollas asignadas</strong>
-        <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin()}</div>
-      </div>
+        <div class="admin-checkbox-group">
+          <strong>Pollas asignadas</strong>
+          <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin()}</div>
+        </div>
 
-      <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('nuevo')">
-        Crear usuario
-      </button>
+        <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('nuevo')">
+          Crear usuario
+        </button>
+      </div>
     </article>
   `;
+}
+
+function obtenerUsuariosAdminFiltrados() {
+  const filtro = filtroAdminUsuarios.trim().toLowerCase();
+
+  if (!filtro) return adminParticipantesActuales;
+
+  return adminParticipantesActuales.filter((participante) => {
+    const nombre = String(participante.nombre || "").toLowerCase();
+    const codigo = String(participante.codigoLegacy || "").toLowerCase();
+
+    return nombre.includes(filtro) || codigo.includes(filtro);
+  });
+}
+
+function actualizarFiltroAdminUsuarios(valor) {
+  filtroAdminUsuarios = valor || "";
+  renderizarAdminUsuarios();
+}
+
+function toggleCrearAdminUsuario() {
+  mostrarFormularioCrearUsuario = !mostrarFormularioCrearUsuario;
+  usuarioAdminExpandidoId = "";
+  renderizarAdminUsuarios();
+}
+
+function toggleEditarAdminUsuario(id) {
+  usuarioAdminExpandidoId = usuarioAdminExpandidoId === id ? "" : id;
+  mostrarFormularioCrearUsuario = false;
+  renderizarAdminUsuarios();
 }
 
 function renderizarAdminUsuarios() {
@@ -1750,55 +1801,72 @@ function renderizarAdminUsuarios() {
     return;
   }
 
+  const participantesFiltrados = obtenerUsuariosAdminFiltrados();
+
   if (adminParticipantesActuales.length === 0) {
     contenedor.innerHTML = `<div class="admin-empty">No hay participantes.</div>`;
     return;
   }
 
-  contenedor.innerHTML = adminParticipantesActuales.map((participante) => {
+  if (participantesFiltrados.length === 0) {
+    contenedor.innerHTML = `<div class="admin-empty">No hay usuarios para ese filtro.</div>`;
+    return;
+  }
+
+  contenedor.innerHTML = participantesFiltrados.map((participante) => {
     const pollas = participante.pollas || [];
     const pollasIds = pollas.map((polla) => polla.id);
+    const expandido = usuarioAdminExpandidoId === participante.id;
     const badgesPollas = pollas.length
       ? pollas.map((polla) => `<span class="admin-tag">${escapeHTML(polla.nombre)}</span>`).join("")
       : `<span class="admin-muted">Sin pollas asignadas</span>`;
 
     return `
-      <article class="admin-entity-card" data-admin-user-id="${escapeHTML(participante.id)}">
-        <div class="admin-entity-main">
-          <div>
-            <span class="admin-partido-meta">${escapeHTML(participante.codigoLegacy || "")}</span>
-            <strong>${escapeHTML(participante.nombre || "")}</strong>
-          </div>
+      <article class="admin-entity-card compact ${expandido ? "expanded" : ""}" data-admin-user-id="${escapeHTML(participante.id)}">
+        <button class="admin-entity-summary" type="button" onclick="toggleEditarAdminUsuario('${escapeHTML(participante.id)}')">
+          <strong>${escapeHTML(participante.nombre || "")}</strong>
+          <span class="admin-code">${escapeHTML(participante.codigoLegacy || "")}</span>
           <span class="admin-status ${participante.activo ? "active" : "inactive"}">
             ${participante.activo ? "Activo" : "Inactivo"}
           </span>
-        </div>
-
-        <div class="admin-tag-list">${badgesPollas}</div>
-
-        <div class="admin-form-grid">
-          <label>
-            Nombre visible
-            <input class="admin-user-nombre" type="text" value="${escapeHTML(participante.nombre || "")}" />
-          </label>
-          <label>
-            Código
-            <input class="admin-user-codigo" type="text" value="${escapeHTML(participante.codigoLegacy || "")}" />
-          </label>
-          <label class="admin-switch">
-            <input class="admin-user-activo" type="checkbox" ${participante.activo ? "checked" : ""} />
-            <span>Activo</span>
-          </label>
-        </div>
-
-        <div class="admin-checkbox-group">
-          <strong>Pollas asignadas</strong>
-          <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin(pollasIds)}</div>
-        </div>
-
-        <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('${escapeHTML(participante.id)}')">
-          Guardar usuario
+          <span class="admin-count">${pollas.length} ${pollas.length === 1 ? "polla" : "pollas"}</span>
+          <span class="admin-edit-label">${expandido ? "Cerrar" : "Editar"}</span>
         </button>
+
+        ${expandido ? `
+          <div class="admin-tag-list compact">${badgesPollas}</div>
+
+          <div class="admin-edit-panel">
+            <div class="admin-form-grid">
+              <label>
+                Nombre visible
+                <input class="admin-user-nombre" type="text" value="${escapeHTML(participante.nombre || "")}" />
+              </label>
+              <label>
+                Código
+                <input class="admin-user-codigo" type="text" value="${escapeHTML(participante.codigoLegacy || "")}" />
+              </label>
+              <label class="admin-switch">
+                <input class="admin-user-activo" type="checkbox" ${participante.activo ? "checked" : ""} />
+                <span>Activo</span>
+              </label>
+            </div>
+
+            <div class="admin-checkbox-group">
+              <strong>Pollas asignadas</strong>
+              <div class="admin-checkbox-grid">${obtenerOpcionesPollasAdmin(pollasIds)}</div>
+            </div>
+
+            <div class="admin-action-row">
+              <button class="admin-save-button" type="button" onclick="guardarAdminUsuario('${escapeHTML(participante.id)}')">
+                Guardar usuario
+              </button>
+              <button class="admin-secondary-button" type="button" onclick="guardarAdminUsuario('${escapeHTML(participante.id)}')">
+                Guardar pollas
+              </button>
+            </div>
+          </div>
+        ` : ""}
       </article>
     `;
   }).join("");
@@ -1898,6 +1966,8 @@ async function guardarAdminUsuario(id) {
     }
 
     adminSubtabActual = "usuarios";
+    mostrarFormularioCrearUsuario = false;
+    usuarioAdminExpandidoId = esNuevo ? "" : id;
     mostrarPanelAdmin("usuarios");
     renderizarAdminUsuarios();
     await refrescarPollasUsuarioActualDesdeAdmin();
@@ -1921,32 +1991,77 @@ function renderizarAdminPollasFormulario() {
   if (!contenedor) return;
 
   contenedor.innerHTML = `
-    <article class="admin-form-card" data-admin-polla-id="nueva">
-      <div class="admin-form-heading">
+    <div class="admin-list-toolbar">
+      <input
+        class="admin-search-input"
+        type="search"
+        placeholder="Buscar polla por nombre o ID"
+        value="${escapeHTML(filtroAdminPollas)}"
+        oninput="actualizarFiltroAdminPollas(this.value)"
+      />
+      <button class="admin-secondary-button" type="button" onclick="toggleCrearAdminPolla()">
+        ${mostrarFormularioCrearPolla ? "Cerrar" : "Crear polla"}
+      </button>
+    </div>
+
+    <article class="admin-form-card ${mostrarFormularioCrearPolla ? "" : "hidden"}" data-admin-polla-id="nueva">
+      <div class="admin-form-heading compact">
         <h3>Crear polla</h3>
         <p>El idLegacy se normaliza en minúsculas.</p>
       </div>
 
-      <div class="admin-form-grid">
-        <label>
-          Nombre de polla
-          <input class="admin-polla-nombre" type="text" placeholder="Polla nueva" />
-        </label>
-        <label>
-          idLegacy
-          <input class="admin-polla-legacy" type="text" placeholder="polla-nueva-2026" />
-        </label>
-        <label class="admin-switch">
-          <input class="admin-polla-activa" type="checkbox" checked />
-          <span>Activa</span>
-        </label>
-      </div>
+      <div class="admin-edit-panel">
+        <div class="admin-form-grid">
+          <label>
+            Nombre de polla
+            <input class="admin-polla-nombre" type="text" placeholder="Polla nueva" />
+          </label>
+          <label>
+            idLegacy
+            <input class="admin-polla-legacy" type="text" placeholder="polla-nueva-2026" />
+          </label>
+          <label class="admin-switch">
+            <input class="admin-polla-activa" type="checkbox" checked />
+            <span>Activa</span>
+          </label>
+        </div>
 
-      <button class="admin-save-button" type="button" onclick="guardarAdminPolla('nueva')">
-        Crear polla
-      </button>
+        <button class="admin-save-button" type="button" onclick="guardarAdminPolla('nueva')">
+          Crear polla
+        </button>
+      </div>
     </article>
   `;
+}
+
+function obtenerPollasAdminFiltradas() {
+  const filtro = filtroAdminPollas.trim().toLowerCase();
+
+  if (!filtro) return adminPollasActuales;
+
+  return adminPollasActuales.filter((polla) => {
+    const nombre = String(polla.nombre || "").toLowerCase();
+    const idLegacy = String(polla.idLegacy || "").toLowerCase();
+
+    return nombre.includes(filtro) || idLegacy.includes(filtro);
+  });
+}
+
+function actualizarFiltroAdminPollas(valor) {
+  filtroAdminPollas = valor || "";
+  renderizarAdminPollas();
+}
+
+function toggleCrearAdminPolla() {
+  mostrarFormularioCrearPolla = !mostrarFormularioCrearPolla;
+  pollaAdminExpandidaId = "";
+  renderizarAdminPollas();
+}
+
+function toggleEditarAdminPolla(id) {
+  pollaAdminExpandidaId = pollaAdminExpandidaId === id ? "" : id;
+  mostrarFormularioCrearPolla = false;
+  renderizarAdminPollas();
 }
 
 function renderizarAdminPollas() {
@@ -1961,44 +2076,58 @@ function renderizarAdminPollas() {
     return;
   }
 
+  const pollasFiltradas = obtenerPollasAdminFiltradas();
+
   if (adminPollasActuales.length === 0) {
     contenedor.innerHTML = `<div class="admin-empty">No hay pollas.</div>`;
     return;
   }
 
-  contenedor.innerHTML = adminPollasActuales.map((polla) => `
-    <article class="admin-entity-card" data-admin-polla-id="${escapeHTML(polla.id)}">
-      <div class="admin-entity-main">
-        <div>
-          <span class="admin-partido-meta">${escapeHTML(polla.idLegacy || "")}</span>
-          <strong>${escapeHTML(polla.nombre || "")}</strong>
-          <p class="admin-muted">${escapeHTML(polla.cantidadParticipantes || 0)} participantes</p>
-        </div>
+  if (pollasFiltradas.length === 0) {
+    contenedor.innerHTML = `<div class="admin-empty">No hay pollas para ese filtro.</div>`;
+    return;
+  }
+
+  contenedor.innerHTML = pollasFiltradas.map((polla) => {
+    const expandida = pollaAdminExpandidaId === polla.id;
+
+    return `
+    <article class="admin-entity-card compact ${expandida ? "expanded" : ""}" data-admin-polla-id="${escapeHTML(polla.id)}">
+      <button class="admin-entity-summary" type="button" onclick="toggleEditarAdminPolla('${escapeHTML(polla.id)}')">
+        <strong>${escapeHTML(polla.nombre || "")}</strong>
+        <span class="admin-code">${escapeHTML(polla.idLegacy || "")}</span>
         <span class="admin-status ${polla.activa ? "active" : "inactive"}">
           ${polla.activa ? "Activa" : "Inactiva"}
         </span>
-      </div>
-
-      <div class="admin-form-grid">
-        <label>
-          Nombre de polla
-          <input class="admin-polla-nombre" type="text" value="${escapeHTML(polla.nombre || "")}" />
-        </label>
-        <label>
-          idLegacy
-          <input class="admin-polla-legacy" type="text" value="${escapeHTML(polla.idLegacy || "")}" />
-        </label>
-        <label class="admin-switch">
-          <input class="admin-polla-activa" type="checkbox" ${polla.activa ? "checked" : ""} />
-          <span>Activa</span>
-        </label>
-      </div>
-
-      <button class="admin-save-button" type="button" onclick="guardarAdminPolla('${escapeHTML(polla.id)}')">
-        Guardar cambios
+        <span class="admin-count">${escapeHTML(polla.cantidadParticipantes || 0)} participantes</span>
+        <span class="admin-edit-label">${expandida ? "Cerrar" : "Editar"}</span>
       </button>
+
+      ${expandida ? `
+        <div class="admin-edit-panel">
+          <div class="admin-form-grid">
+            <label>
+              Nombre de polla
+              <input class="admin-polla-nombre" type="text" value="${escapeHTML(polla.nombre || "")}" />
+            </label>
+            <label>
+              idLegacy
+              <input class="admin-polla-legacy" type="text" value="${escapeHTML(polla.idLegacy || "")}" />
+            </label>
+            <label class="admin-switch">
+              <input class="admin-polla-activa" type="checkbox" ${polla.activa ? "checked" : ""} />
+              <span>Activa</span>
+            </label>
+          </div>
+
+          <button class="admin-save-button" type="button" onclick="guardarAdminPolla('${escapeHTML(polla.id)}')">
+            Guardar polla
+          </button>
+        </div>
+      ` : ""}
     </article>
-  `).join("");
+  `;
+  }).join("");
 }
 
 async function cargarAdminPollas() {
@@ -2068,6 +2197,8 @@ async function guardarAdminPolla(id) {
       return;
     }
 
+    mostrarFormularioCrearPolla = false;
+    pollaAdminExpandidaId = esNueva ? "" : id;
     await cargarAdminPollas();
     await refrescarPollasUsuarioActualDesdeAdmin();
     mostrarFeedbackAdmin(esNueva ? "Polla creada." : "Polla actualizada.", "success");

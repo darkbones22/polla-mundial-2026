@@ -1104,6 +1104,10 @@ body {
   display: none;
 }
 
+.tab-label-full {
+  display: inline;
+}
+
 .info-section {
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   padding: 14px;
@@ -3411,6 +3415,177 @@ body {
 
   .global-polla-option {
     color: #0f172a !important;
+  }
+}
+
+/* Compact Admin lists */
+.admin-list-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.admin-search-input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  padding: 0 12px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.admin-secondary-button {
+  min-height: 38px;
+  border: 1px solid #bfdbfe;
+  border-radius: 11px;
+  padding: 0 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-form-card.hidden {
+  display: none;
+}
+
+.admin-form-heading.compact {
+  margin-bottom: 8px;
+}
+
+.admin-entity-card.compact {
+  margin-bottom: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.admin-entity-summary {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.4fr) minmax(95px, 0.8fr) auto auto auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-entity-summary:hover {
+  background: #f8fbff;
+}
+
+.admin-entity-card.expanded .admin-entity-summary {
+  border-bottom: 1px solid #dbeafe;
+  background: #eff6ff;
+}
+
+.admin-entity-summary strong,
+.admin-code,
+.admin-count,
+.admin-edit-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-code,
+.admin-count {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-edit-label {
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-edit-panel {
+  padding: 10px;
+}
+
+.admin-tag-list.compact {
+  margin: 8px 10px 0;
+}
+
+.admin-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-action-row .admin-save-button,
+.admin-action-row .admin-secondary-button {
+  flex: 1 1 180px;
+}
+
+.admin-partido-card {
+  padding: 8px 10px;
+}
+
+.admin-fields {
+  gap: 8px;
+}
+
+.admin-save-button {
+  min-height: 34px;
+}
+
+@media (max-width: 760px) {
+  .admin-entity-summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .admin-entity-summary .admin-code,
+  .admin-entity-summary .admin-count {
+    grid-column: 1 / -1;
+  }
+
+  .admin-entity-summary .admin-status {
+    justify-self: start;
+  }
+
+  .admin-entity-summary .admin-edit-label {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-list-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-search-input,
+  .admin-secondary-button {
+    width: 100%;
+  }
+
+  .admin-entity-summary {
+    min-height: 42px;
+    padding: 8px;
+  }
+
+  .admin-edit-panel {
+    padding: 8px;
+  }
+
+  .admin-action-row {
+    flex-direction: column;
+  }
+
+  .admin-action-row .admin-save-button,
+  .admin-action-row .admin-secondary-button {
+    flex: 1 1 auto;
+    width: 100%;
   }
 }
 
