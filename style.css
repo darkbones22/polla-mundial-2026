@@ -3040,3 +3040,180 @@ body {
   }
 }
 
+/* Mobile hardening for header selector, main tabs and Admin panels */
+#tabAdmin.hidden {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    overflow: visible;
+  }
+
+  .header-actions {
+    min-width: 0;
+  }
+
+  .app-header .global-polla-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .app-header .global-polla-selector.open {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(191, 219, 254, 0.86);
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+  }
+
+  .app-header .global-polla-button {
+    min-height: 40px;
+    justify-content: space-between;
+    padding: 0 12px;
+    color: #ffffff;
+  }
+
+  .app-header .global-polla-selector.open .global-polla-button,
+  .app-header .global-polla-selector.open .global-polla-button span:first-child {
+    color: #0f172a;
+  }
+
+  .app-header .global-polla-selector.open .global-polla-arrow {
+    border-color: #1d4ed8;
+  }
+
+  .global-polla-menu {
+    position: static;
+    width: 100%;
+    max-height: 180px;
+    margin-top: 0;
+    padding: 6px;
+    border: 0;
+    border-top: 1px solid #dbeafe;
+    border-radius: 0 0 16px 16px;
+    background: #ffffff;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .global-polla-option {
+    min-height: 38px;
+    border-radius: 10px;
+    color: #0f172a;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .global-polla-option:hover,
+  .global-polla-option:focus {
+    background: #eff6ff;
+  }
+
+  .global-polla-option.selected {
+    background: #dbeafe;
+    color: #1d4ed8;
+    box-shadow: none;
+  }
+
+  .main-menu {
+    max-width: 100%;
+    border-radius: 18px;
+  }
+
+  .menu-button {
+    min-width: auto;
+    width: auto;
+    pointer-events: auto;
+  }
+
+  #tabAdmin.hidden {
+    display: none !important;
+    flex: 0 0 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+  }
+
+  #tabAdmin::after {
+    content: "Admin";
+  }
+
+  .main-menu.admin-visible #tabAdmin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-section {
+    margin: 0;
+    padding: 10px;
+  }
+
+  .admin-header {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .admin-section .admin-subtabs {
+    gap: 6px;
+    padding: 4px;
+    border-radius: 12px;
+  }
+
+  .admin-section .admin-subtab {
+    min-width: 96px;
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .admin-toolbar {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .admin-partidos,
+  .admin-entity-list {
+    gap: 8px;
+  }
+
+  .admin-partido-card,
+  .admin-form-card,
+  .admin-entity-card {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .admin-partido-main strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-fields {
+    gap: 8px;
+  }
+
+  .admin-fields input,
+  .admin-fields select,
+  .admin-form-grid input,
+  .admin-toolbar select {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  .admin-checkbox-option {
+    min-height: 36px;
+    padding: 6px 8px;
+  }
+}
+
