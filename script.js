@@ -909,6 +909,7 @@ let usuarioAdminExpandidoId = "";
 let pollaAdminExpandidaId = "";
 let mostrarFormularioCrearUsuario = false;
 let mostrarFormularioCrearPolla = false;
+let textoBusquedaAdminUsuarios = "";
 let filtroAdminUsuarios = "";
 let filtroAdminPollas = "";
 
@@ -1753,9 +1754,16 @@ function renderizarAdminUsuariosFormulario() {
         class="admin-search-input"
         type="search"
         placeholder="Buscar usuario por nombre o código"
-        value="${escapeHTML(filtroAdminUsuarios)}"
-        oninput="actualizarFiltroAdminUsuarios(this.value)"
+        value="${escapeHTML(textoBusquedaAdminUsuarios)}"
+        oninput="actualizarTextoBusquedaAdminUsuarios(this.value)"
+        onkeydown="manejarTecladoBusquedaAdminUsuarios(event)"
       />
+      <button class="admin-secondary-button" type="button" onclick="buscarAdminUsuarios()">
+        Buscar
+      </button>
+      <button class="admin-secondary-button subtle" type="button" onclick="limpiarBusquedaAdminUsuarios()">
+        Limpiar
+      </button>
       <button class="admin-secondary-button" type="button" onclick="toggleCrearAdminUsuario()">
         ${mostrarFormularioCrearUsuario ? "Cerrar" : "+ Crear usuario"}
       </button>
@@ -1777,7 +1785,32 @@ function obtenerUsuariosAdminFiltrados() {
   });
 }
 
+function actualizarTextoBusquedaAdminUsuarios(valor) {
+  textoBusquedaAdminUsuarios = valor || "";
+}
+
+function buscarAdminUsuarios() {
+  filtroAdminUsuarios = textoBusquedaAdminUsuarios || "";
+  usuarioAdminExpandidoId = "";
+  renderizarAdminUsuarios();
+}
+
+function limpiarBusquedaAdminUsuarios() {
+  textoBusquedaAdminUsuarios = "";
+  filtroAdminUsuarios = "";
+  usuarioAdminExpandidoId = "";
+  renderizarAdminUsuarios();
+}
+
+function manejarTecladoBusquedaAdminUsuarios(event) {
+  if (event.key !== "Enter") return;
+
+  event.preventDefault();
+  buscarAdminUsuarios();
+}
+
 function actualizarFiltroAdminUsuarios(valor) {
+  textoBusquedaAdminUsuarios = valor || "";
   filtroAdminUsuarios = valor || "";
   renderizarAdminUsuarios();
 }

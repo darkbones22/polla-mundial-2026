@@ -3432,33 +3432,38 @@ body {
 /* Compact Admin lists */
 .admin-list-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 5px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 }
 
 .admin-search-input {
   width: 100%;
-  min-height: 32px;
+  min-height: 30px;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   padding: 0 12px;
   color: #0f172a;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .admin-secondary-button {
-  min-height: 32px;
+  min-height: 30px;
   border: 1px solid #bfdbfe;
   border-radius: 10px;
-  padding: 0 12px;
+  padding: 0 10px;
   background: #eff6ff;
   color: #1d4ed8;
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.admin-secondary-button.subtle {
+  background: #ffffff;
+  color: #475569;
 }
 
 .admin-form-card.hidden {
@@ -3487,12 +3492,12 @@ body {
 .admin-entity-summary {
   display: grid;
   grid-template-columns: minmax(190px, 1.5fr) minmax(88px, 0.7fr) minmax(64px, auto) minmax(66px, auto) auto;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
   width: 100%;
-  min-height: 38px;
+  min-height: 34px;
   border: 0;
-  padding: 6px 9px;
+  padding: 5px 8px;
   background: #ffffff;
   color: #0f172a;
   cursor: pointer;
@@ -3521,7 +3526,7 @@ body {
 .admin-code,
 .admin-count {
   color: #475569;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
 }
 
@@ -3529,9 +3534,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 26px;
+  min-height: 24px;
   border-radius: 999px;
-  padding: 0 9px;
+  padding: 0 8px;
   background: #eff6ff;
   color: #1d4ed8;
   font-size: 12px;
@@ -3539,7 +3544,7 @@ body {
 }
 
 .admin-edit-panel {
-  padding: 7px 9px 9px;
+  padding: 6px 8px 8px;
 }
 
 .admin-tag-list.compact {
@@ -3558,8 +3563,8 @@ body {
 }
 
 .admin-edit-panel .admin-form-grid {
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 5px;
+  margin-bottom: 5px;
 }
 
 .admin-edit-panel .admin-form-grid label,
@@ -3568,28 +3573,28 @@ body {
 }
 
 .admin-edit-panel .admin-form-grid input {
-  min-height: 32px;
+  min-height: 30px;
   font-size: 12px;
 }
 
 .admin-edit-panel .admin-checkbox-group {
-  margin: 5px 0 7px;
+  margin: 4px 0 6px;
 }
 
 .admin-edit-panel .admin-checkbox-grid {
-  gap: 5px;
+  gap: 4px;
 }
 
 .admin-edit-panel .admin-checkbox-option {
-  min-height: 30px;
-  padding: 4px 7px;
-  border-radius: 9px;
+  min-height: 27px;
+  padding: 3px 6px;
+  border-radius: 8px;
   font-size: 11px;
   line-height: 1.15;
 }
 
 .admin-save-button.compact {
-  min-height: 32px;
+  min-height: 30px;
   padding: 0 12px;
 }
 
@@ -3608,8 +3613,8 @@ body {
 
 .admin-switch {
   justify-content: flex-start;
-  gap: 6px;
-  min-height: 32px;
+  gap: 5px;
+  min-height: 30px;
   white-space: nowrap;
 }
 
@@ -3657,22 +3662,27 @@ body {
 
 @media (max-width: 600px) {
   .admin-list-toolbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .admin-search-input,
-  .admin-secondary-button {
+  .admin-search-input {
+    grid-column: 1 / -1;
     width: 100%;
   }
 
+  .admin-secondary-button {
+    width: 100%;
+    padding: 0 6px;
+  }
+
   .admin-entity-summary {
-    min-height: 42px;
-    padding: 8px;
+    min-height: 38px;
+    padding: 6px 7px;
     gap: 4px 6px;
   }
 
   .admin-edit-panel {
-    padding: 7px;
+    padding: 6px;
   }
 
   .admin-action-row {
@@ -3687,7 +3697,7 @@ body {
 
   .admin-save-button.compact {
     width: 100%;
-    min-height: 38px;
+    min-height: 34px;
   }
 }
 
