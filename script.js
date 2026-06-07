@@ -911,6 +911,7 @@ let mostrarFormularioCrearUsuario = false;
 let mostrarFormularioCrearPolla = false;
 let textoBusquedaAdminUsuarios = "";
 let filtroAdminUsuarios = "";
+let textoBusquedaAdminPollas = "";
 let filtroAdminPollas = "";
 
 const CODIGO_ADMIN = "agu-1111";
@@ -2021,11 +2022,18 @@ function renderizarAdminPollasFormulario() {
         class="admin-search-input"
         type="search"
         placeholder="Buscar polla por nombre o ID"
-        value="${escapeHTML(filtroAdminPollas)}"
-        oninput="actualizarFiltroAdminPollas(this.value)"
+        value="${escapeHTML(textoBusquedaAdminPollas)}"
+        oninput="actualizarTextoBusquedaAdminPollas(this.value)"
+        onkeydown="manejarTecladoBusquedaAdminPollas(event)"
       />
+      <button class="admin-secondary-button" type="button" onclick="buscarAdminPollas()">
+        Buscar
+      </button>
+      <button class="admin-secondary-button subtle" type="button" onclick="limpiarBusquedaAdminPollas()">
+        Limpiar
+      </button>
       <button class="admin-secondary-button" type="button" onclick="toggleCrearAdminPolla()">
-        ${mostrarFormularioCrearPolla ? "Cerrar" : "Crear polla"}
+        ${mostrarFormularioCrearPolla ? "Cerrar" : "+ Crear polla"}
       </button>
     </div>
 
@@ -2038,11 +2046,11 @@ function renderizarAdminPollasFormulario() {
       <div class="admin-edit-panel">
         <div class="admin-form-grid">
           <label>
-            Nombre de polla
+            Nombre
             <input class="admin-polla-nombre" type="text" placeholder="Polla nueva" />
           </label>
           <label>
-            idLegacy
+            ID / idLegacy
             <input class="admin-polla-legacy" type="text" placeholder="polla-nueva-2026" />
           </label>
           <label class="admin-switch">
@@ -2051,7 +2059,7 @@ function renderizarAdminPollasFormulario() {
           </label>
         </div>
 
-        <button class="admin-save-button" type="button" onclick="guardarAdminPolla('nueva')">
+        <button class="admin-save-button compact" type="button" onclick="guardarAdminPolla('nueva')">
           Crear polla
         </button>
       </div>
@@ -2073,8 +2081,33 @@ function obtenerPollasAdminFiltradas() {
 }
 
 function actualizarFiltroAdminPollas(valor) {
+  textoBusquedaAdminPollas = valor || "";
   filtroAdminPollas = valor || "";
   renderizarAdminPollas();
+}
+
+function actualizarTextoBusquedaAdminPollas(valor) {
+  textoBusquedaAdminPollas = valor || "";
+}
+
+function buscarAdminPollas() {
+  filtroAdminPollas = textoBusquedaAdminPollas || "";
+  pollaAdminExpandidaId = "";
+  renderizarAdminPollas();
+}
+
+function limpiarBusquedaAdminPollas() {
+  textoBusquedaAdminPollas = "";
+  filtroAdminPollas = "";
+  pollaAdminExpandidaId = "";
+  renderizarAdminPollas();
+}
+
+function manejarTecladoBusquedaAdminPollas(event) {
+  if (event.key !== "Enter") return;
+
+  event.preventDefault();
+  buscarAdminPollas();
 }
 
 function toggleCrearAdminPolla() {
@@ -2109,7 +2142,7 @@ function renderizarAdminPollas() {
   }
 
   if (pollasFiltradas.length === 0) {
-    contenedor.innerHTML = `<div class="admin-empty">No hay pollas para ese filtro.</div>`;
+    contenedor.innerHTML = `<div class="admin-empty">No se encontraron pollas.</div>`;
     return;
   }
 
@@ -2132,11 +2165,11 @@ function renderizarAdminPollas() {
         <div class="admin-edit-panel">
           <div class="admin-form-grid">
             <label>
-              Nombre de polla
+              Nombre
               <input class="admin-polla-nombre" type="text" value="${escapeHTML(polla.nombre || "")}" />
             </label>
             <label>
-              idLegacy
+              ID / idLegacy
               <input class="admin-polla-legacy" type="text" value="${escapeHTML(polla.idLegacy || "")}" />
             </label>
             <label class="admin-switch">
@@ -2145,8 +2178,8 @@ function renderizarAdminPollas() {
             </label>
           </div>
 
-          <button class="admin-save-button" type="button" onclick="guardarAdminPolla('${escapeHTML(polla.id)}')">
-            Guardar polla
+          <button class="admin-save-button compact" type="button" onclick="guardarAdminPolla('${escapeHTML(polla.id)}')">
+            Guardar cambios
           </button>
         </div>
       ` : ""}
@@ -2222,8 +2255,10 @@ async function guardarAdminPolla(id) {
       return;
     }
 
+    adminSubtabActual = "pollas";
     mostrarFormularioCrearPolla = false;
     pollaAdminExpandidaId = esNueva ? "" : id;
+    mostrarPanelAdmin("pollas");
     await cargarAdminPollas();
     await refrescarPollasUsuarioActualDesdeAdmin();
     mostrarFeedbackAdmin(esNueva ? "Polla creada." : "Polla actualizada.", "success");
