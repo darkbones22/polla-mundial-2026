@@ -4,6 +4,10 @@ import {
   calcularPuntosGrupos
 } from './puntaje.service.js';
 import { obtenerFechaHoraChile } from '../utils/fechas.js';
+import {
+  obtenerPronosticosEliminacionPartidoParticipantes,
+  obtenerPronosticosGruposPartidoParticipantes
+} from './pronosticos.service.js';
 
 function tieneGolesValidos(partido) {
   return Number.isInteger(partido.goles_local_real) && Number.isInteger(partido.goles_visita_real);
@@ -107,34 +111,6 @@ async function obtenerPartidoEliminacion(partidoId) {
   return data;
 }
 
-async function obtenerPronosticosGruposPorPartido(pollaId, partidoId) {
-  const { data, error } = await supabase
-    .from('pronosticos_grupos')
-    .select('participante_id,goles_local,goles_visita')
-    .eq('polla_id', pollaId)
-    .eq('partido_id', partidoId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return new Map((data || []).map((fila) => [fila.participante_id, fila]));
-}
-
-async function obtenerPronosticosEliminacionPorPartido(pollaId, partidoId) {
-  const { data, error } = await supabase
-    .from('pronosticos_eliminacion')
-    .select('participante_id,goles_local,goles_visita,clasificado_lado')
-    .eq('polla_id', pollaId)
-    .eq('partido_id', partidoId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return new Map((data || []).map((fila) => [fila.participante_id, fila]));
-}
-
 function ordenarDetalle(detalle, finalizado) {
   return detalle.sort((a, b) => {
     if (finalizado && b.puntos !== a.puntos) return b.puntos - a.puntos;
@@ -143,10 +119,11 @@ function ordenarDetalle(detalle, finalizado) {
 }
 
 export async function obtenerDetallePartidoGrupos({ pollaId, partidoId }) {
-  const [partido, participantes, pronosticosPorParticipante] = await Promise.all([
+  const participantesPolla = await obtenerParticipantesDePolla(pollaId);
+  const participanteIds = participantesPolla.map((participante) => participante.participanteId);
+  const [partido, pronosticosPorParticipante] = await Promise.all([
     obtenerPartidoGrupo(partidoId),
-    obtenerParticipantesDePolla(pollaId),
-    obtenerPronosticosGruposPorPartido(pollaId, partidoId)
+    obtenerPronosticosGruposPartidoParticipantes(partidoId, participanteIds)
   ]);
 
   if (!partido) return null;
@@ -157,7 +134,7 @@ export async function obtenerDetallePartidoGrupos({ pollaId, partidoId }) {
     golesVisita: partido.goles_visita_real
   };
 
-  const detalle = participantes.map((participante) => {
+  const detalle = participantesPolla.map((participante) => {
     const pronostico = pronosticosPorParticipante.get(participante.participanteId);
     const pronosticoMapeado = pronostico
       ? {
@@ -189,10 +166,11 @@ export async function obtenerDetallePartidoGrupos({ pollaId, partidoId }) {
 }
 
 export async function obtenerDetallePartidoEliminacion({ pollaId, partidoId }) {
-  const [partido, participantes, pronosticosPorParticipante] = await Promise.all([
+  const participantesPolla = await obtenerParticipantesDePolla(pollaId);
+  const participanteIds = participantesPolla.map((participante) => participante.participanteId);
+  const [partido, pronosticosPorParticipante] = await Promise.all([
     obtenerPartidoEliminacion(partidoId),
-    obtenerParticipantesDePolla(pollaId),
-    obtenerPronosticosEliminacionPorPartido(pollaId, partidoId)
+    obtenerPronosticosEliminacionPartidoParticipantes(partidoId, participanteIds)
   ]);
 
   if (!partido) return null;
@@ -204,7 +182,7 @@ export async function obtenerDetallePartidoEliminacion({ pollaId, partidoId }) {
     clasificadoRealLado: partido.clasificado_real_lado
   };
 
-  const detalle = participantes.map((participante) => {
+  const detalle = participantesPolla.map((participante) => {
     const pronostico = pronosticosPorParticipante.get(participante.participanteId);
     const pronosticoMapeado = pronostico
       ? {

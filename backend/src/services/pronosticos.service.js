@@ -12,6 +12,34 @@ function mapearPronosticoGrupo(fila) {
   };
 }
 
+function obtenerMarcaTiempoPronostico(fila) {
+  return new Date(fila.actualizado_en || fila.enviado_en || 0).getTime() || 0;
+}
+
+function compararPronosticosRecientes(a, b) {
+  const diferenciaFecha = obtenerMarcaTiempoPronostico(b) - obtenerMarcaTiempoPronostico(a);
+
+  if (diferenciaFecha !== 0) return diferenciaFecha;
+
+  return String(a.id || '').localeCompare(String(b.id || ''));
+}
+
+function obtenerUltimosPorClave(filas, crearClave) {
+  const ultimos = new Map();
+
+  [...(filas || [])]
+    .sort(compararPronosticosRecientes)
+    .forEach((fila) => {
+      const clave = crearClave(fila);
+
+      if (!ultimos.has(clave)) {
+        ultimos.set(clave, fila);
+      }
+    });
+
+  return Array.from(ultimos.values());
+}
+
 function esEnteroNoNegativo(valor) {
   return Number.isInteger(valor) && valor >= 0;
 }
@@ -74,16 +102,17 @@ function mapearPronosticoEliminacion(fila) {
 export async function obtenerPronosticosGrupos({ participanteId, pollaId }) {
   const { data, error } = await supabase
     .from('pronosticos_grupos')
-    .select('partido_id,goles_local,goles_visita')
+    .select('id,partido_id,goles_local,goles_visita,enviado_en,actualizado_en')
     .eq('participante_id', participanteId)
-    .eq('polla_id', pollaId)
     .order('partido_id', { ascending: true });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data || []).map(mapearPronosticoGrupo);
+  return obtenerUltimosPorClave(data, (fila) => fila.partido_id)
+    .sort((a, b) => a.partido_id.localeCompare(b.partido_id))
+    .map(mapearPronosticoGrupo);
 }
 
 export async function guardarPronosticosGrupos({ participanteId, pollaId, pronosticos }) {
@@ -130,12 +159,49 @@ export async function guardarPronosticosGrupos({ participanteId, pollaId, pronos
   });
 
   if (registros.length > 0) {
-    const { error } = await supabase
+    const idsRegistros = registros.map((registro) => registro.partido_id);
+    const { data: existentes, error: errorExistentes } = await supabase
       .from('pronosticos_grupos')
-      .upsert(registros, { onConflict: 'polla_id,participante_id,partido_id' });
+      .select('partido_id')
+      .eq('participante_id', participanteId)
+      .in('partido_id', idsRegistros);
 
-    if (error) {
-      throw new Error(error.message);
+    if (errorExistentes) {
+      throw new Error(errorExistentes.message);
+    }
+
+    const partidosExistentes = new Set((existentes || []).map((fila) => fila.partido_id));
+    const paraInsertar = [];
+
+    for (const registro of registros) {
+      if (!partidosExistentes.has(registro.partido_id)) {
+        paraInsertar.push(registro);
+        continue;
+      }
+
+      const { error } = await supabase
+        .from('pronosticos_grupos')
+        .update({
+          goles_local: registro.goles_local,
+          goles_visita: registro.goles_visita,
+          actualizado_en: registro.actualizado_en
+        })
+        .eq('participante_id', participanteId)
+        .eq('partido_id', registro.partido_id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    }
+
+    if (paraInsertar.length > 0) {
+      const { error } = await supabase
+        .from('pronosticos_grupos')
+        .insert(paraInsertar);
+
+      if (error) {
+        throw new Error(error.message);
+      }
     }
   }
 
@@ -150,16 +216,17 @@ export async function guardarPronosticosGrupos({ participanteId, pollaId, pronos
 export async function obtenerPronosticosEliminacion({ participanteId, pollaId }) {
   const { data, error } = await supabase
     .from('pronosticos_eliminacion')
-    .select('partido_id,goles_local,goles_visita,clasificado_lado')
+    .select('id,partido_id,goles_local,goles_visita,clasificado_lado,enviado_en,actualizado_en')
     .eq('participante_id', participanteId)
-    .eq('polla_id', pollaId)
     .order('partido_id', { ascending: true });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data || []).map(mapearPronosticoEliminacion);
+  return obtenerUltimosPorClave(data, (fila) => fila.partido_id)
+    .sort((a, b) => a.partido_id.localeCompare(b.partido_id))
+    .map(mapearPronosticoEliminacion);
 }
 
 export async function guardarPronosticosEliminacion({ participanteId, pollaId, pronosticos }) {
@@ -213,12 +280,50 @@ export async function guardarPronosticosEliminacion({ participanteId, pollaId, p
   });
 
   if (registros.length > 0) {
-    const { error } = await supabase
+    const idsRegistros = registros.map((registro) => registro.partido_id);
+    const { data: existentes, error: errorExistentes } = await supabase
       .from('pronosticos_eliminacion')
-      .upsert(registros, { onConflict: 'polla_id,participante_id,partido_id' });
+      .select('partido_id')
+      .eq('participante_id', participanteId)
+      .in('partido_id', idsRegistros);
 
-    if (error) {
-      throw new Error(error.message);
+    if (errorExistentes) {
+      throw new Error(errorExistentes.message);
+    }
+
+    const partidosExistentes = new Set((existentes || []).map((fila) => fila.partido_id));
+    const paraInsertar = [];
+
+    for (const registro of registros) {
+      if (!partidosExistentes.has(registro.partido_id)) {
+        paraInsertar.push(registro);
+        continue;
+      }
+
+      const { error } = await supabase
+        .from('pronosticos_eliminacion')
+        .update({
+          goles_local: registro.goles_local,
+          goles_visita: registro.goles_visita,
+          clasificado_lado: registro.clasificado_lado,
+          actualizado_en: registro.actualizado_en
+        })
+        .eq('participante_id', participanteId)
+        .eq('partido_id', registro.partido_id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    }
+
+    if (paraInsertar.length > 0) {
+      const { error } = await supabase
+        .from('pronosticos_eliminacion')
+        .insert(paraInsertar);
+
+      if (error) {
+        throw new Error(error.message);
+      }
     }
   }
 
@@ -228,4 +333,80 @@ export async function guardarPronosticosEliminacion({ participanteId, pollaId, p
     omitidos: errores.length,
     errores
   };
+}
+
+export async function obtenerPronosticosGruposParticipantes(participanteIds) {
+  const ids = [...new Set((participanteIds || []).filter(Boolean))];
+
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('pronosticos_grupos')
+    .select('id,participante_id,partido_id,goles_local,goles_visita,enviado_en,actualizado_en')
+    .in('participante_id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return obtenerUltimosPorClave(data, (fila) => `${fila.participante_id}|${fila.partido_id}`);
+}
+
+export async function obtenerPronosticosEliminacionParticipantes(participanteIds) {
+  const ids = [...new Set((participanteIds || []).filter(Boolean))];
+
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('pronosticos_eliminacion')
+    .select('id,participante_id,partido_id,goles_local,goles_visita,clasificado_lado,enviado_en,actualizado_en')
+    .in('participante_id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return obtenerUltimosPorClave(data, (fila) => `${fila.participante_id}|${fila.partido_id}`);
+}
+
+export async function obtenerPronosticosGruposPartidoParticipantes(partidoId, participanteIds) {
+  const ids = [...new Set((participanteIds || []).filter(Boolean))];
+
+  if (!partidoId || ids.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('pronosticos_grupos')
+    .select('id,participante_id,goles_local,goles_visita,enviado_en,actualizado_en')
+    .eq('partido_id', partidoId)
+    .in('participante_id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return new Map(
+    obtenerUltimosPorClave(data, (fila) => fila.participante_id)
+      .map((fila) => [fila.participante_id, fila])
+  );
+}
+
+export async function obtenerPronosticosEliminacionPartidoParticipantes(partidoId, participanteIds) {
+  const ids = [...new Set((participanteIds || []).filter(Boolean))];
+
+  if (!partidoId || ids.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('pronosticos_eliminacion')
+    .select('id,participante_id,goles_local,goles_visita,clasificado_lado,enviado_en,actualizado_en')
+    .eq('partido_id', partidoId)
+    .in('participante_id', ids);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return new Map(
+    obtenerUltimosPorClave(data, (fila) => fila.participante_id)
+      .map((fila) => [fila.participante_id, fila])
+  );
 }

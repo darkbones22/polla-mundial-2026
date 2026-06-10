@@ -3,6 +3,10 @@ import {
   calcularPuntosEliminacion,
   calcularPuntosGrupos
 } from './puntaje.service.js';
+import {
+  obtenerPronosticosEliminacionParticipantes,
+  obtenerPronosticosGruposParticipantes
+} from './pronosticos.service.js';
 
 function crearFilaRanking(fila) {
   return {
@@ -88,32 +92,6 @@ async function obtenerParticipantesActivosPolla(pollaId) {
   return (data || [])
     .filter((fila) => fila.participantes?.activo)
     .map(crearFilaRanking);
-}
-
-async function obtenerPronosticosGruposPolla(pollaId) {
-  const { data, error } = await supabase
-    .from('pronosticos_grupos')
-    .select('participante_id,partido_id,goles_local,goles_visita')
-    .eq('polla_id', pollaId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data || [];
-}
-
-async function obtenerPronosticosEliminacionPolla(pollaId) {
-  const { data, error } = await supabase
-    .from('pronosticos_eliminacion')
-    .select('participante_id,partido_id,goles_local,goles_visita,clasificado_lado')
-    .eq('polla_id', pollaId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data || [];
 }
 
 async function obtenerPartidosGruposRanking() {
@@ -218,16 +196,17 @@ function ordenarRanking(ranking) {
 }
 
 export async function obtenerRankingPolla(pollaId) {
+  const participantes = await obtenerParticipantesActivosPolla(pollaId);
+  const participanteIds = participantes.map((participante) => participante.participanteId);
+
   const [
-    participantes,
     pronosticosGrupos,
     pronosticosEliminacion,
     partidosGrupos,
     partidosEliminacion
   ] = await Promise.all([
-    obtenerParticipantesActivosPolla(pollaId),
-    obtenerPronosticosGruposPolla(pollaId),
-    obtenerPronosticosEliminacionPolla(pollaId),
+    obtenerPronosticosGruposParticipantes(participanteIds),
+    obtenerPronosticosEliminacionParticipantes(participanteIds),
     obtenerPartidosGruposRanking(),
     obtenerPartidosEliminacionRanking()
   ]);

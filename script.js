@@ -958,6 +958,8 @@ function validarCodigoConServidor(codigoUsuario) {
 async function cargarPronosticosUsuarioConServidor() {
   const idPolla = obtenerPollaGlobalSeleccionada();
 
+  console.info("[Pronósticos] cargando pronósticos globales del usuario");
+
   if (!idPolla) {
     return {
       ok: false,
@@ -1004,6 +1006,8 @@ async function guardarPronosticosConServidor(datosGuardado) {
   const tipo = datosGuardado.tipo || "grupos";
   const idPolla = obtenerPollaGlobalSeleccionada();
   const pronosticos = datosGuardado.pronosticos || [];
+
+  console.info("[Pronósticos] guardando pronósticos globales del usuario");
 
   console.info("[Guardar pronósticos] usando Node/Supabase");
   console.info("[Guardar pronósticos] tipo:", tipo);
@@ -1461,6 +1465,8 @@ function llenarSelectorPollaGlobal(pollas) {
 
 function cambiarPollaGlobal() {
   const idPolla = obtenerPollaGlobalSeleccionada();
+
+  console.info("[Polla] cambio de polla: solo cambia ranking/participantes, no pronósticos");
 
   if (idPolla) {
     localStorage.setItem(obtenerClavePollaGlobal(), idPolla);
