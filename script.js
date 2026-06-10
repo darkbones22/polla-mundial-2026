@@ -747,11 +747,7 @@ function renderizarResultadosGrupos() {
       </div>
 
       <div class="result-hint">
-        ${resultadoFinalizado
-          ? "Ver detalle de puntos"
-          : abiertoParaPronosticar
-            ? "Ver detalle"
-            : "Ver pron\u00f3sticos registrados"}
+        ${estadoResultado.accion}
       </div>
     `;
 
