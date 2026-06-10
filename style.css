@@ -271,6 +271,36 @@ body {
   text-align: center;
 }
 
+.result-status {
+  justify-self: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.result-status--available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.result-status--closed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.result-status--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.result-status--final {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .result-qualified {
   margin-top: 3px;
   color: #1d4ed8;
@@ -291,9 +321,10 @@ body {
 }
 
 .result-detail-panel {
+  position: relative;
   margin-top: -2px;
   margin-bottom: 6px;
-  padding: 10px;
+  padding: 10px 36px 10px 10px;
   border: 1px solid #dbeafe;
   border-radius: 12px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -363,6 +394,36 @@ body {
   line-height: 1.35;
 }
 
+.result-detail-private.match-detail--available {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.result-detail-private.match-detail--available strong {
+  color: #166534;
+}
+
+.result-detail-private.match-detail--pending {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.result-detail-private.match-detail--pending strong {
+  color: #92400e;
+}
+
+.result-detail-note.match-detail--closed {
+  display: inline-flex;
+  max-width: 100%;
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fff1f2;
+  color: #991b1b;
+  font-weight: 800;
+}
+
 .result-detail-private strong {
   color: #1d4ed8;
 }
@@ -381,6 +442,9 @@ body {
 }
 
 .result-detail-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   flex: 0 0 auto;
   width: 22px;
   height: 22px;

@@ -477,6 +477,79 @@ function partidoDisponibleParaPronosticar(partido) {
   return !obtenerEstadoVisualGrupo(partido).bloqueado;
 }
 
+function obtenerEstadoResultadoPartido(partido, tipo = "grupos") {
+  if (tipo === "eliminacion") {
+    const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
+
+    if (resultadoFinalizado) {
+      return {
+        clave: "final",
+        texto: "Finalizado",
+        descripcion: "El resultado real ya fue ingresado.",
+        accion: "Ver detalle de puntos"
+      };
+    }
+
+    const bloqueadoPorHora = estaBloqueado({
+      fecha: partido.fecha,
+      hora: partido.hora
+    });
+    const estadoVisual = obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora);
+
+    if (!estadoVisual.bloqueado) {
+      return {
+        clave: "available",
+        texto: "Disponible",
+        descripcion: "Puedes editar tu pron\u00f3stico.",
+        accion: "Ver detalle"
+      };
+    }
+
+    if (String(partido.estado || "").trim().toLowerCase() === "pendiente") {
+      return {
+        clave: "pending",
+        texto: "Pendiente",
+        descripcion: "El partido a\u00fan no est\u00e1 disponible o falta informaci\u00f3n.",
+        accion: "Ver detalle"
+      };
+    }
+
+    return {
+      clave: "closed",
+      texto: "Cerrado",
+      descripcion: "El partido ya no se puede editar.",
+      accion: "Ver pron\u00f3sticos registrados"
+    };
+  }
+
+  const resultadoFinalizado = resultadoGrupoFinalizadoValido(partido.id);
+
+  if (resultadoFinalizado) {
+    return {
+      clave: "final",
+      texto: "Finalizado",
+      descripcion: "El resultado real ya fue ingresado.",
+      accion: "Ver detalle de puntos"
+    };
+  }
+
+  if (partidoDisponibleParaPronosticar(partido)) {
+    return {
+      clave: "available",
+      texto: "Disponible",
+      descripcion: "Puedes editar tu pron\u00f3stico.",
+      accion: "Ver detalle"
+    };
+  }
+
+  return {
+    clave: "closed",
+    texto: "Cerrado",
+    descripcion: "El partido ya no se puede editar.",
+    accion: "Ver pron\u00f3sticos registrados"
+  };
+}
+
 function obtenerOrdenEstadoGrupo(partido) {
   const estadoVisual = obtenerEstadoVisualGrupo(partido);
 
@@ -640,11 +713,11 @@ function renderizarResultadosGrupos() {
   partidosResultados.forEach((partido) => {
     const resultado = resultadosGrupos[partido.id];
     const resultadoFinalizado = resultadoGrupoFinalizadoValido(partido.id);
-    const abiertoParaPronosticar = partidoDisponibleParaPronosticar(partido);
+    const estadoResultado = obtenerEstadoResultadoPartido(partido, "grupos");
 
     const marcador = resultadoFinalizado
       ? `${escapeHTML(resultado.golesLocalReal)} - ${escapeHTML(resultado.golesVisitaReal)}`
-      : "Resultado pendiente";
+      : estadoResultado.texto;
 
     const grupoSeguro = escapeHTML(partido.grupo);
     const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
@@ -666,7 +739,10 @@ function renderizarResultadosGrupos() {
 
       <div class="result-row">
         <div class="team local">${localSeguro}</div>
-        <div class="${resultadoFinalizado ? "result-score" : "result-pending"}">${marcador}</div>
+        <div
+          class="${resultadoFinalizado ? "result-score" : `result-status result-status--${estadoResultado.clave}`}"
+          title="${escapeHTML(estadoResultado.descripcion)}"
+        >${escapeHTML(marcador)}</div>
         <div class="team visitante">${visitaSeguro}</div>
       </div>
 
@@ -844,39 +920,31 @@ function obtenerTextoPronosticoPropio(pronostico, partido) {
 function mostrarDetallePartido(panel, respuesta) {
   const partido = respuesta.partido || {};
   const participantes = respuesta.participantes || [];
-  const nombrePolla = respuesta.polla ? respuesta.polla.nombre : obtenerNombrePollaPorId(obtenerPollaGlobalSeleccionada());
   const resultadoFinalizado = respuesta.resultadoFinalizado !== false;
-  const local = obtenerNombreEquipo(partido.local || partido.localPlaceholder || "Local");
-  const visita = obtenerNombreEquipo(partido.visita || partido.visitaPlaceholder || "Visita");
-  const encabezadoPartido = resultadoFinalizado
-    ? `${partido.golesLocalReal} - ${partido.golesVisitaReal}`
-    : "vs";
+  const estadoDetalle = String(respuesta.estadoDetalle || "").toLowerCase();
   const avisoPendiente = resultadoFinalizado
     ? ""
     : `
-        <p class="result-detail-note">
+        <p class="result-detail-note match-detail--closed">
           Pron\u00f3sticos registrados. Los puntos se calcular\u00e1n cuando el resultado sea final.
         </p>
       `;
 
   if (respuesta.pronosticosOcultos) {
-    panel.innerHTML = `
-      <div class="result-detail-header">
-        <div>
-          <span class="result-detail-kicker">${escapeHTML(nombrePolla)}</span>
-          <div class="result-detail-match">
-            <strong>${escapeHTML(local)}</strong>
-            <span>${escapeHTML(encabezadoPartido)}</span>
-            <strong>${escapeHTML(visita)}</strong>
-          </div>
-        </div>
-        <button class="result-detail-close" type="button" aria-label="Cerrar detalle">&times;</button>
-      </div>
+    const esPendiente = estadoDetalle === "pendiente";
 
-      <div class="result-detail-private">
-        <strong>Este partido a\u00fan est\u00e1 abierto para pronosticar.</strong>
-        <span>Los pron\u00f3sticos de otros participantes se mostrar\u00e1n cuando se cierre el plazo.</span>
-        <em>${escapeHTML(obtenerTextoPronosticoPropio(respuesta.pronosticoPropio, partido))}</em>
+    panel.innerHTML = `
+      <button class="result-detail-close" type="button" aria-label="Cerrar detalle">&times;</button>
+      <div class="result-detail-private ${esPendiente ? "match-detail--pending" : "match-detail--available"}">
+        <strong>${esPendiente
+          ? "Este partido a\u00fan no est\u00e1 disponible o falta informaci\u00f3n."
+          : "Este partido a\u00fan est\u00e1 abierto para pronosticar."}</strong>
+        ${esPendiente
+          ? ""
+          : "<span>Los pron\u00f3sticos de otros participantes se mostrar\u00e1n cuando se cierre el plazo.</span>"}
+        ${esPendiente
+          ? ""
+          : `<em>${escapeHTML(obtenerTextoPronosticoPropio(respuesta.pronosticoPropio, partido))}</em>`}
       </div>
     `;
 
@@ -904,18 +972,8 @@ function mostrarDetallePartido(panel, respuesta) {
     : `<li class="result-detail-row empty">No hay participantes activos en esta polla.</li>`;
 
   panel.innerHTML = `
-    <div class="result-detail-header">
-      <div>
-        <span class="result-detail-kicker">${escapeHTML(nombrePolla)}</span>
-        <div class="result-detail-match">
-          <strong>${escapeHTML(local)}</strong>
-          <span>${escapeHTML(encabezadoPartido)}</span>
-          <strong>${escapeHTML(visita)}</strong>
-        </div>
-        ${avisoPendiente}
-      </div>
-      <button class="result-detail-close" type="button" aria-label="Cerrar detalle">&times;</button>
-    </div>
+    <button class="result-detail-close" type="button" aria-label="Cerrar detalle">&times;</button>
+    ${avisoPendiente}
 
     <ul class="result-detail-list">
       ${filas}
@@ -3177,15 +3235,10 @@ function renderizarResultadosEliminacion(llavesCerradas) {
     }
 
     const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
-    const bloqueadoPorHora = estaBloqueado({
-      fecha: partido.fecha,
-      hora: partido.hora
-    });
-    const estadoVisual = obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora);
-    const abiertoParaPronosticar = !estadoVisual.bloqueado;
+    const estadoResultado = obtenerEstadoResultadoPartido(partido, "eliminacion");
     const marcador = resultadoFinalizado
       ? `${escapeHTML(partido.golesLocalReal)} - ${escapeHTML(partido.golesVisitaReal)}`
-      : "Resultado pendiente";
+      : estadoResultado.texto;
     const localMostrado = partido.local || partido.localPlaceholder;
     const visitaMostrada = partido.visita || partido.visitaPlaceholder;
     const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
@@ -3211,18 +3264,17 @@ function renderizarResultadosEliminacion(llavesCerradas) {
       <div class="result-row">
         <div class="team local">${localSeguro}</div>
         <div>
-          <div class="${resultadoFinalizado ? "result-score" : "result-pending"}">${marcador}</div>
+          <div
+            class="${resultadoFinalizado ? "result-score" : `result-status result-status--${estadoResultado.clave}`}"
+            title="${escapeHTML(estadoResultado.descripcion)}"
+          >${escapeHTML(marcador)}</div>
           ${clasificaSeguro}
         </div>
         <div class="team visitante">${visitaSeguro}</div>
       </div>
 
       <div class="result-hint">
-        ${resultadoFinalizado
-          ? "Ver detalle de puntos"
-          : abiertoParaPronosticar
-            ? "Ver detalle"
-            : "Ver pron\u00f3sticos registrados"}
+        ${estadoResultado.accion}
       </div>
     `;
 

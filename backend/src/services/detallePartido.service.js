@@ -26,6 +26,11 @@ function resultadoFinalizadoEliminacion(partido) {
   );
 }
 
+function esPartidoPendienteNoDisponible(partido, tipo) {
+  const estado = String(partido?.estado || '').trim().toLowerCase();
+  return tipo === 'eliminacion' && estado === 'pendiente';
+}
+
 function mapearPartidoGrupo(partido) {
   const fechaHoraChile = obtenerFechaHoraChile(partido.fecha_hora);
 
@@ -135,7 +140,7 @@ export async function obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, pa
     golesVisita: partido.goles_visita_real
   };
 
-  if (disponibilidad.disponible) {
+  if (disponibilidad.disponible || esPartidoPendienteNoDisponible(partido, 'grupos')) {
     const pronosticoPropioPorParticipante = await obtenerPronosticosGruposPartidoParticipantes(
       partidoId,
       participanteActualId ? [participanteActualId] : []
@@ -147,9 +152,11 @@ export async function obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, pa
       tipo: 'grupos',
       partido: mapearPartidoGrupo(partido),
       resultadoFinalizado: finalizado,
-      estadoDetalle: 'abierto',
+      estadoDetalle: disponibilidad.disponible ? 'abierto' : 'pendiente',
       pronosticosOcultos: true,
-      mensajeOculto: 'Este partido aun esta abierto para pronosticar. Los pronosticos de otros participantes se mostraran cuando se cierre el plazo.',
+      mensajeOculto: disponibilidad.disponible
+        ? 'Este partido aun esta abierto para pronosticar. Los pronosticos de otros participantes se mostraran cuando se cierre el plazo.'
+        : 'Este partido aun no esta disponible o falta informacion.',
       pronosticoPropio: pronosticoPropio
         ? {
           golesLocal: pronosticoPropio.goles_local,
@@ -212,7 +219,7 @@ export async function obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoI
     clasificadoRealLado: partido.clasificado_real_lado
   };
 
-  if (disponibilidad.disponible) {
+  if (disponibilidad.disponible || esPartidoPendienteNoDisponible(partido, 'eliminacion')) {
     const pronosticoPropioPorParticipante = await obtenerPronosticosEliminacionPartidoParticipantes(
       partidoId,
       participanteActualId ? [participanteActualId] : []
@@ -224,9 +231,11 @@ export async function obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoI
       tipo: 'eliminacion',
       partido: mapearPartidoEliminacion(partido),
       resultadoFinalizado: finalizado,
-      estadoDetalle: 'abierto',
+      estadoDetalle: disponibilidad.disponible ? 'abierto' : 'pendiente',
       pronosticosOcultos: true,
-      mensajeOculto: 'Este partido aun esta abierto para pronosticar. Los pronosticos de otros participantes se mostraran cuando se cierre el plazo.',
+      mensajeOculto: disponibilidad.disponible
+        ? 'Este partido aun esta abierto para pronosticar. Los pronosticos de otros participantes se mostraran cuando se cierre el plazo.'
+        : 'Este partido aun no esta disponible o falta informacion.',
       pronosticoPropio: pronosticoPropio
         ? {
           golesLocal: pronosticoPropio.goles_local,
