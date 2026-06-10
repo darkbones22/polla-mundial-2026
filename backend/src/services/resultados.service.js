@@ -5,10 +5,6 @@ function tieneGolesValidos(fila) {
   return Number.isInteger(fila.goles_local_real) && Number.isInteger(fila.goles_visita_real);
 }
 
-function esResultadoRelevante(fila) {
-  return tieneGolesValidos(fila) || ['Cerrado', 'Finalizado'].includes(fila.estado);
-}
-
 function mapearResultadoGrupo(fila) {
   const fechaHoraChile = obtenerFechaHoraChile(fila.fecha_hora);
 
@@ -58,9 +54,7 @@ export async function obtenerResultadosGrupos() {
     throw new Error(error.message);
   }
 
-  return (data || [])
-    .filter(esResultadoRelevante)
-    .map(mapearResultadoGrupo);
+  return (data || []).map(mapearResultadoGrupo);
 }
 
 export async function obtenerResultadosEliminacion() {
@@ -73,9 +67,7 @@ export async function obtenerResultadosEliminacion() {
     throw new Error(error.message);
   }
 
-  return (data || [])
-    .filter(esResultadoRelevante)
-    .map(mapearResultadoEliminacion);
+  return (data || []).map(mapearResultadoEliminacion);
 }
 
 export async function obtenerResultados(tipo) {

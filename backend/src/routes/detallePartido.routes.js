@@ -37,7 +37,12 @@ router.get('/', requerirAutenticacion, async (req, res, next) => {
       return;
     }
 
-    const detalle = await obtenerDetallePartido({ pollaId, partidoId, tipo });
+    const detalle = await obtenerDetallePartido({
+      pollaId,
+      partidoId,
+      tipo,
+      participanteActualId: req.sesion.participanteId
+    });
 
     if (!detalle) {
       res.status(404).json({

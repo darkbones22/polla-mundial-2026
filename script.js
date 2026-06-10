@@ -625,12 +625,10 @@ function renderizarResultadosGrupos() {
 
   contenedorResultados.innerHTML = "";
 
-  const partidosCerrados = ordenarPartidosPorFechaHora(
-    partidos.filter((partido) => !partidoDisponibleParaPronosticar(partido))
-  );
-  const llavesCerradas = obtenerLlavesEliminacionParaResultados();
+  const partidosResultados = ordenarPartidosPorFechaHora(partidos);
+  const llavesResultados = obtenerLlavesEliminacionParaResultados();
 
-  if (partidosCerrados.length === 0 && llavesCerradas.length === 0) {
+  if (partidosResultados.length === 0 && llavesResultados.length === 0) {
     contenedorResultados.innerHTML = `
       <div class="empty-state">
         Todavía no hay resultados disponibles.
@@ -639,9 +637,10 @@ function renderizarResultadosGrupos() {
     return;
   }
 
-  partidosCerrados.forEach((partido) => {
+  partidosResultados.forEach((partido) => {
     const resultado = resultadosGrupos[partido.id];
     const resultadoFinalizado = resultadoGrupoFinalizadoValido(partido.id);
+    const abiertoParaPronosticar = partidoDisponibleParaPronosticar(partido);
 
     const marcador = resultadoFinalizado
       ? `${escapeHTML(resultado.golesLocalReal)} - ${escapeHTML(resultado.golesVisitaReal)}`
@@ -672,7 +671,11 @@ function renderizarResultadosGrupos() {
       </div>
 
       <div class="result-hint">
-        ${resultadoFinalizado ? "Ver detalle de puntos" : "Ver pron\u00f3sticos registrados"}
+        ${resultadoFinalizado
+          ? "Ver detalle de puntos"
+          : abiertoParaPronosticar
+            ? "Ver detalle"
+            : "Ver pron\u00f3sticos registrados"}
       </div>
     `;
 
@@ -696,7 +699,7 @@ function renderizarResultadosGrupos() {
     });
   });
 
-  renderizarResultadosEliminacion(llavesCerradas);
+  renderizarResultadosEliminacion(llavesResultados);
 }
 
 function cerrarDetallesResultado() {
@@ -819,6 +822,25 @@ function obtenerTextoDetallePuntos(participante) {
   return `Pron\u00f3stico: ${golesLocal} - ${golesVisita}${clasifica}`;
 }
 
+function obtenerTextoPronosticoPropio(pronostico, partido) {
+  if (!pronostico) {
+    return "A\u00fan no has ingresado tu pron\u00f3stico para este partido.";
+  }
+
+  const golesLocal = pronostico.golesLocal ?? "";
+  const golesVisita = pronostico.golesVisita ?? "";
+  const clasifica = pronostico.clasifica || (
+    pronostico.clasificadoLado === "local"
+      ? partido.local || partido.localPlaceholder || ""
+      : pronostico.clasificadoLado === "visita"
+        ? partido.visita || partido.visitaPlaceholder || ""
+        : ""
+  );
+  const textoClasifica = clasifica ? ` \u00b7 Clasifica: ${clasifica}` : "";
+
+  return `Tu pron\u00f3stico: ${golesLocal} - ${golesVisita}${textoClasifica}`;
+}
+
 function mostrarDetallePartido(panel, respuesta) {
   const partido = respuesta.partido || {};
   const participantes = respuesta.participantes || [];
@@ -836,6 +858,40 @@ function mostrarDetallePartido(panel, respuesta) {
           Pron\u00f3sticos registrados. Los puntos se calcular\u00e1n cuando el resultado sea final.
         </p>
       `;
+
+  if (respuesta.pronosticosOcultos) {
+    panel.innerHTML = `
+      <div class="result-detail-header">
+        <div>
+          <span class="result-detail-kicker">${escapeHTML(nombrePolla)}</span>
+          <div class="result-detail-match">
+            <strong>${escapeHTML(local)}</strong>
+            <span>${escapeHTML(encabezadoPartido)}</span>
+            <strong>${escapeHTML(visita)}</strong>
+          </div>
+        </div>
+        <button class="result-detail-close" type="button" aria-label="Cerrar detalle">&times;</button>
+      </div>
+
+      <div class="result-detail-private">
+        <strong>Este partido a\u00fan est\u00e1 abierto para pronosticar.</strong>
+        <span>Los pron\u00f3sticos de otros participantes se mostrar\u00e1n cuando se cierre el plazo.</span>
+        <em>${escapeHTML(obtenerTextoPronosticoPropio(respuesta.pronosticoPropio, partido))}</em>
+      </div>
+    `;
+
+    const botonCerrarPrivado = panel.querySelector(".result-detail-close");
+
+    if (botonCerrarPrivado) {
+      botonCerrarPrivado.addEventListener("click", (event) => {
+        event.stopPropagation();
+        detalleResultadoAbierto = "";
+        cerrarDetallesResultado();
+      });
+    }
+
+    return;
+  }
 
   const filas = participantes.length
     ? participantes.map((participante, index) => `
@@ -3102,15 +3158,7 @@ function configurarDetalleRankingDesplegable() {
 }
 
 function obtenerLlavesEliminacionParaResultados() {
-  return llavesEliminacion.filter((partido) => {
-    const bloqueadoPorHora = estaBloqueado({
-      fecha: partido.fecha,
-      hora: partido.hora
-    });
-    const estadoVisual = obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora);
-
-    return estadoVisual.bloqueado;
-  });
+  return ordenarPartidosPorFechaHora(llavesEliminacion);
 }
 
 function renderizarResultadosEliminacion(llavesCerradas) {
@@ -3129,6 +3177,12 @@ function renderizarResultadosEliminacion(llavesCerradas) {
     }
 
     const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
+    const bloqueadoPorHora = estaBloqueado({
+      fecha: partido.fecha,
+      hora: partido.hora
+    });
+    const estadoVisual = obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora);
+    const abiertoParaPronosticar = !estadoVisual.bloqueado;
     const marcador = resultadoFinalizado
       ? `${escapeHTML(partido.golesLocalReal)} - ${escapeHTML(partido.golesVisitaReal)}`
       : "Resultado pendiente";
@@ -3164,7 +3218,11 @@ function renderizarResultadosEliminacion(llavesCerradas) {
       </div>
 
       <div class="result-hint">
-        ${resultadoFinalizado ? "Ver detalle de puntos" : "Ver pron\u00f3sticos registrados"}
+        ${resultadoFinalizado
+          ? "Ver detalle de puntos"
+          : abiertoParaPronosticar
+            ? "Ver detalle"
+            : "Ver pron\u00f3sticos registrados"}
       </div>
     `;
 

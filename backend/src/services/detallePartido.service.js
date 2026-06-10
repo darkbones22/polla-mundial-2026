@@ -8,6 +8,7 @@ import {
   obtenerPronosticosEliminacionPartidoParticipantes,
   obtenerPronosticosGruposPartidoParticipantes
 } from './pronosticos.service.js';
+import { estaPartidoDisponibleParaPronosticar } from '../utils/pronosticos.js';
 
 function tieneGolesValidos(partido) {
   return Number.isInteger(partido.goles_local_real) && Number.isInteger(partido.goles_visita_real);
@@ -119,20 +120,49 @@ function ordenarDetalle(detalle, finalizado) {
 }
 
 export async function obtenerDetallePartidoGrupos({ pollaId, partidoId }) {
-  const participantesPolla = await obtenerParticipantesDePolla(pollaId);
-  const participanteIds = participantesPolla.map((participante) => participante.participanteId);
-  const [partido, pronosticosPorParticipante] = await Promise.all([
-    obtenerPartidoGrupo(partidoId),
-    obtenerPronosticosGruposPartidoParticipantes(partidoId, participanteIds)
-  ]);
+  return obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, participanteActualId: '' });
+}
+
+export async function obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, participanteActualId }) {
+  const partido = await obtenerPartidoGrupo(partidoId);
 
   if (!partido) return null;
 
+  const disponibilidad = estaPartidoDisponibleParaPronosticar(partido, 'grupos');
   const finalizado = resultadoFinalizadoGrupo(partido);
   const resultado = {
     golesLocal: partido.goles_local_real,
     golesVisita: partido.goles_visita_real
   };
+
+  if (disponibilidad.disponible) {
+    const pronosticoPropioPorParticipante = await obtenerPronosticosGruposPartidoParticipantes(
+      partidoId,
+      participanteActualId ? [participanteActualId] : []
+    );
+    const pronosticoPropio = pronosticoPropioPorParticipante.get(participanteActualId);
+
+    return {
+      ok: true,
+      tipo: 'grupos',
+      partido: mapearPartidoGrupo(partido),
+      resultadoFinalizado: finalizado,
+      estadoDetalle: 'abierto',
+      pronosticosOcultos: true,
+      mensajeOculto: 'Este partido aun esta abierto para pronosticar. Los pronosticos de otros participantes se mostraran cuando se cierre el plazo.',
+      pronosticoPropio: pronosticoPropio
+        ? {
+          golesLocal: pronosticoPropio.goles_local,
+          golesVisita: pronosticoPropio.goles_visita
+        }
+        : null,
+      detalle: []
+    };
+  }
+
+  const participantesPolla = await obtenerParticipantesDePolla(pollaId);
+  const participanteIds = participantesPolla.map((participante) => participante.participanteId);
+  const pronosticosPorParticipante = await obtenerPronosticosGruposPartidoParticipantes(partidoId, participanteIds);
 
   const detalle = participantesPolla.map((participante) => {
     const pronostico = pronosticosPorParticipante.get(participante.participanteId);
@@ -166,21 +196,51 @@ export async function obtenerDetallePartidoGrupos({ pollaId, partidoId }) {
 }
 
 export async function obtenerDetallePartidoEliminacion({ pollaId, partidoId }) {
-  const participantesPolla = await obtenerParticipantesDePolla(pollaId);
-  const participanteIds = participantesPolla.map((participante) => participante.participanteId);
-  const [partido, pronosticosPorParticipante] = await Promise.all([
-    obtenerPartidoEliminacion(partidoId),
-    obtenerPronosticosEliminacionPartidoParticipantes(partidoId, participanteIds)
-  ]);
+  return obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoId, participanteActualId: '' });
+}
+
+export async function obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoId, participanteActualId }) {
+  const partido = await obtenerPartidoEliminacion(partidoId);
 
   if (!partido) return null;
 
+  const disponibilidad = estaPartidoDisponibleParaPronosticar(partido, 'eliminacion');
   const finalizado = resultadoFinalizadoEliminacion(partido);
   const resultado = {
     golesLocal: partido.goles_local_real,
     golesVisita: partido.goles_visita_real,
     clasificadoRealLado: partido.clasificado_real_lado
   };
+
+  if (disponibilidad.disponible) {
+    const pronosticoPropioPorParticipante = await obtenerPronosticosEliminacionPartidoParticipantes(
+      partidoId,
+      participanteActualId ? [participanteActualId] : []
+    );
+    const pronosticoPropio = pronosticoPropioPorParticipante.get(participanteActualId);
+
+    return {
+      ok: true,
+      tipo: 'eliminacion',
+      partido: mapearPartidoEliminacion(partido),
+      resultadoFinalizado: finalizado,
+      estadoDetalle: 'abierto',
+      pronosticosOcultos: true,
+      mensajeOculto: 'Este partido aun esta abierto para pronosticar. Los pronosticos de otros participantes se mostraran cuando se cierre el plazo.',
+      pronosticoPropio: pronosticoPropio
+        ? {
+          golesLocal: pronosticoPropio.goles_local,
+          golesVisita: pronosticoPropio.goles_visita,
+          clasificadoLado: pronosticoPropio.clasificado_lado
+        }
+        : null,
+      detalle: []
+    };
+  }
+
+  const participantesPolla = await obtenerParticipantesDePolla(pollaId);
+  const participanteIds = participantesPolla.map((participante) => participante.participanteId);
+  const pronosticosPorParticipante = await obtenerPronosticosEliminacionPartidoParticipantes(partidoId, participanteIds);
 
   const detalle = participantesPolla.map((participante) => {
     const pronostico = pronosticosPorParticipante.get(participante.participanteId);
@@ -214,13 +274,13 @@ export async function obtenerDetallePartidoEliminacion({ pollaId, partidoId }) {
   };
 }
 
-export async function obtenerDetallePartido({ pollaId, partidoId, tipo }) {
+export async function obtenerDetallePartido({ pollaId, partidoId, tipo, participanteActualId }) {
   if (tipo === 'grupos') {
-    return obtenerDetallePartidoGrupos({ pollaId, partidoId });
+    return obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, participanteActualId });
   }
 
   if (tipo === 'eliminacion') {
-    return obtenerDetallePartidoEliminacion({ pollaId, partidoId });
+    return obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoId, participanteActualId });
   }
 
   throw new Error('Tipo de detalle invalido');

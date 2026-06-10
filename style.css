@@ -351,6 +351,35 @@ body {
   line-height: 1.25;
 }
 
+.result-detail-private {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.result-detail-private strong {
+  color: #1d4ed8;
+}
+
+.result-detail-private em {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  font-style: normal;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
 .result-detail-close {
   flex: 0 0 auto;
   width: 22px;
