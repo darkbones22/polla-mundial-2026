@@ -92,17 +92,46 @@
     return { fecha, hora };
   }
 
+  function obtenerFechaHoraChile(fechaHora) {
+    const texto = String(fechaHora || "").trim();
+
+    if (!texto) return { fecha: "", hora: "" };
+
+    const fechaObj = new Date(texto);
+
+    if (Number.isNaN(fechaObj.getTime())) {
+      return separarFechaHora(texto);
+    }
+
+    const partes = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Santiago",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23"
+    }).formatToParts(fechaObj);
+    const mapa = Object.fromEntries(partes.map((parte) => [parte.type, parte.value]));
+
+    return {
+      fecha: `${mapa.year}-${mapa.month}-${mapa.day}`,
+      hora: `${mapa.hour}:${mapa.minute}`
+    };
+  }
+
   function obtenerIdPartido(partido) {
     return partido.id || partido.partidoId || partido.partido_id || "";
   }
 
   function obtenerFechaHoraPartidoNode(partido) {
-    const desdeFechaHora = separarFechaHora(partido.fechaHora || partido.fecha_hora);
+    const fechaHora = partido.fechaHora || partido.fecha_hora;
+    const desdeFechaHora = obtenerFechaHoraChile(fechaHora);
 
     return {
       fecha: partido.fecha || desdeFechaHora.fecha,
       hora: partido.hora || desdeFechaHora.hora,
-      fechaHora: partido.fechaHora || partido.fecha_hora || [
+      fechaHora: fechaHora || [
         partido.fecha || desdeFechaHora.fecha,
         partido.hora || desdeFechaHora.hora
       ].filter(Boolean).join("T")

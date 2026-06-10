@@ -3,6 +3,7 @@ import {
   calcularPuntosEliminacion,
   calcularPuntosGrupos
 } from './puntaje.service.js';
+import { obtenerFechaHoraChile } from '../utils/fechas.js';
 
 function tieneGolesValidos(partido) {
   return Number.isInteger(partido.goles_local_real) && Number.isInteger(partido.goles_visita_real);
@@ -21,10 +22,14 @@ function resultadoFinalizadoEliminacion(partido) {
 }
 
 function mapearPartidoGrupo(partido) {
+  const fechaHoraChile = obtenerFechaHoraChile(partido.fecha_hora);
+
   return {
     id: partido.id,
     grupo: partido.grupo,
     fechaHora: partido.fecha_hora,
+    fecha: fechaHoraChile.fecha,
+    hora: fechaHoraChile.hora,
     equipoLocal: partido.equipo_local,
     equipoVisita: partido.equipo_visita,
     golesLocalReal: partido.goles_local_real,
@@ -34,10 +39,14 @@ function mapearPartidoGrupo(partido) {
 }
 
 function mapearPartidoEliminacion(partido) {
+  const fechaHoraChile = obtenerFechaHoraChile(partido.fecha_hora);
+
   return {
     id: partido.id,
     ronda: partido.ronda,
     fechaHora: partido.fecha_hora,
+    fecha: fechaHoraChile.fecha,
+    hora: fechaHoraChile.hora,
     placeholderLocal: partido.placeholder_local,
     equipoLocal: partido.equipo_local,
     placeholderVisita: partido.placeholder_visita,

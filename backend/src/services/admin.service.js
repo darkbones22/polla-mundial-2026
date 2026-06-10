@@ -1,14 +1,19 @@
 import { supabase } from '../supabaseClient.js';
 import { normalizarCodigoLegacy } from '../utils/codigos.js';
+import { obtenerFechaHoraChile } from '../utils/fechas.js';
 
 const ESTADOS_VALIDOS = new Set(['Pendiente', 'Abierto', 'Cerrado', 'Finalizado']);
 const TIPOS_VALIDOS = new Set(['grupos', 'eliminacion']);
 
 function mapearPartidoGrupo(fila) {
+  const fechaHoraChile = obtenerFechaHoraChile(fila.fecha_hora);
+
   return {
     id: fila.id,
     grupo: fila.grupo,
     fechaHora: fila.fecha_hora,
+    fecha: fechaHoraChile.fecha,
+    hora: fechaHoraChile.hora,
     equipoLocal: fila.equipo_local,
     equipoVisita: fila.equipo_visita,
     golesLocalReal: fila.goles_local_real,
@@ -18,10 +23,14 @@ function mapearPartidoGrupo(fila) {
 }
 
 function mapearPartidoEliminacion(fila) {
+  const fechaHoraChile = obtenerFechaHoraChile(fila.fecha_hora);
+
   return {
     id: fila.id,
     ronda: fila.ronda,
     fechaHora: fila.fecha_hora,
+    fecha: fechaHoraChile.fecha,
+    hora: fechaHoraChile.hora,
     placeholderLocal: fila.placeholder_local,
     equipoLocal: fila.equipo_local,
     placeholderVisita: fila.placeholder_visita,
