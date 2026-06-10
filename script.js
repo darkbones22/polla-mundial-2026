@@ -478,6 +478,15 @@ function partidoDisponibleParaPronosticar(partido) {
 }
 
 function obtenerEstadoResultadoPartido(partido, tipo = "grupos") {
+  if (!partido || !partido.id) {
+    return {
+      clave: "pending",
+      texto: "Pendiente",
+      descripcion: "El partido a\u00fan no est\u00e1 disponible o falta informaci\u00f3n.",
+      accion: "Ver detalle"
+    };
+  }
+
   if (tipo === "eliminacion") {
     const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
 
@@ -693,7 +702,7 @@ function renderizarPartidos() {
   });
 }
 
-function renderizarResultadosGrupos() {
+function renderizarResultadosGruposLegacy() {
   if (!contenedorResultados) return;
 
   contenedorResultados.innerHTML = "";
@@ -772,6 +781,107 @@ function renderizarResultadosGrupos() {
   });
 
   renderizarResultadosEliminacion(llavesResultados);
+}
+
+function renderizarResultadosGrupos() {
+  if (!contenedorResultados) return;
+
+  try {
+    contenedorResultados.innerHTML = "";
+
+    const partidosResultados = ordenarPartidosPorFechaHora(Array.isArray(partidos) ? partidos : []);
+    const llavesResultados = obtenerLlavesEliminacionParaResultados();
+
+    if (partidosResultados.length === 0 && llavesResultados.length === 0) {
+      contenedorResultados.innerHTML = `
+        <div class="empty-state">
+          Todavía no hay resultados disponibles.
+        </div>
+      `;
+      return;
+    }
+
+    partidosResultados.forEach((partido) => {
+      try {
+        renderizarTarjetaResultadoGrupo(partido);
+      } catch (error) {
+        console.error("[Resultados] error al renderizar partido de grupos:", partido, error);
+      }
+    });
+
+    renderizarResultadosEliminacion(llavesResultados);
+  } catch (error) {
+    console.error("[Resultados] error al renderizar:", error);
+    contenedorResultados.innerHTML = `
+      <div class="empty-state">
+        No se pudieron mostrar los resultados. Intenta recargar la página.
+      </div>
+    `;
+  }
+}
+
+function renderizarTarjetaResultadoGrupo(partido) {
+  if (!partido || !partido.id) {
+    console.warn("[Resultados] partido de grupos omitido por datos incompletos:", partido);
+    return;
+  }
+
+  const resultado = resultadosGrupos[partido.id];
+  const resultadoFinalizado = resultadoGrupoFinalizadoValido(partido.id);
+  const estadoResultado = obtenerEstadoResultadoPartido(partido, "grupos");
+  const marcador = resultadoFinalizado
+    ? `${escapeHTML(resultado.golesLocalReal)} - ${escapeHTML(resultado.golesVisitaReal)}`
+    : estadoResultado.texto;
+  const grupoSeguro = escapeHTML(partido.grupo);
+  const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
+  const horaSegura = escapeHTML(partido.hora);
+  const localSeguro = escapeHTML(obtenerNombreEquipo(partido.local));
+  const visitaSeguro = escapeHTML(obtenerNombreEquipo(partido.visita));
+
+  const tarjeta = document.createElement("article");
+  tarjeta.className = "match-card result-card partido-bloqueado";
+  tarjeta.setAttribute("role", "button");
+  tarjeta.setAttribute("tabindex", "0");
+  tarjeta.setAttribute("aria-expanded", detalleResultadoAbierto === obtenerClaveDetalleResultado(partido.id, "grupos") ? "true" : "false");
+
+  tarjeta.innerHTML = `
+    <div class="match-info">
+      <span class="group-badge">Grupo ${grupoSeguro}</span>
+      ${fechaSegura} &middot; ${horaSegura} hrs
+    </div>
+
+    <div class="result-row">
+      <div class="team local">${localSeguro}</div>
+      <div
+        class="${resultadoFinalizado ? "result-score" : `result-status result-status--${estadoResultado.clave}`}"
+        title="${escapeHTML(estadoResultado.descripcion)}"
+      >${escapeHTML(marcador)}</div>
+      <div class="team visitante">${visitaSeguro}</div>
+    </div>
+
+    <div class="result-hint">
+      ${estadoResultado.accion}
+    </div>
+  `;
+
+  contenedorResultados.appendChild(tarjeta);
+
+  const panelDetalle = document.createElement("section");
+  panelDetalle.className = "result-detail-panel hidden";
+  panelDetalle.id = obtenerIdPanelDetalleResultado(partido.id, "grupos");
+  contenedorResultados.appendChild(panelDetalle);
+
+  const alternarDetalle = () => {
+    manejarClickDetalleResultado(partido, "grupos");
+  };
+
+  tarjeta.addEventListener("click", alternarDetalle);
+  tarjeta.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      alternarDetalle();
+    }
+  });
 }
 
 function cerrarDetallesResultado() {
