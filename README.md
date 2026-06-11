@@ -137,7 +137,7 @@ La hoja `Resultados_Eliminacion` queda sin uso por compatibilidad histórica.
 - Cerrado: no se puede editar.
 - Finalizado: ya tiene resultado real.
 
-Además, los partidos se bloquean automáticamente 1 hora antes de comenzar.
+Además, los partidos se bloquean automáticamente 30 minutos antes de comenzar.
 
 ## Reglas de puntaje fase de grupos
 

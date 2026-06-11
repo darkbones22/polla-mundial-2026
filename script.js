@@ -179,7 +179,7 @@ let partidos = [
 // REGLAS DE LA POLLA
 // =======================
 
-const HORAS_ANTES_BLOQUEO = 1;
+const MINUTOS_BLOQUEO_ANTES_PARTIDO = 30;
 const TOTAL_PARTIDOS_GRUPOS = 72;
 const TOTAL_PRONOSTICOS_ELIMINACION = 32;
 const CLAVE_SESION_USUARIO = "usuario";
@@ -277,7 +277,7 @@ function escapeHTML(texto) {
 function estaBloqueado(partido) {
   const inicioPartido = new Date(`${partido.fecha}T${partido.hora}:00`);
   const limiteEdicion = new Date(
-    inicioPartido.getTime() - HORAS_ANTES_BLOQUEO * 60 * 60 * 1000
+    inicioPartido.getTime() - MINUTOS_BLOQUEO_ANTES_PARTIDO * 60 * 1000
   );
 
   return new Date() >= limiteEdicion;

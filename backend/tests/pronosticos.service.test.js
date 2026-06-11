@@ -47,10 +47,10 @@ describe('pronosticos eliminacion', () => {
 });
 
 describe('disponibilidad de partidos', () => {
-  it('permite grupos en estado Pendiente si falta mas de una hora', () => {
+  it('permite grupos en estado Pendiente si faltan mas de 30 minutos', () => {
     const disponibilidad = estaPartidoDisponibleParaPronosticar({
       estado: 'Pendiente',
-      fecha_hora: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
+      fecha_hora: new Date(Date.now() + 31 * 60 * 1000).toISOString()
     }, 'grupos');
 
     assert.equal(disponibilidad.disponible, true);
@@ -59,14 +59,14 @@ describe('disponibilidad de partidos', () => {
   it('bloquea eliminacion en estado Pendiente', () => {
     const disponibilidad = estaPartidoDisponibleParaPronosticar({
       estado: 'Pendiente',
-      fecha_hora: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
+      fecha_hora: new Date(Date.now() + 31 * 60 * 1000).toISOString()
     }, 'eliminacion');
 
     assert.equal(disponibilidad.disponible, false);
     assert.equal(disponibilidad.motivo, 'estado');
   });
 
-  it('bloquea por horario si falta menos de una hora', () => {
+  it('bloquea por horario si faltan 30 minutos o menos', () => {
     const disponibilidad = estaPartidoDisponibleParaPronosticar({
       estado: 'Abierto',
       fecha_hora: new Date(Date.now() + 30 * 60 * 1000).toISOString()

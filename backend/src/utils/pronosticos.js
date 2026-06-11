@@ -1,5 +1,5 @@
-const MS_HORA = 60 * 60 * 1000;
-const HORAS_ANTES_BLOQUEO = 1;
+const MS_MINUTO = 60 * 1000;
+export const MINUTOS_BLOQUEO_ANTES_PARTIDO = 30;
 const LADOS_VALIDOS = new Set(['local', 'visita']);
 
 function normalizarEstado(estado) {
@@ -11,7 +11,7 @@ function estaBloqueadoPorHorario(fechaHora) {
 
   if (Number.isNaN(inicio)) return true;
 
-  return Date.now() >= inicio - HORAS_ANTES_BLOQUEO * MS_HORA;
+  return Date.now() >= inicio - MINUTOS_BLOQUEO_ANTES_PARTIDO * MS_MINUTO;
 }
 
 export function estaPartidoDisponibleParaPronosticar(partido, tipo) {
