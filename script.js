@@ -3886,29 +3886,36 @@ mostrarPollasDelParticipante(validacionCodigo);
 // GUARDAR USUARIO Y CÓDIGO
 // =======================
 
-const inputCodigoUsuario = document.getElementById("codigoUsuario");
+function configurarEventosLogin() {
+  const input = document.getElementById("codigoUsuario");
 
-inputCodigoUsuario.value = "";
+  if (!input || input.dataset.loginEventosListos === "true") {
+    return;
+  }
 
-inputCodigoUsuario.addEventListener("input", () => {
-  recargarPronosticosGruposDesdeLocalStorage();
-  recargarPronosticosEliminacionDesdeLocalStorage();
-  actualizarContadorPronosticos();
-  actualizarContadorEliminacion();
-  limpiarInfoPollas();
-});
+  input.dataset.loginEventosListos = "true";
+  input.value = "";
 
-inputCodigoUsuario.addEventListener("keydown", (event) => {
-  if (event.key !== "Enter") return;
+  input.addEventListener("input", () => {
+    recargarPronosticosGruposDesdeLocalStorage();
+    recargarPronosticosEliminacionDesdeLocalStorage();
+    actualizarContadorPronosticos();
+    actualizarContadorEliminacion();
+    limpiarInfoPollas();
+  });
 
-  event.preventDefault();
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
 
-  const btnIngresar = document.getElementById("btnIngresar");
+    event.preventDefault();
 
-  if (btnIngresar?.disabled) return;
+    const btnIngresar = document.getElementById("btnIngresar");
 
-  iniciarSesion();
-});
+    if (btnIngresar?.disabled) return;
+
+    iniciarSesion();
+  });
+}
 
 document.addEventListener("click", cerrarDropdownPollaGlobal);
 
@@ -4279,6 +4286,7 @@ async function inicializarApp() {
   console.info("[App] modo API:", window.PollaApiClient?.API_MODE);
   console.info("[Polla API] usando backend:", window.PollaApiClient?.NODE_API_BASE_URL);
   console.info("[Polla API] modo:", window.PollaApiClient?.API_MODE);
+  configurarEventosLogin();
 
   if (!window.PollaApiClient) {
     throw new Error("No se cargó api-client.js.");
