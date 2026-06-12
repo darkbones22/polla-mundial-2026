@@ -1071,8 +1071,10 @@ function mostrarDetallePartido(panel, respuesta) {
     ? participantes.map((participante, index) => `
         <li class="result-detail-row">
           <span class="result-detail-position">${index + 1}.</span>
-          <strong class="result-detail-name">${escapeHTML(participante.nombre)}</strong>
-          <span class="result-detail-prediction">${escapeHTML(obtenerTextoDetallePuntos(participante))}</span>
+          <span class="result-detail-main">
+            <strong class="result-detail-name">${escapeHTML(participante.nombre)}</strong>
+            <span class="result-detail-prediction">${escapeHTML(obtenerTextoDetallePuntos(participante))}</span>
+          </span>
           <strong class="result-detail-points">${escapeHTML(participante.puntos || 0)} pts</strong>
         </li>`).join("")
     : `<li class="result-detail-row empty">No hay participantes activos en esta polla.</li>`;
