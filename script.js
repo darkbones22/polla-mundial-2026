@@ -274,6 +274,10 @@ function escapeHTML(texto) {
     .replace(/'/g, "&#039;");
 }
 
+function esBanderaVerdadera(valor) {
+  return valor === true || valor === "true" || valor === 1 || valor === "1";
+}
+
 function estaBloqueado(partido) {
   const inicioPartido = new Date(`${partido.fecha}T${partido.hora}:00`);
   const limiteEdicion = new Date(
@@ -1716,12 +1720,15 @@ function cambiarPollaGlobal() {
 }
 
 function esAdminValidado(validacionCodigo) {
-  return validacionCodigo?.participante?.esAdmin === true ||
-    validacionCodigo?.participante?.es_admin === true;
+  return esBanderaVerdadera(validacionCodigo?.participante?.esAdmin) ||
+    esBanderaVerdadera(validacionCodigo?.participante?.es_admin);
 }
 
 function actualizarVisibilidadAdmin(validacionCodigo) {
   usuarioAdminActual = esAdminValidado(validacionCodigo);
+
+  console.info("[Admin] participante:", validacionCodigo?.participante || null);
+  console.info("[Admin] esAdmin:", usuarioAdminActual);
 
   const tabAdmin = document.getElementById("tabAdmin");
   const menuPrincipal = document.querySelector(".main-menu");

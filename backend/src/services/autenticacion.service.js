@@ -3,12 +3,16 @@ import { normalizarCodigoLegacy } from '../utils/codigos.js';
 import { crearTokenSesion } from '../utils/token.js';
 import { obtenerPollasParticipante } from './pollas.service.js';
 
+function esValorVerdadero(valor) {
+  return valor === true || valor === 'true' || valor === 1 || valor === '1';
+}
+
 function mapearParticipante(fila) {
   return {
     id: fila.id,
     codigoLegacy: fila.codigo_legacy,
     nombre: fila.nombre_visible,
-    esAdmin: fila.es_admin === true
+    esAdmin: esValorVerdadero(fila.es_admin)
   };
 }
 

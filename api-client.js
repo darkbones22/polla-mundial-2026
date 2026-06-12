@@ -22,6 +22,10 @@
     return Boolean(obtenerTokenNode());
   }
 
+  function esValorVerdadero(valor) {
+    return valor === true || valor === "true" || valor === 1 || valor === "1";
+  }
+
   async function llamarNodeApi(ruta, opciones = {}) {
     const headers = {
       ...(opciones.headers || {})
@@ -74,7 +78,8 @@
       participante: respuesta.participante
         ? {
           ...respuesta.participante,
-          esAdmin: respuesta.participante.esAdmin === true || respuesta.participante.es_admin === true
+          esAdmin: esValorVerdadero(respuesta.participante.esAdmin) ||
+            esValorVerdadero(respuesta.participante.es_admin)
         }
         : null,
       pollas: (respuesta.pollas || []).map((polla) => ({

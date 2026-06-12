@@ -1,5 +1,9 @@
 import { supabase } from '../supabaseClient.js';
 
+function esValorVerdadero(valor) {
+  return valor === true || valor === 'true' || valor === 1 || valor === '1';
+}
+
 export async function requerirAdmin(req, res, next) {
   const participanteId = req.sesion?.participanteId;
 
@@ -22,7 +26,7 @@ export async function requerirAdmin(req, res, next) {
       throw new Error(error.message);
     }
 
-    if (!data?.activo || data.es_admin !== true) {
+    if (!esValorVerdadero(data?.activo) || !esValorVerdadero(data?.es_admin)) {
       res.status(403).json({
         ok: false,
         error: 'No autorizado'
