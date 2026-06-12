@@ -7,7 +7,8 @@ function mapearParticipante(fila) {
   return {
     id: fila.id,
     codigoLegacy: fila.codigo_legacy,
-    nombre: fila.nombre_visible
+    nombre: fila.nombre_visible,
+    esAdmin: fila.es_admin === true
   };
 }
 
@@ -23,7 +24,7 @@ export async function validarCodigoParticipante(codigo) {
 
   const { data, error } = await supabase
     .from('participantes')
-    .select('id,codigo_legacy,nombre_visible,activo,codigo_hash')
+    .select('id,codigo_legacy,nombre_visible,activo,codigo_hash,es_admin')
     .eq('codigo_legacy', codigoNormalizado)
     .maybeSingle();
 

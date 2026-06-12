@@ -1136,7 +1136,6 @@ let filtroAdminUsuarios = "";
 let textoBusquedaAdminPollas = "";
 let filtroAdminPollas = "";
 
-const CODIGO_ADMIN = "agu-1111";
 const ESTADOS_ADMIN = ["Pendiente", "Abierto", "Cerrado", "Finalizado"];
 
 function cargarPartidosConServidor() {
@@ -1717,10 +1716,8 @@ function cambiarPollaGlobal() {
 }
 
 function esAdminValidado(validacionCodigo) {
-  const codigoParticipante = String(validacionCodigo?.participante?.codigoLegacy || "").trim().toLowerCase();
-  const codigoActual = obtenerCodigoActual();
-
-  return codigoParticipante === CODIGO_ADMIN || codigoActual === CODIGO_ADMIN;
+  return validacionCodigo?.participante?.esAdmin === true ||
+    validacionCodigo?.participante?.es_admin === true;
 }
 
 function actualizarVisibilidadAdmin(validacionCodigo) {
@@ -1728,6 +1725,7 @@ function actualizarVisibilidadAdmin(validacionCodigo) {
 
   const tabAdmin = document.getElementById("tabAdmin");
   const menuPrincipal = document.querySelector(".main-menu");
+  const seccionAdmin = document.getElementById("seccionAdmin");
 
   if (tabAdmin) {
     tabAdmin.classList.toggle("hidden", !usuarioAdminActual);
@@ -1736,6 +1734,11 @@ function actualizarVisibilidadAdmin(validacionCodigo) {
 
   if (menuPrincipal) {
     menuPrincipal.classList.toggle("admin-visible", usuarioAdminActual);
+  }
+
+  if (!usuarioAdminActual) {
+    tabAdmin?.classList.remove("active");
+    seccionAdmin?.classList.add("hidden");
   }
 }
 
@@ -1757,7 +1760,10 @@ function manejarErrorAdmin(respuesta) {
   }
 
   if (respuesta?.status === 403) {
+    usuarioAdminActual = false;
+    actualizarVisibilidadAdmin(null);
     mostrarFeedbackAdmin("No autorizado.", "error");
+    mostrarSeccion("pronosticos");
     return true;
   }
 

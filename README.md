@@ -139,6 +139,29 @@ La hoja `Resultados_Eliminacion` queda sin uso por compatibilidad histórica.
 
 Además, los partidos se bloquean automáticamente 30 minutos antes de comenzar.
 
+## Administradores
+
+El acceso administrador se controla con el campo `es_admin` en la tabla `participantes`.
+No hay códigos de administrador hardcodeados en el frontend ni en el backend.
+
+Para activar un administrador:
+
+```sql
+UPDATE participantes
+SET es_admin = true
+WHERE codigo_legacy = 'codigo-del-participante';
+```
+
+Para quitar acceso administrador:
+
+```sql
+UPDATE participantes
+SET es_admin = false
+WHERE codigo_legacy = 'codigo-del-participante';
+```
+
+El participante debe estar activo para usar el panel administrador. Si `activo = false` o `es_admin = false`, las rutas de administración responden `403`.
+
 ## Reglas de puntaje fase de grupos
 
 - 10 puntos por marcador exacto. Si es exacto, no suma otros criterios.

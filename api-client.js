@@ -71,7 +71,12 @@
     return {
       ok: true,
       nombre: respuesta.participante?.nombre || "",
-      participante: respuesta.participante || null,
+      participante: respuesta.participante
+        ? {
+          ...respuesta.participante,
+          esAdmin: respuesta.participante.esAdmin === true || respuesta.participante.es_admin === true
+        }
+        : null,
       pollas: (respuesta.pollas || []).map((polla) => ({
         id: polla.id,
         idLegacy: polla.idLegacy,

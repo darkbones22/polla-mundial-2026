@@ -1,9 +1,9 @@
-const CODIGO_ADMIN = 'agu-1111';
+import { supabase } from '../supabaseClient.js';
 
-export function requerirAdmin(req, res, next) {
-  const codigoLegacy = String(req.sesion?.codigoLegacy || '').trim().toLowerCase();
+export async function requerirAdmin(req, res, next) {
+  const participanteId = req.sesion?.participanteId;
 
-  if (codigoLegacy !== CODIGO_ADMIN) {
+  if (!participanteId) {
     res.status(403).json({
       ok: false,
       error: 'No autorizado'
@@ -11,5 +11,27 @@ export function requerirAdmin(req, res, next) {
     return;
   }
 
-  next();
+  try {
+    const { data, error } = await supabase
+      .from('participantes')
+      .select('id,activo,es_admin')
+      .eq('id', participanteId)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data?.activo || data.es_admin !== true) {
+      res.status(403).json({
+        ok: false,
+        error: 'No autorizado'
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 }
