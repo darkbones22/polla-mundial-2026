@@ -71,6 +71,41 @@ describe('puntaje fase de grupos', () => {
     assert.equal(detalle.ganadorEmpate, true);
     assert.equal(detalle.diferencia, true);
   });
+
+  it('suma diferencia por margen absoluto aunque cambie el ganador', () => {
+    const detalle = calcularPuntosGrupos(
+      { golesLocal: 1, golesVisita: 2 },
+      { golesLocal: 2, golesVisita: 1 }
+    );
+
+    assert.equal(detalle.puntos, 1);
+    assert.equal(detalle.ganadorEmpate, false);
+    assert.equal(detalle.golesLocal, false);
+    assert.equal(detalle.golesVisita, false);
+    assert.equal(detalle.diferencia, true);
+  });
+
+  it('suma ganador correcto y margen absoluto sin exacto', () => {
+    const detalle = calcularPuntosGrupos(
+      { golesLocal: 3, golesVisita: 2 },
+      { golesLocal: 2, golesVisita: 1 }
+    );
+
+    assert.equal(detalle.puntos, 6);
+    assert.equal(detalle.ganadorEmpate, true);
+    assert.equal(detalle.diferencia, true);
+  });
+
+  it('suma empate correcto y margen absoluto en empates sin exacto', () => {
+    const detalle = calcularPuntosGrupos(
+      { golesLocal: 0, golesVisita: 0 },
+      { golesLocal: 1, golesVisita: 1 }
+    );
+
+    assert.equal(detalle.puntos, 6);
+    assert.equal(detalle.ganadorEmpate, true);
+    assert.equal(detalle.diferencia, true);
+  });
 });
 
 describe('puntaje fase de eliminacion', () => {
@@ -151,6 +186,18 @@ describe('puntaje fase de eliminacion', () => {
     assert.equal(detalle.diferencia, true);
     assert.equal(detalle.clasificado, true);
   });
+
+  it('suma margen absoluto y clasificado correcto aunque cambie el ganador', () => {
+    const detalle = calcularPuntosEliminacion(
+      { golesLocal: 1, golesVisita: 2, clasificadoLado: 'local' },
+      { golesLocal: 2, golesVisita: 1, clasificadoRealLado: 'local' }
+    );
+
+    assert.equal(detalle.puntos, 4);
+    assert.equal(detalle.ganadorEmpate, false);
+    assert.equal(detalle.diferencia, true);
+    assert.equal(detalle.clasificado, true);
+  });
 });
 
 describe('validaciones y helpers de puntaje', () => {
@@ -181,5 +228,6 @@ describe('validaciones y helpers de puntaje', () => {
     assert.equal(obtenerGanador(1, 3), 'visita');
     assert.equal(obtenerGanador(2, 2), 'empate');
     assert.equal(obtenerDiferencia(3, 1), 2);
+    assert.equal(obtenerDiferencia(1, 3), 2);
   });
 });

@@ -55,18 +55,20 @@ export function obtenerGanador(golesLocal, golesVisita) {
 
 export function obtenerDiferencia(golesLocal, golesVisita) {
   if (!esGolValido(golesLocal) || !esGolValido(golesVisita)) return null;
-  return golesLocal - golesVisita;
+  return Math.abs(golesLocal - golesVisita);
 }
 
 export function obtenerClasificadoPronosticado(pronostico) {
   const { golesLocal, golesVisita, valido } = marcadorDesde(pronostico);
+  const clasificadoLado = pronostico?.clasificadoLado || pronostico?.clasificado_lado || '';
+
+  if (LADOS_VALIDOS.has(clasificadoLado)) return clasificadoLado;
 
   if (!valido) return '';
   if (golesLocal > golesVisita) return 'local';
   if (golesVisita > golesLocal) return 'visita';
 
-  const clasificadoLado = pronostico?.clasificadoLado || pronostico?.clasificado_lado || '';
-  return LADOS_VALIDOS.has(clasificadoLado) ? clasificadoLado : '';
+  return '';
 }
 
 export function calcularPuntosGrupos(pronostico, resultado) {

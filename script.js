@@ -3367,7 +3367,7 @@ function obtenerDetalleRankingGruposCompleto(participante) {
   return `
     <p>Resultado exacto / pleno: ${escapeHTML(participante.exactosGrupos || 0)}</p>
     <p>Acertó ganador/empate: ${escapeHTML(participante.ganadorEmpateGrupos || 0)}</p>
-    <p>Acertó diferencia de gol: ${escapeHTML(participante.diferenciaGrupos || 0)}</p>
+    <p>Acertó diferencia/margen de gol: ${escapeHTML(participante.diferenciaGrupos || 0)}</p>
     <p>Predicciones enviadas: ${escapeHTML(participante.partidosGrupos || 0)}</p>
   `;
 }
@@ -3498,7 +3498,7 @@ function obtenerDetalleSegunTipo(participante) {
       Ganador/empate: ${escapeHTML(participante.ganadorEmpateGrupos || 0)} ·
       Goles local: ${escapeHTML(participante.golesLocalGrupos || 0)} ·
       Goles visita: ${escapeHTML(participante.golesVisitaGrupos || 0)} ·
-      Diferencia: ${escapeHTML(participante.diferenciaGrupos || 0)} ·
+      Margen: ${escapeHTML(participante.diferenciaGrupos || 0)} ·
       Partidos: ${escapeHTML(participante.partidosGrupos || 0)}
     `;
   }
@@ -3511,7 +3511,7 @@ function obtenerDetalleSegunTipo(participante) {
       Ganador/empate: ${escapeHTML(participante.ganadorEmpateEliminacion || 0)} ·
       Goles local: ${escapeHTML(participante.golesLocalEliminacion || 0)} ·
       Goles visita: ${escapeHTML(participante.golesVisitaEliminacion || 0)} ·
-      Diferencia: ${escapeHTML(participante.diferenciaEliminacion || 0)} ·
+      Margen: ${escapeHTML(participante.diferenciaEliminacion || 0)} ·
       Partidos: ${escapeHTML(participante.partidosEliminacion || 0)}
     `;
   }

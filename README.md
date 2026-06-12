@@ -172,7 +172,7 @@ El participante debe estar activo para usar el panel administrador. Si `activo =
   - +5 por acertar ganador o empate.
   - +2 por acertar goles del local.
   - +2 por acertar goles del visitante.
-  - +1 por acertar diferencia de gol.
+  - +1 por acertar diferencia/margen de gol.
 
 ## Reglas de puntaje eliminación directa
 
@@ -185,7 +185,7 @@ Si no es exacto:
 - +5 por acertar ganador o empate del marcador.
 - +2 por acertar goles del local.
 - +2 por acertar goles del visitante.
-- +1 por acertar diferencia de gol.
+- +1 por acertar diferencia/margen de gol.
 - +3 por acertar equipo que clasifica.
 
 ## Pendientes principales
