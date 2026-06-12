@@ -1322,8 +1322,13 @@ async function sincronizarPronosticosUsuarioDesdeServidor(codigoUsuario) {
 async function iniciarSesion() {
   console.info("[Login] usando solo código");
 
-  const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
   const btnIngresar = document.getElementById("btnIngresar");
+
+  if (btnIngresar?.disabled) {
+    return;
+  }
+
+  const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
 
   console.info("[Login] código ingresado:", codigoUsuario);
 
@@ -3891,6 +3896,18 @@ inputCodigoUsuario.addEventListener("input", () => {
   actualizarContadorPronosticos();
   actualizarContadorEliminacion();
   limpiarInfoPollas();
+});
+
+inputCodigoUsuario.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+
+  event.preventDefault();
+
+  const btnIngresar = document.getElementById("btnIngresar");
+
+  if (btnIngresar?.disabled) return;
+
+  iniciarSesion();
 });
 
 document.addEventListener("click", cerrarDropdownPollaGlobal);
