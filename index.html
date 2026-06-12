@@ -23,23 +23,25 @@
         rankings y pollas activas.
       </p>
 
-      <label for="codigoUsuario" class="second-label">Código de participante</label>
-      <input 
-        type="text" 
-        id="codigoUsuario" 
-        placeholder="Ingresa tu código" 
-        autocomplete="off"
-      />
+      <form id="loginForm">
+        <label for="codigoUsuario" class="second-label">Código de participante</label>
+        <input
+          type="text"
+          id="codigoUsuario"
+          placeholder="Ingresa tu código"
+          autocomplete="off"
+        />
 
-      <p class="user-help">
-        Usa el código que se te entregó para ingresar y editar tus pronósticos.
-      </p>
+        <p class="user-help">
+          Usa el código que se te entregó para ingresar y editar tus pronósticos.
+        </p>
 
-      <div id="infoPollas" class="pollas-info hidden"></div>
+        <div id="infoPollas" class="pollas-info hidden"></div>
 
-      <button id="btnIngresar" onclick="iniciarSesion()">
-        Ingresar
-      </button>
+        <button id="btnIngresar" type="submit">
+          Ingresar
+        </button>
+      </form>
     </section>
   </main>
 

@@ -3887,26 +3887,17 @@ mostrarPollasDelParticipante(validacionCodigo);
 // =======================
 
 function configurarEventosLogin() {
+  const form = document.getElementById("loginForm");
   const input = document.getElementById("codigoUsuario");
 
-  if (!input || input.dataset.loginEventosListos === "true") {
+  if (!form || !input || form.dataset.loginEventosListos === "true") {
     return;
   }
 
-  input.dataset.loginEventosListos = "true";
+  form.dataset.loginEventosListos = "true";
   input.value = "";
 
-  input.addEventListener("input", () => {
-    recargarPronosticosGruposDesdeLocalStorage();
-    recargarPronosticosEliminacionDesdeLocalStorage();
-    actualizarContadorPronosticos();
-    actualizarContadorEliminacion();
-    limpiarInfoPollas();
-  });
-
-  input.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter") return;
-
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
 
     const btnIngresar = document.getElementById("btnIngresar");
@@ -3914,6 +3905,14 @@ function configurarEventosLogin() {
     if (btnIngresar?.disabled) return;
 
     iniciarSesion();
+  });
+
+  input.addEventListener("input", () => {
+    recargarPronosticosGruposDesdeLocalStorage();
+    recargarPronosticosEliminacionDesdeLocalStorage();
+    actualizarContadorPronosticos();
+    actualizarContadorEliminacion();
+    limpiarInfoPollas();
   });
 }
 
