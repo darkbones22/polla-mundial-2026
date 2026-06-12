@@ -144,6 +144,9 @@ Además, los partidos se bloquean automáticamente 30 minutos antes de comenzar.
 El acceso administrador se controla con el campo `es_admin` en la tabla `participantes`.
 No hay códigos de administrador hardcodeados en el frontend ni en el backend.
 
+Desde la web, un administrador puede ir a Admin -> Usuarios, abrir un participante y activar o desactivar el switch
+`Administrador`. Ese cambio actualiza solo `participantes.es_admin` en Supabase y pasa siempre por el backend.
+
 Para activar un administrador:
 
 ```sql

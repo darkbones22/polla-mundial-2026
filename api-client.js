@@ -389,6 +389,13 @@
     });
   }
 
+  async function apiAdminActualizarPermisoAdminParticipante(id, esAdmin) {
+    return llamarNodeApi(`/api/admin/participantes/${encodeURIComponent(id)}/admin`, {
+      method: "PATCH",
+      body: { esAdmin }
+    });
+  }
+
   async function apiAdminObtenerPollas() {
     return llamarNodeApi("/api/admin/pollas");
   }
@@ -429,6 +436,7 @@
     apiAdminCrearParticipante,
     apiAdminActualizarParticipante,
     apiAdminActualizarPollasParticipante,
+    apiAdminActualizarPermisoAdminParticipante,
     apiAdminObtenerPollas,
     apiAdminCrearPolla,
     apiAdminActualizarPolla

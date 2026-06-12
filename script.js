@@ -2110,6 +2110,9 @@ function renderizarAdminUsuarios() {
           <span class="admin-status ${participante.activo ? "active" : "inactive"}">
             ${participante.activo ? "Activo" : "Inactivo"}
           </span>
+          <span class="admin-status admin-role ${participante.esAdmin ? "active" : "inactive"}">
+            ${participante.esAdmin ? "Admin" : "Usuario"}
+          </span>
           <span class="admin-count">${pollas.length} ${pollas.length === 1 ? "polla" : "pollas"}</span>
           <span class="admin-edit-label">${expandido ? "Cerrar" : "Editar"}</span>
         </button>
@@ -2128,6 +2131,15 @@ function renderizarAdminUsuarios() {
               <label class="admin-switch">
                 <input class="admin-user-activo" type="checkbox" ${participante.activo ? "checked" : ""} />
                 <span>Activo</span>
+              </label>
+              <label class="admin-switch">
+                <input
+                  class="admin-user-admin"
+                  type="checkbox"
+                  ${participante.esAdmin ? "checked" : ""}
+                  onchange="cambiarPermisoAdminUsuario('${escapeHTML(participante.id)}', this.checked)"
+                />
+                <span>Administrador</span>
               </label>
             </div>
 
@@ -2254,6 +2266,59 @@ async function guardarAdminUsuario(id) {
   } catch (error) {
     console.error(error);
     mostrarFeedbackAdmin("Error al guardar usuario.", "error");
+  }
+}
+
+async function cambiarPermisoAdminUsuario(id, esAdmin) {
+  const tarjeta = document.querySelector(`[data-admin-user-id="${CSS.escape(id)}"]`);
+  const control = tarjeta?.querySelector(".admin-user-admin");
+  const participante = adminParticipantesActuales.find((usuario) => usuario.id === id);
+  const estadoAnterior = Boolean(participante?.esAdmin);
+
+  if (!tarjeta || !control || !participante) return;
+
+  if (!esAdmin) {
+    const confirmado = confirm(`Quitar permiso de administrador a ${participante.nombre || participante.codigoLegacy}?`);
+
+    if (!confirmado) {
+      control.checked = estadoAnterior;
+      return;
+    }
+  }
+
+  control.disabled = true;
+  mostrarFeedbackAdmin(esAdmin ? "Activando administrador..." : "Quitando administrador...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminActualizarPermisoAdminParticipante(id, esAdmin);
+
+    if (!respuesta.ok) {
+      control.checked = estadoAnterior;
+
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudo actualizar el permiso de administrador.", "error");
+      }
+      return;
+    }
+
+    const resultadoCarga = await recargarAdminUsuariosDatos();
+
+    if (!resultadoCarga.ok) {
+      if (!manejarErrorAdmin(resultadoCarga.respuesta)) {
+        mostrarFeedbackAdmin(resultadoCarga.respuesta?.error || resultadoCarga.mensaje || "Permiso actualizado, pero no se pudo recargar la lista.", "error");
+      }
+      return;
+    }
+
+    usuarioAdminExpandidoId = id;
+    renderizarAdminUsuarios();
+    mostrarFeedbackAdmin(esAdmin ? "Administrador activado." : "Administrador desactivado.", "success");
+  } catch (error) {
+    console.error(error);
+    control.checked = estadoAnterior;
+    mostrarFeedbackAdmin("Error al actualizar el permiso de administrador.", "error");
+  } finally {
+    control.disabled = false;
   }
 }
 

@@ -2923,6 +2923,16 @@ body {
   color: #991b1b;
 }
 
+.admin-status.admin-role.active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.admin-status.admin-role.inactive {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .admin-tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -3613,7 +3623,7 @@ body {
 
 .admin-entity-summary {
   display: grid;
-  grid-template-columns: minmax(190px, 1.5fr) minmax(88px, 0.7fr) minmax(64px, auto) minmax(66px, auto) auto;
+  grid-template-columns: minmax(190px, 1.5fr) minmax(88px, 0.7fr) minmax(64px, auto) minmax(64px, auto) minmax(66px, auto) auto;
   gap: 5px;
   align-items: center;
   width: 100%;
@@ -3773,6 +3783,12 @@ body {
   .admin-entity-summary .admin-status {
     grid-column: 2 / 3;
     justify-self: center;
+  }
+
+  .admin-entity-summary .admin-role {
+    grid-column: 2 / 3;
+    grid-row: 1;
+    justify-self: end;
   }
 
   .admin-entity-summary .admin-edit-label {

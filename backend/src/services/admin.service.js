@@ -167,6 +167,7 @@ function mapearParticipanteAdmin(fila, pollasPorParticipante = new Map()) {
     nombre: fila.nombre_visible,
     codigoLegacy: fila.codigo_legacy,
     activo: Boolean(fila.activo),
+    esAdmin: Boolean(fila.es_admin),
     pollas: pollasPorParticipante.get(fila.id) || []
   };
 }
@@ -278,7 +279,7 @@ export async function obtenerParticipantesAdmin() {
   const [participantesRespuesta, pollasPorParticipante] = await Promise.all([
     supabase
       .from('participantes')
-      .select('id,codigo_legacy,nombre_visible,activo')
+      .select('id,codigo_legacy,nombre_visible,activo,es_admin')
       .order('nombre_visible', { ascending: true }),
     obtenerPollasPorParticipante()
   ]);
@@ -312,7 +313,7 @@ export async function crearParticipanteAdmin(datos) {
       codigo_hash: `legacy:${codigoLegacy}`,
       activo: normalizarBooleano(datos?.activo)
     })
-    .select('id,codigo_legacy,nombre_visible,activo')
+    .select('id,codigo_legacy,nombre_visible,activo,es_admin')
     .single();
 
   if (error) {
@@ -364,7 +365,7 @@ export async function actualizarParticipanteAdmin(id, datos) {
     .from('participantes')
     .update(cambios)
     .eq('id', participanteId)
-    .select('id,codigo_legacy,nombre_visible,activo')
+    .select('id,codigo_legacy,nombre_visible,activo,es_admin')
     .maybeSingle();
 
   if (error) {
@@ -439,7 +440,7 @@ export async function actualizarPollasParticipanteAdmin(id, pollas) {
 
   const { data: participante, error: errorParticipante } = await supabase
     .from('participantes')
-    .select('id,codigo_legacy,nombre_visible,activo')
+    .select('id,codigo_legacy,nombre_visible,activo,es_admin')
     .eq('id', participanteId)
     .maybeSingle();
 
@@ -453,6 +454,58 @@ export async function actualizarPollasParticipanteAdmin(id, pollas) {
 
   const pollasPorParticipante = await obtenerPollasPorParticipante();
   return mapearParticipanteAdmin(participante, pollasPorParticipante);
+}
+
+export async function actualizarPermisoAdminParticipanteAdmin(id, esAdmin, adminActualId) {
+  const participanteId = String(id || '').trim();
+
+  if (!participanteId) {
+    throw crearErrorValidacion('Debes indicar participante id');
+  }
+
+  if (typeof esAdmin !== 'boolean') {
+    throw crearErrorValidacion('esAdmin debe ser true o false');
+  }
+
+  if (!esAdmin) {
+    if (participanteId === adminActualId) {
+      throw crearErrorValidacion('No puedes quitarte el permiso de administrador a ti mismo');
+    }
+
+    const { data: otrosAdmins, error: errorAdmins } = await supabase
+      .from('participantes')
+      .select('id')
+      .eq('activo', true)
+      .eq('es_admin', true)
+      .neq('id', participanteId)
+      .limit(1);
+
+    if (errorAdmins) {
+      throw new Error(errorAdmins.message);
+    }
+
+    if ((otrosAdmins || []).length === 0) {
+      throw crearErrorValidacion('Debe quedar al menos un administrador activo');
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('participantes')
+    .update({ es_admin: esAdmin })
+    .eq('id', participanteId)
+    .select('id,codigo_legacy,nombre_visible,activo,es_admin')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw crearErrorValidacion('Participante no encontrado', 404);
+  }
+
+  const pollasPorParticipante = await obtenerPollasPorParticipante();
+  return mapearParticipanteAdmin(data, pollasPorParticipante);
 }
 
 export async function obtenerPollasAdmin() {

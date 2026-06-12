@@ -4,6 +4,7 @@ import { requerirAdmin } from '../middleware/admin.js';
 import { requerirAutenticacion } from '../middleware/autenticacion.js';
 import {
   actualizarPartidoAdmin,
+  actualizarPermisoAdminParticipanteAdmin,
   actualizarParticipanteAdmin,
   actualizarPollaAdmin,
   actualizarPollasParticipanteAdmin,
@@ -89,6 +90,26 @@ router.patch('/participantes/:id', async (req, res, next) => {
 router.put('/participantes/:id/pollas', async (req, res, next) => {
   try {
     const participante = await actualizarPollasParticipanteAdmin(req.params.id, req.body?.pollas);
+
+    res.json({
+      ok: true,
+      participante
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/participantes/:id/admin', async (req, res, next) => {
+  try {
+    const valorAdmin = Object.prototype.hasOwnProperty.call(req.body || {}, 'esAdmin')
+      ? req.body.esAdmin
+      : req.body?.es_admin;
+    const participante = await actualizarPermisoAdminParticipanteAdmin(
+      req.params.id,
+      valorAdmin,
+      req.sesion.participanteId
+    );
 
     res.json({
       ok: true,
