@@ -143,7 +143,7 @@ Además, los partidos se bloquean automáticamente 30 minutos antes de comenzar.
 
 - 10 puntos por marcador exacto. Si es exacto, no suma otros criterios.
 - Si no es exacto:
-  - +3 por acertar ganador o empate.
+  - +5 por acertar ganador o empate.
   - +2 por acertar goles del local.
   - +2 por acertar goles del visitante.
   - +1 por acertar diferencia de gol.
@@ -156,7 +156,7 @@ Además, los partidos se bloquean automáticamente 30 minutos antes de comenzar.
 
 Si no es exacto:
 
-- +3 por acertar ganador o empate del marcador.
+- +5 por acertar ganador o empate del marcador.
 - +2 por acertar goles del local.
 - +2 por acertar goles del visitante.
 - +1 por acertar diferencia de gol.

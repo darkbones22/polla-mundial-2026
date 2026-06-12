@@ -1,4 +1,10 @@
 const LADOS_VALIDOS = new Set(['local', 'visita']);
+const PUNTOS_MARCADOR_EXACTO = 10;
+const PUNTOS_GANADOR_EMPATE = 5;
+const PUNTOS_GOL_LOCAL = 2;
+const PUNTOS_GOL_VISITA = 2;
+const PUNTOS_DIFERENCIA = 1;
+const PUNTOS_CLASIFICADO = 3;
 
 function leerNumeroMarcador(objeto, claves) {
   for (const clave of claves) {
@@ -74,8 +80,8 @@ export function calcularPuntosGrupos(pronostico, resultado) {
 
   if (exacto) {
     return {
-      puntos: 10,
-      total: 10,
+      puntos: PUNTOS_MARCADOR_EXACTO,
+      total: PUNTOS_MARCADOR_EXACTO,
       calculable: true,
       exacto: true,
       ganadorEmpate: false,
@@ -96,10 +102,10 @@ export function calcularPuntosGrupos(pronostico, resultado) {
 
   let puntos = 0;
 
-  if (ganadorEmpate) puntos += 3;
-  if (golesLocal) puntos += 2;
-  if (golesVisita) puntos += 2;
-  if (diferencia) puntos += 1;
+  if (ganadorEmpate) puntos += PUNTOS_GANADOR_EMPATE;
+  if (golesLocal) puntos += PUNTOS_GOL_LOCAL;
+  if (golesVisita) puntos += PUNTOS_GOL_VISITA;
+  if (diferencia) puntos += PUNTOS_DIFERENCIA;
 
   return {
     puntos,
@@ -134,7 +140,7 @@ export function calcularPuntosEliminacion(pronostico, resultado) {
   const exacto = pred.golesLocal === real.golesLocal && pred.golesVisita === real.golesVisita;
 
   if (exacto) {
-    const puntos = 10 + (clasificado ? 3 : 0);
+    const puntos = PUNTOS_MARCADOR_EXACTO + (clasificado ? PUNTOS_CLASIFICADO : 0);
 
     return {
       puntos,
@@ -161,11 +167,11 @@ export function calcularPuntosEliminacion(pronostico, resultado) {
 
   let puntos = 0;
 
-  if (ganadorEmpate) puntos += 3;
-  if (golesLocal) puntos += 2;
-  if (golesVisita) puntos += 2;
-  if (diferencia) puntos += 1;
-  if (clasificado) puntos += 3;
+  if (ganadorEmpate) puntos += PUNTOS_GANADOR_EMPATE;
+  if (golesLocal) puntos += PUNTOS_GOL_LOCAL;
+  if (golesVisita) puntos += PUNTOS_GOL_VISITA;
+  if (diferencia) puntos += PUNTOS_DIFERENCIA;
+  if (clasificado) puntos += PUNTOS_CLASIFICADO;
 
   return {
     puntos,

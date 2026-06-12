@@ -31,7 +31,7 @@ describe('puntaje fase de grupos', () => {
       { golesLocal: 3, golesVisita: 1 }
     );
 
-    assert.equal(detalle.puntos, 4);
+    assert.equal(detalle.puntos, 6);
     assert.equal(detalle.ganadorEmpate, true);
     assert.equal(detalle.diferencia, true);
     assert.equal(detalle.golesLocal, false);
@@ -67,7 +67,7 @@ describe('puntaje fase de grupos', () => {
       { golesLocal: 1, golesVisita: 1 }
     );
 
-    assert.equal(detalle.puntos, 4);
+    assert.equal(detalle.puntos, 6);
     assert.equal(detalle.ganadorEmpate, true);
     assert.equal(detalle.diferencia, true);
   });
@@ -134,9 +134,21 @@ describe('puntaje fase de eliminacion', () => {
       { golesLocal: 3, golesVisita: 1, clasificadoRealLado: 'local' }
     );
 
-    assert.equal(detalle.puntos, 8);
+    assert.equal(detalle.puntos, 10);
     assert.equal(detalle.ganadorEmpate, true);
     assert.equal(detalle.golesVisita, true);
+    assert.equal(detalle.clasificado, true);
+  });
+
+  it('suma empate, diferencia y clasificado correcto sin exacto', () => {
+    const detalle = calcularPuntosEliminacion(
+      { golesLocal: 0, golesVisita: 0, clasificadoLado: 'local' },
+      { golesLocal: 1, golesVisita: 1, clasificadoRealLado: 'local' }
+    );
+
+    assert.equal(detalle.puntos, 9);
+    assert.equal(detalle.ganadorEmpate, true);
+    assert.equal(detalle.diferencia, true);
     assert.equal(detalle.clasificado, true);
   });
 });
