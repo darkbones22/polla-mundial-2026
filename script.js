@@ -1207,6 +1207,7 @@ let adminParticipantesActuales = [];
 let adminPollasActuales = [];
 let adminSubtabsInicializadas = false;
 let adminCargaSubtabActual = 0;
+let adminResultadoAbiertoId = "";
 let usuarioAdminExpandidoId = "";
 let pollaAdminExpandidaId = "";
 let mostrarFormularioCrearUsuario = false;
@@ -2696,6 +2697,28 @@ function obtenerOpcionesEstadoAdmin(partido) {
   }).join("");
 }
 
+function tieneMarcadorAdmin(partido) {
+  return partido.golesLocalReal !== null &&
+    partido.golesLocalReal !== undefined &&
+    partido.golesLocalReal !== "" &&
+    partido.golesVisitaReal !== null &&
+    partido.golesVisitaReal !== undefined &&
+    partido.golesVisitaReal !== "";
+}
+
+function obtenerClaseTarjetaResultadoAdmin(partido) {
+  const estado = obtenerClaseEstadoAdmin(partido.estado);
+
+  if (estado === "finalizado") return "admin-result-card--finalizado";
+  if (estado === "cerrado" || partido.cerradoPorHorario) return "admin-result-card--cerrado";
+  return "admin-result-card--pendiente";
+}
+
+function toggleAdminResultado(partidoId) {
+  adminResultadoAbiertoId = adminResultadoAbiertoId === partidoId ? "" : partidoId;
+  renderizarAdminPartidos();
+}
+
 function renderizarAdminPartidos() {
   const contenedor = document.getElementById("adminPartidos");
 
@@ -2725,6 +2748,11 @@ function renderizarAdminPartidos() {
     const opcionesEstado = obtenerOpcionesEstadoAdmin(partido);
     const estadoEtiqueta = partido.cerradoPorHorario ? "Cerrado por horario" : estado;
     const estadoClase = obtenerClaseEstadoAdmin(estado);
+    const estaAbierto = adminResultadoAbiertoId === partido.id;
+    const claseTarjeta = obtenerClaseTarjetaResultadoAdmin(partido);
+    const marcadorResumen = tieneMarcadorAdmin(partido)
+      ? `<span class="admin-result-score">${escapeHTML(golesLocal)} - ${escapeHTML(golesVisita)}</span>`
+      : `<span class="admin-result-vs">vs</span>`;
     const clasificado = partido.clasificadoRealLado || "";
     const selectorClasificado = adminTipoActual === "eliminacion"
       ? `
@@ -2754,39 +2782,48 @@ function renderizarAdminPartidos() {
       : "";
 
     return `
-      <article class="admin-partido-card" data-partido-id="${escapeHTML(partido.id)}">
-        <div class="admin-partido-main">
-          <div class="admin-partido-meta-row">
-            <span class="admin-partido-meta">${meta} · ${escapeHTML(obtenerFechaAdminPartido(partido))}</span>
-            <span class="admin-status admin-partido-status ${escapeHTML(estadoClase)}">
-              ${escapeHTML(estadoEtiqueta)}
-            </span>
-          </div>
-          <strong>${local} vs ${visita}</strong>
-          ${equiposEliminacion}
-        </div>
+      <article class="admin-partido-card admin-result-card ${claseTarjeta} ${estaAbierto ? "expanded" : ""}" data-partido-id="${escapeHTML(partido.id)}">
+        <button class="admin-result-summary" type="button" onclick="toggleAdminResultado('${escapeHTML(partido.id)}')" aria-expanded="${estaAbierto ? "true" : "false"}">
+          <span class="admin-result-team admin-result-team--local">${local}</span>
+          ${marcadorResumen}
+          <span class="admin-result-team admin-result-team--visita">${visita}</span>
+        </button>
 
-        <div class="admin-fields">
-          <div class="admin-score-fields">
-            <label>
-              Local
-              <input class="admin-goles-local" type="number" min="0" value="${escapeHTML(golesLocal)}" />
-            </label>
-            <span class="admin-score-separator">-</span>
-            <label>
-              Visita
-              <input class="admin-goles-visita" type="number" min="0" value="${escapeHTML(golesVisita)}" />
-            </label>
+        ${estaAbierto ? `
+          <div class="admin-result-editor">
+            <div class="admin-partido-main">
+              <div class="admin-partido-meta-row">
+                <span class="admin-partido-meta">${meta} · ${escapeHTML(obtenerFechaAdminPartido(partido))}</span>
+                <span class="admin-status admin-partido-status ${escapeHTML(estadoClase)}">
+                  ${escapeHTML(estadoEtiqueta)}
+                </span>
+              </div>
+              ${equiposEliminacion}
+            </div>
+
+            <div class="admin-fields">
+              <div class="admin-score-fields">
+                <label>
+                  Local
+                  <input class="admin-goles-local" type="number" min="0" value="${escapeHTML(golesLocal)}" />
+                </label>
+                <span class="admin-score-separator">-</span>
+                <label>
+                  Visita
+                  <input class="admin-goles-visita" type="number" min="0" value="${escapeHTML(golesVisita)}" />
+                </label>
+              </div>
+              <label>
+                Estado
+                <select class="admin-estado">${opcionesEstado}</select>
+              </label>
+              ${selectorClasificado}
+              <button class="admin-save-button" type="button" onclick="guardarAdminPartido('${escapeHTML(partido.id)}')">
+                Guardar cambios
+              </button>
+            </div>
           </div>
-          <label>
-            Estado
-            <select class="admin-estado">${opcionesEstado}</select>
-          </label>
-          ${selectorClasificado}
-          <button class="admin-save-button" type="button" onclick="guardarAdminPartido('${escapeHTML(partido.id)}')">
-            Guardar cambios
-          </button>
-        </div>
+        ` : ""}
       </article>
     `;
   }).join("");
