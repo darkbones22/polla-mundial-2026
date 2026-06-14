@@ -568,6 +568,36 @@ body {
   box-shadow: none;
 }
 
+.previous-matches-section {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.previous-matches-toggle {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+}
+
+.previous-matches-toggle:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.previous-matches-panel {
+  display: grid;
+  gap: 0;
+}
+
 @media (max-width: 600px) {
   .save-bar-content {
     flex-direction: column;
@@ -629,6 +659,18 @@ body {
   }
 
   .team {
+    font-size: 12px;
+  }
+
+  .previous-matches-section {
+    margin-top: 12px;
+    gap: 7px;
+  }
+
+  .previous-matches-toggle {
+    min-height: 38px;
+    border-radius: 12px;
+    padding: 8px 10px;
     font-size: 12px;
   }
 

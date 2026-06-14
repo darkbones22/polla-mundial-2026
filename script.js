@@ -180,6 +180,7 @@ let partidos = [
 // =======================
 
 const MINUTOS_BLOQUEO_ANTES_PARTIDO = 30;
+const DIAS_VISIBLES_PRONOSTICOS_GRUPOS = 2;
 const TOTAL_PARTIDOS_GRUPOS = 72;
 const TOTAL_PRONOSTICOS_ELIMINACION = 32;
 const CLAVE_SESION_USUARIO = "usuario";
@@ -194,6 +195,7 @@ const CLAVES_SESION_ANTIGUAS_LOCALSTORAGE = [
   "currentUser",
   "activeUser"
 ];
+let mostrarPartidosAnterioresGrupos = false;
 
 function limpiarClavesSesionAntiguasLocalStorage() {
   CLAVES_SESION_ANTIGUAS_LOCALSTORAGE.forEach((clave) => {
@@ -340,6 +342,49 @@ function obtenerFechaHoraPartido(partido) {
   }
 
   return new Date(`${obtenerFechaISO(partido.fecha)}T${obtenerHoraISO(partido.hora) || "00:00"}:00`);
+}
+
+function obtenerAhoraChile() {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(new Date());
+  const mapa = Object.fromEntries(partes.map((parte) => [parte.type, parte.value]));
+
+  return new Date(`${mapa.year}-${mapa.month}-${mapa.day}T${mapa.hour}:${mapa.minute}:${mapa.second}`);
+}
+
+function esPartidoAnteriorGrupo(partido) {
+  const fechaPartido = obtenerFechaHoraPartido(partido);
+
+  if (Number.isNaN(fechaPartido.getTime())) return false;
+
+  const limite = new Date(
+    obtenerAhoraChile().getTime() - DIAS_VISIBLES_PRONOSTICOS_GRUPOS * 24 * 60 * 60 * 1000
+  );
+
+  return fechaPartido < limite;
+}
+
+function separarPartidosActualesYAnteriores(partidosOrdenados) {
+  return partidosOrdenados.reduce((acumulador, partido) => {
+    if (esPartidoAnteriorGrupo(partido)) {
+      acumulador.anteriores.push(partido);
+    } else {
+      acumulador.visibles.push(partido);
+    }
+
+    return acumulador;
+  }, {
+    visibles: [],
+    anteriores: []
+  });
 }
 
 function formatearFechaEncabezado(fecha) {
@@ -590,28 +635,10 @@ function ordenarPartidosPorFechaHora(listaPartidos) {
   });
 }
 
-function renderizarPartidos() {
-  if (!contenedorPartidos) {
-    console.error("[Grupos] No existe el contenedor #partidos.");
-    return;
-  }
-
-  contenedorPartidos.innerHTML = "";
-
-  const partidosOrdenados = ordenarPartidosPorFechaHora(partidos);
-
-  if (partidosOrdenados.length === 0) {
-    contenedorPartidos.innerHTML = `
-      <div class="empty-state">
-        No hay partidos cargados por ahora.
-      </div>
-    `;
-    return;
-  }
-
+function renderizarListaPartidosGrupos(listaPartidos, contenedor) {
   let fechaActual = "";
 
-  partidosOrdenados.forEach((partido) => {
+  listaPartidos.forEach((partido) => {
     if (!partido || !partido.id) {
       console.warn("[Grupos] partido sin id, omitido:", partido);
       return;
@@ -623,7 +650,7 @@ function renderizarPartidos() {
       const tituloFecha = document.createElement("h2");
       tituloFecha.className = "date-title";
       tituloFecha.textContent = formatearFechaEncabezado(fechaActual);
-      contenedorPartidos.appendChild(tituloFecha);
+      contenedor.appendChild(tituloFecha);
     }
 
     const estadoVisual = obtenerEstadoVisualGrupo(partido);
@@ -702,8 +729,72 @@ function renderizarPartidos() {
         });
     }
 
-    contenedorPartidos.appendChild(tarjeta);
+    contenedor.appendChild(tarjeta);
   });
+}
+
+function renderizarPartidosAnterioresGrupos(partidosAnteriores) {
+  if (partidosAnteriores.length === 0) return;
+
+  const seccion = document.createElement("section");
+  seccion.className = "previous-matches-section";
+
+  const boton = document.createElement("button");
+  boton.className = "previous-matches-toggle";
+  boton.type = "button";
+  boton.setAttribute("aria-expanded", mostrarPartidosAnterioresGrupos ? "true" : "false");
+  boton.textContent = `${mostrarPartidosAnterioresGrupos ? "Ocultar" : "Ver"} partidos anteriores (${partidosAnteriores.length})`;
+
+  const panel = document.createElement("div");
+  panel.className = "previous-matches-panel";
+  panel.classList.toggle("hidden", !mostrarPartidosAnterioresGrupos);
+
+  if (mostrarPartidosAnterioresGrupos) {
+    renderizarListaPartidosGrupos(partidosAnteriores, panel);
+  }
+
+  boton.addEventListener("click", () => {
+    mostrarPartidosAnterioresGrupos = !mostrarPartidosAnterioresGrupos;
+    renderizarPartidos();
+  });
+
+  seccion.appendChild(boton);
+  seccion.appendChild(panel);
+  contenedorPartidos.appendChild(seccion);
+}
+
+function renderizarPartidos() {
+  if (!contenedorPartidos) {
+    console.error("[Grupos] No existe el contenedor #partidos.");
+    return;
+  }
+
+  contenedorPartidos.innerHTML = "";
+
+  const partidosOrdenados = ordenarPartidosPorFechaHora(partidos);
+
+  if (partidosOrdenados.length === 0) {
+    contenedorPartidos.innerHTML = `
+      <div class="empty-state">
+        No hay partidos cargados por ahora.
+      </div>
+    `;
+    return;
+  }
+
+  const { visibles, anteriores } = separarPartidosActualesYAnteriores(partidosOrdenados);
+
+  if (visibles.length === 0) {
+    contenedorPartidos.innerHTML = `
+      <div class="empty-state">
+        No hay partidos actuales o proximos para mostrar.
+      </div>
+    `;
+  } else {
+    renderizarListaPartidosGrupos(visibles, contenedorPartidos);
+  }
+
+  renderizarPartidosAnterioresGrupos(anteriores);
 }
 
 function renderizarResultadosGruposLegacy() {
@@ -4014,10 +4105,14 @@ function actualizarContadorPronosticos() {
   partidos.forEach((partido) => {
     const inputLocal = obtenerInputPorId(`${partido.id}_local`);
     const inputVisita = obtenerInputPorId(`${partido.id}_visita`);
+    const valorLocal = inputLocal
+      ? inputLocal.value
+      : localStorage.getItem(crearClavePronostico(partido.id, "local")) || "";
+    const valorVisita = inputVisita
+      ? inputVisita.value
+      : localStorage.getItem(crearClavePronostico(partido.id, "visita")) || "";
 
-    if (!inputLocal || !inputVisita) return;
-
-    if (inputLocal.value !== "" && inputVisita.value !== "") {
+    if (valorLocal !== "" && valorVisita !== "") {
       completados++;
     }
   });
