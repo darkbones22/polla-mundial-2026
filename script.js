@@ -180,7 +180,7 @@ let partidos = [
 // =======================
 
 const MINUTOS_BLOQUEO_ANTES_PARTIDO = 30;
-const DIAS_VISIBLES_PRONOSTICOS_GRUPOS = 2;
+const DIAS_VISIBLES_PRONOSTICOS_GRUPOS = 1;
 const TOTAL_PARTIDOS_GRUPOS = 72;
 const TOTAL_PRONOSTICOS_ELIMINACION = 32;
 const CLAVE_SESION_USUARIO = "usuario";
@@ -608,30 +608,15 @@ function obtenerEstadoResultadoPartido(partido, tipo = "grupos") {
   };
 }
 
-function obtenerOrdenEstadoGrupo(partido) {
-  const estadoVisual = obtenerEstadoVisualGrupo(partido);
-
-  if (!estadoVisual.bloqueado) return 0;
-  if (estadoVisual.clase === "finalizado") return 2;
-  return 1;
-}
-
 function ordenarPartidosPorFechaHora(listaPartidos) {
   return [...listaPartidos].sort((a, b) => {
     const fechaA = obtenerFechaHoraPartido(a);
     const fechaB = obtenerFechaHoraPartido(b);
+    const diferenciaFechaHora = fechaA - fechaB;
 
-    if (a.fecha !== b.fecha) {
-      return fechaA - fechaB;
-    }
+    if (diferenciaFechaHora !== 0) return diferenciaFechaHora;
 
-    const ordenEstado = obtenerOrdenEstadoGrupo(a) - obtenerOrdenEstadoGrupo(b);
-
-    if (ordenEstado !== 0) {
-      return ordenEstado;
-    }
-
-    return fechaA - fechaB;
+    return String(a.id || "").localeCompare(String(b.id || ""));
   });
 }
 
