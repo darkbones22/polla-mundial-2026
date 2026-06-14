@@ -2987,6 +2987,26 @@ body {
   color: #475569;
 }
 
+.admin-status.abierto {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-status.pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-status.cerrado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-status.finalizado {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .admin-tag-list {
   display: flex;
   flex-wrap: wrap;
@@ -3024,6 +3044,14 @@ body {
 
 .admin-partido-main {
   min-width: 0;
+}
+
+.admin-partido-meta-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
 }
 
 .admin-partido-main strong {
@@ -3064,15 +3092,40 @@ body {
 
 .admin-partido-meta {
   display: block;
-  margin-bottom: 3px;
   color: #2563eb;
   font-size: 11px;
   font-weight: 900;
 }
 
+.admin-partido-status {
+  flex: 0 0 auto;
+  min-height: 20px;
+  min-width: 0;
+  padding: 2px 7px;
+  font-size: 10px;
+}
+
 .admin-fields {
   justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+.admin-score-fields {
+  display: grid;
+  grid-template-columns: 70px 10px 70px;
+  gap: 5px;
+  align-items: end;
+}
+
+.admin-score-fields label {
+  min-width: 0;
+}
+
+.admin-score-separator {
+  align-self: center;
+  color: #64748b;
+  font-weight: 900;
+  text-align: center;
 }
 
 .admin-fields input {
@@ -3488,21 +3541,74 @@ body {
     border-radius: 12px;
   }
 
+  .admin-partido-card {
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .admin-partido-meta-row {
+    gap: 5px;
+    align-items: flex-start;
+  }
+
+  .admin-partido-meta {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .admin-partido-status {
+    min-height: 18px;
+    padding: 2px 6px;
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
   .admin-partido-main strong {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.15;
     white-space: normal;
     overflow-wrap: anywhere;
   }
 
   .admin-fields {
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(96px, 0.85fr);
+    gap: 6px;
+    align-items: end;
   }
 
   .admin-fields input,
   .admin-fields select,
   .admin-form-grid input,
   .admin-toolbar select {
-    min-height: 40px;
+    min-height: 32px;
     font-size: 13px;
+  }
+
+  .admin-score-fields {
+    grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .admin-score-fields label,
+  .admin-fields > label {
+    width: 100%;
+    font-size: 10px;
+  }
+
+  .admin-score-fields input,
+  .admin-fields input,
+  .admin-fields select {
+    width: 100%;
+  }
+
+  .admin-save-button {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
   }
 
   .admin-checkbox-option {

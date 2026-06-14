@@ -2676,6 +2676,26 @@ function obtenerAdminPartidosFiltrados() {
   return adminPartidosActuales.filter((partido) => !filtroEstado || partido.estado === filtroEstado);
 }
 
+function obtenerClaseEstadoAdmin(estado) {
+  return String(estado || "Pendiente").trim().toLowerCase();
+}
+
+function obtenerOpcionesEstadoAdmin(partido) {
+  const estado = partido.estado || "Pendiente";
+  const cerradoPorHorario = Boolean(partido.cerradoPorHorario);
+
+  return ESTADOS_ADMIN.map((opcion) => {
+    const deshabilitado = cerradoPorHorario && ["Pendiente", "Abierto"].includes(opcion);
+    const texto = cerradoPorHorario && opcion === "Cerrado" ? "Cerrado por horario" : opcion;
+
+    return `
+      <option value="${opcion}" ${opcion === estado ? "selected" : ""} ${deshabilitado ? "disabled" : ""}>
+        ${texto}
+      </option>
+    `;
+  }).join("");
+}
+
 function renderizarAdminPartidos() {
   const contenedor = document.getElementById("adminPartidos");
 
@@ -2702,9 +2722,9 @@ function renderizarAdminPartidos() {
     const golesLocal = partido.golesLocalReal ?? "";
     const golesVisita = partido.golesVisitaReal ?? "";
     const estado = partido.estado || "Pendiente";
-    const opcionesEstado = ESTADOS_ADMIN.map((opcion) => `
-      <option value="${opcion}" ${opcion === estado ? "selected" : ""}>${opcion}</option>
-    `).join("");
+    const opcionesEstado = obtenerOpcionesEstadoAdmin(partido);
+    const estadoEtiqueta = partido.cerradoPorHorario ? "Cerrado por horario" : estado;
+    const estadoClase = obtenerClaseEstadoAdmin(estado);
     const clasificado = partido.clasificadoRealLado || "";
     const selectorClasificado = adminTipoActual === "eliminacion"
       ? `
@@ -2736,20 +2756,28 @@ function renderizarAdminPartidos() {
     return `
       <article class="admin-partido-card" data-partido-id="${escapeHTML(partido.id)}">
         <div class="admin-partido-main">
-          <span class="admin-partido-meta">${meta} · ${escapeHTML(obtenerFechaAdminPartido(partido))}</span>
+          <div class="admin-partido-meta-row">
+            <span class="admin-partido-meta">${meta} · ${escapeHTML(obtenerFechaAdminPartido(partido))}</span>
+            <span class="admin-status admin-partido-status ${escapeHTML(estadoClase)}">
+              ${escapeHTML(estadoEtiqueta)}
+            </span>
+          </div>
           <strong>${local} vs ${visita}</strong>
           ${equiposEliminacion}
         </div>
 
         <div class="admin-fields">
-          <label>
-            Local
-            <input class="admin-goles-local" type="number" min="0" value="${escapeHTML(golesLocal)}" />
-          </label>
-          <label>
-            Visita
-            <input class="admin-goles-visita" type="number" min="0" value="${escapeHTML(golesVisita)}" />
-          </label>
+          <div class="admin-score-fields">
+            <label>
+              Local
+              <input class="admin-goles-local" type="number" min="0" value="${escapeHTML(golesLocal)}" />
+            </label>
+            <span class="admin-score-separator">-</span>
+            <label>
+              Visita
+              <input class="admin-goles-visita" type="number" min="0" value="${escapeHTML(golesVisita)}" />
+            </label>
+          </div>
           <label>
             Estado
             <select class="admin-estado">${opcionesEstado}</select>
@@ -2994,9 +3022,17 @@ async function guardarAdminPartido(partidoId) {
       return;
     }
 
+    const estadoGuardado = respuesta.partido?.estado || datos.estado;
+    const estadoCorregido = datos.estado !== estadoGuardado;
+
     try {
       await refrescarDatosDespuesDeAdmin(adminTipoActual);
-      mostrarFeedbackAdmin("Cambios guardados.", "success");
+      mostrarFeedbackAdmin(
+        estadoCorregido
+          ? `Cambios guardados. El estado se ajustó a ${estadoGuardado} por horario.`
+          : "Cambios guardados.",
+        "success"
+      );
     } catch (errorRefresco) {
       console.error(errorRefresco);
       mostrarFeedbackAdmin("Cambios guardados. Recarga la página si no ves todo actualizado.", "success");

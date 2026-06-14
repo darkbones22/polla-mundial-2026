@@ -1,12 +1,30 @@
 import { supabase } from '../supabaseClient.js';
 import { normalizarCodigoLegacy } from '../utils/codigos.js';
-import { obtenerFechaHoraChile } from '../utils/fechas.js';
+import { estaEnVentanaDeCierrePorHorario, obtenerFechaHoraChile } from '../utils/fechas.js';
 
 const ESTADOS_VALIDOS = new Set(['Pendiente', 'Abierto', 'Cerrado', 'Finalizado']);
 const TIPOS_VALIDOS = new Set(['grupos', 'eliminacion']);
 
+function estaCerradoPorHorario(fechaHora, estado) {
+  if (String(estado || '').trim().toLowerCase() === 'finalizado') return false;
+
+  return estaEnVentanaDeCierrePorHorario(fechaHora);
+}
+
+function obtenerEstadoAdminCalculado(fila) {
+  const estadoBase = fila.estado || 'Pendiente';
+  const cerradoPorHorario = estaCerradoPorHorario(fila.fecha_hora, estadoBase);
+
+  return {
+    estado: cerradoPorHorario ? 'Cerrado' : estadoBase,
+    estadoBase,
+    cerradoPorHorario
+  };
+}
+
 function mapearPartidoGrupo(fila) {
   const fechaHoraChile = obtenerFechaHoraChile(fila.fecha_hora);
+  const estadoAdmin = obtenerEstadoAdminCalculado(fila);
 
   return {
     id: fila.id,
@@ -18,12 +36,15 @@ function mapearPartidoGrupo(fila) {
     equipoVisita: fila.equipo_visita,
     golesLocalReal: fila.goles_local_real,
     golesVisitaReal: fila.goles_visita_real,
-    estado: fila.estado
+    estado: estadoAdmin.estado,
+    estadoBase: estadoAdmin.estadoBase,
+    cerradoPorHorario: estadoAdmin.cerradoPorHorario
   };
 }
 
 function mapearPartidoEliminacion(fila) {
   const fechaHoraChile = obtenerFechaHoraChile(fila.fecha_hora);
+  const estadoAdmin = obtenerEstadoAdminCalculado(fila);
 
   return {
     id: fila.id,
@@ -38,7 +59,9 @@ function mapearPartidoEliminacion(fila) {
     golesLocalReal: fila.goles_local_real,
     golesVisitaReal: fila.goles_visita_real,
     clasificadoRealLado: fila.clasificado_real_lado,
-    estado: fila.estado
+    estado: estadoAdmin.estado,
+    estadoBase: estadoAdmin.estadoBase,
+    cerradoPorHorario: estadoAdmin.cerradoPorHorario
   };
 }
 
@@ -620,21 +643,45 @@ export async function actualizarPartidoAdmin(id, datos) {
   const partidoId = String(id || '').trim();
   const tipo = validarTipo(datos?.tipo);
   const config = obtenerConfigTipo(tipo);
-  const estado = normalizarEstado(datos?.estado);
+  let estado = normalizarEstado(datos?.estado);
   const golesLocalReal = normalizarGoles(datos?.golesLocalReal, 'golesLocalReal');
   const golesVisitaReal = normalizarGoles(datos?.golesVisitaReal, 'golesVisitaReal');
-  const cambios = {
-    goles_local_real: golesLocalReal,
-    goles_visita_real: golesVisitaReal,
-    estado,
-    actualizado_en: new Date().toISOString()
-  };
 
   if (!partidoId) {
     const error = new Error('Debes indicar partido id');
     error.status = 400;
     throw error;
   }
+
+  const { data: partidoActual, error: errorPartidoActual } = await supabase
+    .from(config.tabla)
+    .select('id,fecha_hora,estado')
+    .eq('id', partidoId)
+    .maybeSingle();
+
+  if (errorPartidoActual) {
+    throw new Error(errorPartidoActual.message);
+  }
+
+  if (!partidoActual) {
+    const errorNoEncontrado = new Error('Partido no encontrado');
+    errorNoEncontrado.status = 404;
+    throw errorNoEncontrado;
+  }
+
+  if (
+    estaCerradoPorHorario(partidoActual.fecha_hora, partidoActual.estado) &&
+    ['Pendiente', 'Abierto'].includes(estado)
+  ) {
+    estado = 'Cerrado';
+  }
+
+  const cambios = {
+    goles_local_real: golesLocalReal,
+    goles_visita_real: golesVisitaReal,
+    estado,
+    actualizado_en: new Date().toISOString()
+  };
 
   if (estado === 'Finalizado' && (golesLocalReal === null || golesVisitaReal === null)) {
     const error = new Error('Un partido finalizado debe tener goles reales completos');
