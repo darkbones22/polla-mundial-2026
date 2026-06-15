@@ -629,6 +629,10 @@ body {
   margin-top: 8px;
 }
 
+.admin-previous-results-section {
+  margin-bottom: 8px;
+}
+
 @media (max-width: 600px) {
   .save-bar-content {
     flex-direction: column;

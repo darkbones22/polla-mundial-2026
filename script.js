@@ -1429,6 +1429,7 @@ let adminPollasActuales = [];
 let adminSubtabsInicializadas = false;
 let adminCargaSubtabActual = 0;
 let adminResultadoAbiertoId = "";
+let mostrarAdminResultadosAnteriores = false;
 let usuarioAdminExpandidoId = "";
 let pollaAdminExpandidaId = "";
 let mostrarFormularioCrearUsuario = false;
@@ -2947,6 +2948,161 @@ function toggleAdminResultado(partidoId) {
   renderizarAdminPartidos();
 }
 
+function esAdminPartidoVisibleFijo(partido) {
+  const fechaPartido = obtenerFechaHoraPartido(partido);
+  const fechaValida = !Number.isNaN(fechaPartido.getTime());
+  const esFuturo = fechaValida && fechaPartido.getTime() > obtenerAhoraChile().getTime();
+  const estado = String(partido.estado || "").trim().toLowerCase();
+
+  return Boolean(partido.enVivo) ||
+    estado === "en vivo" ||
+    estado === "abierto" ||
+    esFuturo;
+}
+
+function separarAdminResultadosActualesYAnteriores(partidosOrdenados) {
+  const candidatosRecientes = [];
+  const visiblesFijos = [];
+
+  partidosOrdenados.forEach((partido) => {
+    if (esAdminPartidoVisibleFijo(partido)) {
+      visiblesFijos.push(partido);
+    } else {
+      candidatosRecientes.push(partido);
+    }
+  });
+
+  const recientes = [...candidatosRecientes]
+    .sort((a, b) => obtenerFechaHoraPartido(b) - obtenerFechaHoraPartido(a))
+    .slice(0, 3);
+  const clavesRecientes = new Set(recientes.map((partido) => partido.id));
+
+  return partidosOrdenados.reduce((acumulador, partido) => {
+    if (clavesRecientes.has(partido.id) || visiblesFijos.includes(partido)) {
+      acumulador.visibles.push(partido);
+    } else {
+      acumulador.anteriores.push(partido);
+    }
+
+    return acumulador;
+  }, {
+    visibles: [],
+    anteriores: []
+  });
+}
+
+function renderizarAdminPartidoCard(partido) {
+  const local = escapeHTML(obtenerNombreAdminPartido(partido, "local"));
+  const visita = escapeHTML(obtenerNombreAdminPartido(partido, "visita"));
+  const meta = adminTipoActual === "grupos"
+    ? `Grupo ${escapeHTML(partido.grupo || "")}`
+    : escapeHTML(partido.ronda || "");
+  const golesLocal = partido.golesLocalReal ?? "";
+  const golesVisita = partido.golesVisitaReal ?? "";
+  const estado = partido.estado || "Pendiente";
+  const opcionesEstado = obtenerOpcionesEstadoAdmin(partido);
+  const estadoEtiqueta = partido.enVivo ? "En vivo" : partido.cerradoPorHorario ? "Cerrado por horario" : estado;
+  const estadoClase = obtenerClaseEstadoAdmin(estado);
+  const estaAbierto = adminResultadoAbiertoId === partido.id;
+  const claseTarjeta = obtenerClaseTarjetaResultadoAdmin(partido);
+  const marcadorResumen = tieneMarcadorAdmin(partido)
+    ? `<span class="admin-result-score">${escapeHTML(golesLocal)} - ${escapeHTML(golesVisita)}</span>`
+    : `<span class="admin-result-vs">vs</span>`;
+  const clasificado = partido.clasificadoRealLado || "";
+  const selectorClasificado = adminTipoActual === "eliminacion"
+    ? `
+        <label>
+          Clasifica
+          <select class="admin-clasificado">
+            <option value="" ${clasificado === "" ? "selected" : ""}>Sin definir</option>
+            <option value="local" ${clasificado === "local" ? "selected" : ""}>Local</option>
+            <option value="visita" ${clasificado === "visita" ? "selected" : ""}>Visita</option>
+          </select>
+        </label>
+      `
+    : "";
+  const equiposEliminacion = adminTipoActual === "eliminacion"
+    ? `
+        <div class="admin-team-fields">
+          <label>
+            Local: ${escapeHTML(partido.localPlaceholder || partido.placeholderLocal || "Local")}
+            <input class="admin-equipo-local" type="text" value="${escapeHTML(partido.equipoLocal || "")}" placeholder="Equipo real local" />
+          </label>
+          <label>
+            Visita: ${escapeHTML(partido.visitaPlaceholder || partido.placeholderVisita || "Visita")}
+            <input class="admin-equipo-visita" type="text" value="${escapeHTML(partido.equipoVisita || "")}" placeholder="Equipo real visita" />
+          </label>
+        </div>
+      `
+    : "";
+
+  return `
+    <article class="admin-partido-card admin-result-card ${claseTarjeta} ${estaAbierto ? "expanded" : ""}" data-partido-id="${escapeHTML(partido.id)}">
+      <button class="admin-result-summary" type="button" onclick="toggleAdminResultado('${escapeHTML(partido.id)}')" aria-expanded="${estaAbierto ? "true" : "false"}">
+        <span class="admin-result-team admin-result-team--local">${local}</span>
+        ${marcadorResumen}
+        <span class="admin-result-team admin-result-team--visita">${visita}</span>
+      </button>
+
+      ${estaAbierto ? `
+        <div class="admin-result-editor">
+          <div class="admin-partido-main">
+            <div class="admin-partido-meta-row">
+              <span class="admin-partido-meta">${meta} Â· ${escapeHTML(obtenerFechaAdminPartido(partido))}</span>
+              <span class="admin-status admin-partido-status ${escapeHTML(estadoClase)}">
+                ${escapeHTML(estadoEtiqueta)}
+              </span>
+            </div>
+            ${equiposEliminacion}
+          </div>
+
+          <div class="admin-fields">
+            <div class="admin-score-fields">
+              <label>
+                Local
+                <input class="admin-goles-local" type="number" min="0" value="${escapeHTML(golesLocal)}" />
+              </label>
+              <span class="admin-score-separator">-</span>
+              <label>
+                Visita
+                <input class="admin-goles-visita" type="number" min="0" value="${escapeHTML(golesVisita)}" />
+              </label>
+            </div>
+            <label>
+              Estado
+              <select class="admin-estado">${opcionesEstado}</select>
+            </label>
+            ${selectorClasificado}
+            <button class="admin-save-button" type="button" onclick="guardarAdminPartido('${escapeHTML(partido.id)}')">
+              Guardar cambios
+            </button>
+          </div>
+        </div>
+      ` : ""}
+    </article>
+  `;
+}
+
+function renderizarAdminResultadosAnteriores(partidosAnteriores) {
+  if (partidosAnteriores.length === 0) return "";
+
+  return `
+    <section class="previous-matches-section previous-results-section admin-previous-results-section">
+      <button class="previous-matches-toggle previous-results-toggle" type="button" onclick="toggleAdminResultadosAnteriores()">
+        ${mostrarAdminResultadosAnteriores ? "Ocultar" : "Ver"} resultados anteriores (${partidosAnteriores.length})
+      </button>
+      <div class="previous-matches-panel previous-results-panel ${mostrarAdminResultadosAnteriores ? "" : "hidden"}">
+        ${mostrarAdminResultadosAnteriores ? partidosAnteriores.map(renderizarAdminPartidoCard).join("") : ""}
+      </div>
+    </section>
+  `;
+}
+
+function toggleAdminResultadosAnteriores() {
+  mostrarAdminResultadosAnteriores = !mostrarAdminResultadosAnteriores;
+  renderizarAdminPartidos();
+}
+
 function renderizarAdminPartidos() {
   const contenedor = document.getElementById("adminPartidos");
 
@@ -2963,6 +3119,15 @@ function renderizarAdminPartidos() {
     contenedor.innerHTML = `<div class="admin-empty">No hay partidos para este filtro.</div>`;
     return;
   }
+
+  const partidosOrdenados = ordenarPartidosPorFechaHora(partidosFiltrados);
+  const { visibles, anteriores } = separarAdminResultadosActualesYAnteriores(partidosOrdenados);
+
+  contenedor.innerHTML = `
+    ${renderizarAdminResultadosAnteriores(anteriores)}
+    ${visibles.map(renderizarAdminPartidoCard).join("")}
+  `;
+  return;
 
   contenedor.innerHTML = partidosFiltrados.map((partido) => {
     const local = escapeHTML(obtenerNombreAdminPartido(partido, "local"));
