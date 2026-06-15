@@ -420,6 +420,15 @@ function obtenerEstadoVisualGrupo(partido) {
     };
   }
 
+  if (estado === "en vivo" || partido.enVivo) {
+    return {
+      bloqueado: true,
+      motivo: "en-vivo",
+      clase: "en-vivo",
+      texto: "\uD83D\uDD34 En vivo"
+    };
+  }
+
   if (estado === "cerrado" || estado === "finalizado" || estaBloqueado(partido)) {
     return {
       bloqueado: true,
@@ -446,6 +455,14 @@ function obtenerEstadoVisualEliminacion(partido, bloqueadoPorHora) {
       bloqueado: true,
       clase: "finalizado",
       texto: "\uD83C\uDFC1 Finalizado"
+    };
+  }
+
+  if (estado === "en vivo" || partido.enVivo) {
+    return {
+      bloqueado: true,
+      clase: "en-vivo",
+      texto: "\uD83D\uDD34 En vivo"
     };
   }
 
@@ -526,6 +543,22 @@ function resultadoEliminacionFinalizadoValido(partidoId) {
   );
 }
 
+function tieneMarcadorRealValido(partido) {
+  return partido &&
+    partido.golesLocalReal !== "" &&
+    partido.golesLocalReal !== null &&
+    partido.golesLocalReal !== undefined &&
+    partido.golesVisitaReal !== "" &&
+    partido.golesVisitaReal !== null &&
+    partido.golesVisitaReal !== undefined;
+}
+
+function obtenerMarcadorRealPartido(partido) {
+  if (!tieneMarcadorRealValido(partido)) return "";
+
+  return `${partido.golesLocalReal} - ${partido.golesVisitaReal}`;
+}
+
 function partidoDisponibleParaPronosticar(partido) {
   return !obtenerEstadoVisualGrupo(partido).bloqueado;
 }
@@ -549,6 +582,16 @@ function obtenerEstadoResultadoPartido(partido, tipo = "grupos") {
         texto: "Finalizado",
         descripcion: "El resultado real ya fue ingresado.",
         accion: "Ver detalle de puntos"
+      };
+    }
+
+    if (String(partido.estado || "").trim().toLowerCase() === "en vivo" || partido.enVivo) {
+      return {
+        clave: "live",
+        texto: "\uD83D\uDD34 En vivo",
+        marcador: obtenerMarcadorRealPartido(partido),
+        descripcion: "Partido en vivo. El marcador puede ser parcial.",
+        accion: "Ver pron\u00f3sticos registrados"
       };
     }
 
@@ -592,6 +635,16 @@ function obtenerEstadoResultadoPartido(partido, tipo = "grupos") {
       texto: "Finalizado",
       descripcion: "El resultado real ya fue ingresado.",
       accion: "Ver detalle de puntos"
+    };
+  }
+
+  if (String(partido.estado || "").trim().toLowerCase() === "en vivo" || partido.enVivo) {
+    return {
+      clave: "live",
+      texto: "\uD83D\uDD34 En vivo",
+      marcador: obtenerMarcadorRealPartido(partido),
+      descripcion: "Partido en vivo. El marcador puede ser parcial.",
+      accion: "Ver pron\u00f3sticos registrados"
     };
   }
 
@@ -805,12 +858,16 @@ function renderizarResultadosGruposLegacy() {
 
   partidosResultados.forEach((partido) => {
     const resultado = resultadosGrupos[partido.id];
+    const partidoResultado = {
+      ...partido,
+      ...(resultado || {})
+    };
     const resultadoFinalizado = resultadoGrupoFinalizadoValido(partido.id);
-    const estadoResultado = obtenerEstadoResultadoPartido(partido, "grupos");
+    const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "grupos");
 
     const marcador = resultadoFinalizado
       ? `${escapeHTML(resultado.golesLocalReal)} - ${escapeHTML(resultado.golesVisitaReal)}`
-      : estadoResultado.texto;
+      : estadoResultado.marcador || estadoResultado.texto;
 
     const grupoSeguro = escapeHTML(partido.grupo);
     const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
@@ -911,11 +968,15 @@ function renderizarTarjetaResultadoGrupo(partido) {
   }
 
   const resultado = resultadosGrupos[partido.id];
+  const partidoResultado = {
+    ...partido,
+    ...(resultado || {})
+  };
   const resultadoFinalizado = resultadoGrupoFinalizadoValido(partido.id);
-  const estadoResultado = obtenerEstadoResultadoPartido(partido, "grupos");
+  const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "grupos");
   const marcador = resultadoFinalizado
     ? `${escapeHTML(resultado.golesLocalReal)} - ${escapeHTML(resultado.golesVisitaReal)}`
-    : estadoResultado.texto;
+    : estadoResultado.marcador || estadoResultado.texto;
   const grupoSeguro = escapeHTML(partido.grupo);
   const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
   const horaSegura = escapeHTML(partido.hora);
@@ -1221,7 +1282,7 @@ let filtroAdminUsuarios = "";
 let textoBusquedaAdminPollas = "";
 let filtroAdminPollas = "";
 
-const ESTADOS_ADMIN = ["Pendiente", "Abierto", "Cerrado", "Finalizado"];
+const ESTADOS_ADMIN = ["Pendiente", "Abierto", "Cerrado", "En vivo", "Finalizado"];
 
 function cargarPartidosConServidor() {
   return window.PollaApiClient.apiObtenerPartidosGrupos();
@@ -2682,16 +2743,22 @@ function obtenerAdminPartidosFiltrados() {
 }
 
 function obtenerClaseEstadoAdmin(estado) {
-  return String(estado || "Pendiente").trim().toLowerCase();
+  return String(estado || "Pendiente").trim().toLowerCase().replace(/\s+/g, "-");
 }
 
 function obtenerOpcionesEstadoAdmin(partido) {
   const estado = partido.estado || "Pendiente";
   const cerradoPorHorario = Boolean(partido.cerradoPorHorario);
+  const enVivo = Boolean(partido.enVivo) || String(estado).trim().toLowerCase() === "en vivo";
 
   return ESTADOS_ADMIN.map((opcion) => {
-    const deshabilitado = cerradoPorHorario && ["Pendiente", "Abierto"].includes(opcion);
-    const texto = cerradoPorHorario && opcion === "Cerrado" ? "Cerrado por horario" : opcion;
+    const deshabilitado = (enVivo && ["Pendiente", "Abierto", "Cerrado"].includes(opcion)) ||
+      (cerradoPorHorario && ["Pendiente", "Abierto"].includes(opcion));
+    const texto = enVivo && opcion === "En vivo"
+      ? "En vivo"
+      : cerradoPorHorario && opcion === "Cerrado"
+        ? "Cerrado por horario"
+        : opcion;
 
     return `
       <option value="${opcion}" ${opcion === estado ? "selected" : ""} ${deshabilitado ? "disabled" : ""}>
@@ -2714,6 +2781,7 @@ function obtenerClaseTarjetaResultadoAdmin(partido) {
   const estado = obtenerClaseEstadoAdmin(partido.estado);
 
   if (estado === "finalizado") return "admin-result-card--finalizado";
+  if (estado === "en-vivo" || partido.enVivo) return "admin-result-card--en-vivo";
   if (estado === "cerrado" || partido.cerradoPorHorario) return "admin-result-card--cerrado";
   return "admin-result-card--pendiente";
 }
@@ -2750,7 +2818,7 @@ function renderizarAdminPartidos() {
     const golesVisita = partido.golesVisitaReal ?? "";
     const estado = partido.estado || "Pendiente";
     const opcionesEstado = obtenerOpcionesEstadoAdmin(partido);
-    const estadoEtiqueta = partido.cerradoPorHorario ? "Cerrado por horario" : estado;
+    const estadoEtiqueta = partido.enVivo ? "En vivo" : partido.cerradoPorHorario ? "Cerrado por horario" : estado;
     const estadoClase = obtenerClaseEstadoAdmin(estado);
     const estaAbierto = adminResultadoAbiertoId === partido.id;
     const claseTarjeta = obtenerClaseTarjetaResultadoAdmin(partido);
@@ -3578,11 +3646,16 @@ function renderizarResultadosEliminacion(llavesCerradas) {
       contenedorResultados.appendChild(tituloRonda);
     }
 
+    const resultadoEliminacion = resultadosEliminacion[partido.id];
+    const partidoResultado = {
+      ...partido,
+      ...(resultadoEliminacion || {})
+    };
     const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
-    const estadoResultado = obtenerEstadoResultadoPartido(partido, "eliminacion");
+    const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "eliminacion");
     const marcador = resultadoFinalizado
-      ? `${escapeHTML(partido.golesLocalReal)} - ${escapeHTML(partido.golesVisitaReal)}`
-      : estadoResultado.texto;
+      ? `${escapeHTML(partidoResultado.golesLocalReal)} - ${escapeHTML(partidoResultado.golesVisitaReal)}`
+      : estadoResultado.marcador || estadoResultado.texto;
     const localMostrado = partido.local || partido.localPlaceholder;
     const visitaMostrada = partido.visita || partido.visitaPlaceholder;
     const fechaSegura = escapeHTML(formatearFecha(partido.fecha));

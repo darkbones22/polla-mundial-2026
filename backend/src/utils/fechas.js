@@ -44,3 +44,57 @@ export function estaEnVentanaDeCierrePorHorario(fechaHora, minutos = MINUTOS_CIE
 
   return Date.now() >= inicio - minutos * MS_MINUTO;
 }
+
+export function obtenerEstadoHorarioPartido(fechaHora, estadoBase = 'Pendiente') {
+  const estadoOriginal = estadoBase || 'Pendiente';
+  const estadoNormalizado = String(estadoOriginal).trim().toLowerCase();
+
+  if (estadoNormalizado === 'finalizado') {
+    return {
+      estado: 'Finalizado',
+      estadoBase: estadoOriginal,
+      cerradoPorHorario: false,
+      enVivo: false
+    };
+  }
+
+  const inicio = new Date(fechaHora).getTime();
+
+  if (Number.isNaN(inicio)) {
+    return {
+      estado: estadoOriginal,
+      estadoBase: estadoOriginal,
+      cerradoPorHorario: false,
+      enVivo: false
+    };
+  }
+
+  const ahora = Date.now();
+  const enVivo = ahora >= inicio;
+  const cerradoPorHorario = !enVivo && ahora >= inicio - MINUTOS_CIERRE_POR_HORARIO * MS_MINUTO;
+
+  if (enVivo) {
+    return {
+      estado: 'En vivo',
+      estadoBase: estadoOriginal,
+      cerradoPorHorario: false,
+      enVivo: true
+    };
+  }
+
+  if (cerradoPorHorario) {
+    return {
+      estado: 'Cerrado',
+      estadoBase: estadoOriginal,
+      cerradoPorHorario: true,
+      enVivo: false
+    };
+  }
+
+  return {
+    estado: estadoOriginal,
+    estadoBase: estadoOriginal,
+    cerradoPorHorario: false,
+    enVivo: estadoNormalizado === 'en vivo'
+  };
+}

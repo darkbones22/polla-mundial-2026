@@ -135,6 +135,7 @@ La hoja `Resultados_Eliminacion` queda sin uso por compatibilidad histórica.
 - Pendiente: todavía no se puede pronosticar.
 - Abierto: se puede pronosticar.
 - Cerrado: no se puede editar.
+- En vivo: el partido ya comenzo y puede tener marcador parcial, pero todavia no suma puntos.
 - Finalizado: ya tiene resultado real.
 
 Además, los partidos se bloquean automáticamente 30 minutos antes de comenzar.

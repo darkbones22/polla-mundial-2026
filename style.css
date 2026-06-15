@@ -299,6 +299,11 @@ body {
   color: #92400e;
 }
 
+.result-status--live {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
 .result-status--final {
   background: #dbeafe;
   color: #1d4ed8;
@@ -877,6 +882,11 @@ body {
 .match-status.pendiente {
   color: #92400e;
   background: #fef3c7;
+}
+
+.match-status.en-vivo {
+  color: #be123c;
+  background: #ffe4e6;
 }
 
 .match-status.finalizado {
@@ -3002,6 +3012,11 @@ body {
   color: #991b1b;
 }
 
+.admin-status.en-vivo {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
 .admin-status.finalizado {
   background: #dbeafe;
   color: #1d4ed8;
@@ -3055,6 +3070,11 @@ body {
 .admin-result-card--cerrado {
   background: #f8fafc;
   border-color: #e2e8f0;
+}
+
+.admin-result-card--en-vivo {
+  background: #fff7ed;
+  border-color: #fed7aa;
 }
 
 .admin-result-card--finalizado {

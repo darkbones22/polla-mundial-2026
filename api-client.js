@@ -165,7 +165,11 @@
       equipoVisita: visita,
       golesLocalReal: partido.golesLocalReal ?? partido.goles_local_real,
       golesVisitaReal: partido.golesVisitaReal ?? partido.goles_visita_real,
-      estado: partido.estado
+      estado: partido.estado,
+      estadoBase: partido.estadoBase ?? partido.estado_base,
+      cerradoPorHorario: Boolean(partido.cerradoPorHorario ?? partido.cerrado_por_horario),
+      enVivo: Boolean(partido.enVivo ?? partido.en_vivo),
+      resultadoFinalizado: partido.resultadoFinalizado ?? partido.resultado_finalizado
     };
   }
 
@@ -201,7 +205,11 @@
       golesVisitaReal: partido.golesVisitaReal ?? partido.goles_visita_real,
       clasifica,
       clasificadoRealLado: partido.clasificadoRealLado,
-      estado: partido.estado
+      estado: partido.estado,
+      estadoBase: partido.estadoBase ?? partido.estado_base,
+      cerradoPorHorario: Boolean(partido.cerradoPorHorario ?? partido.cerrado_por_horario),
+      enVivo: Boolean(partido.enVivo ?? partido.en_vivo),
+      resultadoFinalizado: partido.resultadoFinalizado ?? partido.resultado_finalizado
     };
   }
 

@@ -1,25 +1,12 @@
 import { supabase } from '../supabaseClient.js';
 import { normalizarCodigoLegacy } from '../utils/codigos.js';
-import { estaEnVentanaDeCierrePorHorario, obtenerFechaHoraChile } from '../utils/fechas.js';
+import { obtenerEstadoHorarioPartido, obtenerFechaHoraChile } from '../utils/fechas.js';
 
-const ESTADOS_VALIDOS = new Set(['Pendiente', 'Abierto', 'Cerrado', 'Finalizado']);
+const ESTADOS_VALIDOS = new Set(['Pendiente', 'Abierto', 'Cerrado', 'En vivo', 'Finalizado']);
 const TIPOS_VALIDOS = new Set(['grupos', 'eliminacion']);
 
-function estaCerradoPorHorario(fechaHora, estado) {
-  if (String(estado || '').trim().toLowerCase() === 'finalizado') return false;
-
-  return estaEnVentanaDeCierrePorHorario(fechaHora);
-}
-
 function obtenerEstadoAdminCalculado(fila) {
-  const estadoBase = fila.estado || 'Pendiente';
-  const cerradoPorHorario = estaCerradoPorHorario(fila.fecha_hora, estadoBase);
-
-  return {
-    estado: cerradoPorHorario ? 'Cerrado' : estadoBase,
-    estadoBase,
-    cerradoPorHorario
-  };
+  return obtenerEstadoHorarioPartido(fila.fecha_hora, fila.estado || 'Pendiente');
 }
 
 function mapearPartidoGrupo(fila) {
@@ -38,7 +25,8 @@ function mapearPartidoGrupo(fila) {
     golesVisitaReal: fila.goles_visita_real,
     estado: estadoAdmin.estado,
     estadoBase: estadoAdmin.estadoBase,
-    cerradoPorHorario: estadoAdmin.cerradoPorHorario
+    cerradoPorHorario: estadoAdmin.cerradoPorHorario,
+    enVivo: estadoAdmin.enVivo
   };
 }
 
@@ -61,7 +49,8 @@ function mapearPartidoEliminacion(fila) {
     clasificadoRealLado: fila.clasificado_real_lado,
     estado: estadoAdmin.estado,
     estadoBase: estadoAdmin.estadoBase,
-    cerradoPorHorario: estadoAdmin.cerradoPorHorario
+    cerradoPorHorario: estadoAdmin.cerradoPorHorario,
+    enVivo: estadoAdmin.enVivo
   };
 }
 
@@ -669,11 +658,14 @@ export async function actualizarPartidoAdmin(id, datos) {
     throw errorNoEncontrado;
   }
 
-  if (
-    estaCerradoPorHorario(partidoActual.fecha_hora, partidoActual.estado) &&
-    ['Pendiente', 'Abierto'].includes(estado)
-  ) {
-    estado = 'Cerrado';
+  const estadoHorario = obtenerEstadoHorarioPartido(partidoActual.fecha_hora, partidoActual.estado);
+
+  if (estado !== 'Finalizado') {
+    if (estadoHorario.enVivo) {
+      estado = 'En vivo';
+    } else if (estadoHorario.cerradoPorHorario && ['Pendiente', 'Abierto'].includes(estado)) {
+      estado = 'Cerrado';
+    }
   }
 
   const cambios = {

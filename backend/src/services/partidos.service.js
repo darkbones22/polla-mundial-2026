@@ -1,8 +1,9 @@
 import { supabase } from '../supabaseClient.js';
-import { obtenerFechaHoraChile } from '../utils/fechas.js';
+import { obtenerEstadoHorarioPartido, obtenerFechaHoraChile } from '../utils/fechas.js';
 
 function mapearPartidoGrupo(fila) {
   const fechaHoraChile = obtenerFechaHoraChile(fila.fecha_hora);
+  const estadoHorario = obtenerEstadoHorarioPartido(fila.fecha_hora, fila.estado);
 
   return {
     id: fila.id,
@@ -14,12 +15,16 @@ function mapearPartidoGrupo(fila) {
     equipoVisita: fila.equipo_visita,
     golesLocalReal: fila.goles_local_real,
     golesVisitaReal: fila.goles_visita_real,
-    estado: fila.estado
+    estado: estadoHorario.estado,
+    estadoBase: estadoHorario.estadoBase,
+    cerradoPorHorario: estadoHorario.cerradoPorHorario,
+    enVivo: estadoHorario.enVivo
   };
 }
 
 function mapearPartidoEliminacion(fila) {
   const fechaHoraChile = obtenerFechaHoraChile(fila.fecha_hora);
+  const estadoHorario = obtenerEstadoHorarioPartido(fila.fecha_hora, fila.estado);
 
   return {
     id: fila.id,
@@ -34,7 +39,10 @@ function mapearPartidoEliminacion(fila) {
     golesLocalReal: fila.goles_local_real,
     golesVisitaReal: fila.goles_visita_real,
     clasificadoRealLado: fila.clasificado_real_lado,
-    estado: fila.estado
+    estado: estadoHorario.estado,
+    estadoBase: estadoHorario.estadoBase,
+    cerradoPorHorario: estadoHorario.cerradoPorHorario,
+    enVivo: estadoHorario.enVivo
   };
 }
 

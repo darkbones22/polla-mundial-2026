@@ -3,7 +3,7 @@ import {
   calcularPuntosEliminacion,
   calcularPuntosGrupos
 } from './puntaje.service.js';
-import { obtenerFechaHoraChile } from '../utils/fechas.js';
+import { obtenerEstadoHorarioPartido, obtenerFechaHoraChile } from '../utils/fechas.js';
 import {
   obtenerPronosticosEliminacionPartidoParticipantes,
   obtenerPronosticosGruposPartidoParticipantes
@@ -28,11 +28,16 @@ function resultadoFinalizadoEliminacion(partido) {
 
 function esPartidoPendienteNoDisponible(partido, tipo) {
   const estado = String(partido?.estado || '').trim().toLowerCase();
-  return tipo === 'eliminacion' && estado === 'pendiente';
+  const estadoHorario = obtenerEstadoHorarioPartido(partido?.fecha_hora, partido?.estado);
+  return tipo === 'eliminacion' &&
+    estado === 'pendiente' &&
+    !estadoHorario.enVivo &&
+    !estadoHorario.cerradoPorHorario;
 }
 
 function mapearPartidoGrupo(partido) {
   const fechaHoraChile = obtenerFechaHoraChile(partido.fecha_hora);
+  const estadoHorario = obtenerEstadoHorarioPartido(partido.fecha_hora, partido.estado);
 
   return {
     id: partido.id,
@@ -44,12 +49,16 @@ function mapearPartidoGrupo(partido) {
     equipoVisita: partido.equipo_visita,
     golesLocalReal: partido.goles_local_real,
     golesVisitaReal: partido.goles_visita_real,
-    estado: partido.estado
+    estado: estadoHorario.estado,
+    estadoBase: estadoHorario.estadoBase,
+    cerradoPorHorario: estadoHorario.cerradoPorHorario,
+    enVivo: estadoHorario.enVivo
   };
 }
 
 function mapearPartidoEliminacion(partido) {
   const fechaHoraChile = obtenerFechaHoraChile(partido.fecha_hora);
+  const estadoHorario = obtenerEstadoHorarioPartido(partido.fecha_hora, partido.estado);
 
   return {
     id: partido.id,
@@ -64,7 +73,10 @@ function mapearPartidoEliminacion(partido) {
     golesLocalReal: partido.goles_local_real,
     golesVisitaReal: partido.goles_visita_real,
     clasificadoRealLado: partido.clasificado_real_lado,
-    estado: partido.estado
+    estado: estadoHorario.estado,
+    estadoBase: estadoHorario.estadoBase,
+    cerradoPorHorario: estadoHorario.cerradoPorHorario,
+    enVivo: estadoHorario.enVivo
   };
 }
 
