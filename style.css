@@ -620,6 +620,15 @@ body {
   gap: 0;
 }
 
+.previous-results-section {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.previous-results-panel {
+  margin-top: 8px;
+}
+
 @media (max-width: 600px) {
   .save-bar-content {
     flex-direction: column;

@@ -302,6 +302,7 @@ const contenedorResultados = document.getElementById("resultadosGrupos");
 let resultadosGrupos = {};
 let resultadosEliminacion = {};
 let detalleResultadoAbierto = "";
+let mostrarResultadosAnteriores = false;
 
 function obtenerFechaISO(valor) {
   const texto = String(valor || "").trim();
@@ -677,6 +678,86 @@ function obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado) {
   return `result-status result-status--${estadoResultado.clave}`;
 }
 
+function obtenerPartidoResultadoCombinado(partido, tipo) {
+  const resultado = tipo === "eliminacion"
+    ? resultadosEliminacion[partido.id]
+    : resultadosGrupos[partido.id];
+
+  return {
+    ...partido,
+    ...(resultado || {})
+  };
+}
+
+function obtenerEstadoItemResultado(item) {
+  return obtenerEstadoResultadoPartido(
+    obtenerPartidoResultadoCombinado(item.partido, item.tipo),
+    item.tipo
+  );
+}
+
+function crearItemsResultados(partidosGrupos, partidosEliminacion) {
+  return [
+    ...partidosGrupos.map((partido) => ({
+      tipo: "grupos",
+      partido
+    })),
+    ...partidosEliminacion.map((partido) => ({
+      tipo: "eliminacion",
+      partido
+    }))
+  ].sort((a, b) => {
+    const diferencia = obtenerFechaHoraPartido(a.partido) - obtenerFechaHoraPartido(b.partido);
+
+    if (diferencia !== 0) return diferencia;
+
+    return String(a.partido.id || "").localeCompare(String(b.partido.id || ""));
+  });
+}
+
+function separarResultadosActualesYAnteriores(itemsResultados) {
+  const ahora = obtenerAhoraChile().getTime();
+  const candidatosRecientes = [];
+  const visiblesFijos = [];
+
+  itemsResultados.forEach((item) => {
+    const fechaPartido = obtenerFechaHoraPartido(item.partido);
+    const estadoResultado = obtenerEstadoItemResultado(item);
+    const fechaValida = !Number.isNaN(fechaPartido.getTime());
+    const esFuturo = fechaValida && fechaPartido.getTime() > ahora;
+    const visibleFijo = estadoResultado.clave === "live" ||
+      estadoResultado.clave === "available" ||
+      esFuturo;
+
+    if (visibleFijo) {
+      visiblesFijos.push(item);
+      return;
+    }
+
+    candidatosRecientes.push(item);
+  });
+
+  const recientes = [...candidatosRecientes]
+    .sort((a, b) => obtenerFechaHoraPartido(b.partido) - obtenerFechaHoraPartido(a.partido))
+    .slice(0, 3);
+  const clavesRecientes = new Set(recientes.map((item) => `${item.tipo}:${item.partido.id}`));
+
+  return itemsResultados.reduce((acumulador, item) => {
+    const clave = `${item.tipo}:${item.partido.id}`;
+
+    if (clavesRecientes.has(clave) || visiblesFijos.includes(item)) {
+      acumulador.visibles.push(item);
+    } else {
+      acumulador.anteriores.push(item);
+    }
+
+    return acumulador;
+  }, {
+    visibles: [],
+    anteriores: []
+  });
+}
+
 function ordenarPartidosPorFechaHora(listaPartidos) {
   return [...listaPartidos].sort((a, b) => {
     const fechaA = obtenerFechaHoraPartido(a);
@@ -936,6 +1017,65 @@ function renderizarResultadosGruposLegacy() {
   renderizarResultadosEliminacion(llavesResultados);
 }
 
+function renderizarItemResultado(item, destino = contenedorResultados) {
+  if (item.tipo === "eliminacion") {
+    renderizarTarjetaResultadoEliminacion(item.partido, destino);
+    return;
+  }
+
+  renderizarTarjetaResultadoGrupo(item.partido, destino);
+}
+
+function renderizarItemsResultados(itemsResultados, destino = contenedorResultados) {
+  let rondaActual = "";
+
+  itemsResultados.forEach((item) => {
+    try {
+      if (item.tipo === "eliminacion" && item.partido.ronda !== rondaActual) {
+        rondaActual = item.partido.ronda;
+
+        const tituloRonda = document.createElement("h2");
+        tituloRonda.className = "group-title";
+        tituloRonda.textContent = rondaActual;
+        destino.appendChild(tituloRonda);
+      }
+
+      renderizarItemResultado(item, destino);
+    } catch (error) {
+      console.error("[Resultados] error al renderizar partido:", item, error);
+    }
+  });
+}
+
+function renderizarResultadosAnteriores(itemsAnteriores) {
+  if (!contenedorResultados || itemsAnteriores.length === 0) return;
+
+  const seccion = document.createElement("section");
+  seccion.className = "previous-matches-section previous-results-section";
+
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.className = "previous-matches-toggle previous-results-toggle";
+  boton.textContent = `${mostrarResultadosAnteriores ? "Ocultar" : "Ver"} resultados anteriores (${itemsAnteriores.length})`;
+
+  const panel = document.createElement("div");
+  panel.className = "previous-matches-panel previous-results-panel";
+  panel.classList.toggle("hidden", !mostrarResultadosAnteriores);
+
+  if (mostrarResultadosAnteriores) {
+    renderizarItemsResultados(itemsAnteriores, panel);
+  }
+
+  boton.addEventListener("click", () => {
+    mostrarResultadosAnteriores = !mostrarResultadosAnteriores;
+    renderizarResultadosGrupos();
+  });
+
+  seccion.appendChild(boton);
+  seccion.appendChild(panel);
+  contenedorResultados.appendChild(seccion);
+}
+
 function renderizarResultadosGrupos() {
   if (!contenedorResultados) return;
 
@@ -944,8 +1084,9 @@ function renderizarResultadosGrupos() {
 
     const partidosResultados = ordenarPartidosPorFechaHora(Array.isArray(partidos) ? partidos : []);
     const llavesResultados = obtenerLlavesEliminacionParaResultados();
+    const itemsResultados = crearItemsResultados(partidosResultados, llavesResultados);
 
-    if (partidosResultados.length === 0 && llavesResultados.length === 0) {
+    if (itemsResultados.length === 0) {
       contenedorResultados.innerHTML = `
         <div class="empty-state">
           Todavía no hay resultados disponibles.
@@ -954,15 +1095,10 @@ function renderizarResultadosGrupos() {
       return;
     }
 
-    partidosResultados.forEach((partido) => {
-      try {
-        renderizarTarjetaResultadoGrupo(partido);
-      } catch (error) {
-        console.error("[Resultados] error al renderizar partido de grupos:", partido, error);
-      }
-    });
+    const { visibles, anteriores } = separarResultadosActualesYAnteriores(itemsResultados);
 
-    renderizarResultadosEliminacion(llavesResultados);
+    renderizarResultadosAnteriores(anteriores);
+    renderizarItemsResultados(visibles);
   } catch (error) {
     console.error("[Resultados] error al renderizar:", error);
     contenedorResultados.innerHTML = `
@@ -973,7 +1109,7 @@ function renderizarResultadosGrupos() {
   }
 }
 
-function renderizarTarjetaResultadoGrupo(partido) {
+function renderizarTarjetaResultadoGrupo(partido, destino = contenedorResultados) {
   if (!partido || !partido.id) {
     console.warn("[Resultados] partido de grupos omitido por datos incompletos:", partido);
     return;
@@ -1021,12 +1157,12 @@ function renderizarTarjetaResultadoGrupo(partido) {
     </div>
   `;
 
-  contenedorResultados.appendChild(tarjeta);
+  destino.appendChild(tarjeta);
 
   const panelDetalle = document.createElement("section");
   panelDetalle.className = "result-detail-panel hidden";
   panelDetalle.id = obtenerIdPanelDetalleResultado(partido.id, "grupos");
-  contenedorResultados.appendChild(panelDetalle);
+  destino.appendChild(panelDetalle);
 
   const alternarDetalle = () => {
     manejarClickDetalleResultado(partido, "grupos");
@@ -3651,6 +3787,76 @@ function configurarDetalleRankingDesplegable() {
 
 function obtenerLlavesEliminacionParaResultados() {
   return ordenarPartidosPorFechaHora(llavesEliminacion);
+}
+
+function renderizarTarjetaResultadoEliminacion(partido, destino = contenedorResultados) {
+  const resultadoEliminacion = resultadosEliminacion[partido.id];
+  const partidoResultado = {
+    ...partido,
+    ...(resultadoEliminacion || {})
+  };
+  const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
+  const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "eliminacion");
+  const marcador = resultadoFinalizado
+    ? `${escapeHTML(partidoResultado.golesLocalReal)} - ${escapeHTML(partidoResultado.golesVisitaReal)}`
+    : estadoResultado.marcador || estadoResultado.texto;
+  const localMostrado = partido.local || partido.localPlaceholder;
+  const visitaMostrada = partido.visita || partido.visitaPlaceholder;
+  const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
+  const horaSegura = escapeHTML(partido.hora);
+  const localSeguro = escapeHTML(localMostrado);
+  const visitaSeguro = escapeHTML(visitaMostrada);
+  const clasificaSeguro = resultadoFinalizado && partido.clasifica
+    ? `<div class="result-qualified">Clasifica: ${escapeHTML(partido.clasifica)}</div>`
+    : "";
+
+  const tarjeta = document.createElement("article");
+  tarjeta.className = "match-card result-card partido-bloqueado";
+  tarjeta.setAttribute("role", "button");
+  tarjeta.setAttribute("tabindex", "0");
+  tarjeta.setAttribute("aria-expanded", detalleResultadoAbierto === obtenerClaveDetalleResultado(partido.id, "eliminacion") ? "true" : "false");
+
+  tarjeta.innerHTML = `
+    <div class="match-info">
+      <span class="group-badge">${escapeHTML(partido.ronda)}</span>
+      ${fechaSegura} &middot; ${horaSegura} hrs
+    </div>
+
+    <div class="result-row">
+      <div class="team local">${localSeguro}</div>
+      <div>
+        <div
+          class="${obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)}"
+          title="${escapeHTML(estadoResultado.descripcion)}"
+        >${escapeHTML(marcador)}</div>
+        ${clasificaSeguro}
+      </div>
+      <div class="team visitante">${visitaSeguro}</div>
+    </div>
+
+    <div class="result-hint">
+      ${estadoResultado.accion}
+    </div>
+  `;
+
+  destino.appendChild(tarjeta);
+
+  const panelDetalle = document.createElement("section");
+  panelDetalle.className = "result-detail-panel hidden";
+  panelDetalle.id = obtenerIdPanelDetalleResultado(partido.id, "eliminacion");
+  destino.appendChild(panelDetalle);
+
+  const alternarDetalle = () => {
+    manejarClickDetalleResultado(partido, "eliminacion");
+  };
+
+  tarjeta.addEventListener("click", alternarDetalle);
+  tarjeta.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      alternarDetalle();
+    }
+  });
 }
 
 function renderizarResultadosEliminacion(llavesCerradas) {
