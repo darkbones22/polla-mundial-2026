@@ -7,6 +7,7 @@ import {
   obtenerPronosticosEliminacionParticipantes,
   obtenerPronosticosGruposParticipantes
 } from './pronosticos.service.js';
+import { obtenerEstadoHorarioPartido } from '../utils/fechas.js';
 
 function crearFilaRanking(fila) {
   return {
@@ -36,7 +37,9 @@ function crearFilaRanking(fila) {
     clasificados: 0,
 
     partidosGrupos: 0,
-    partidosEliminacion: 0
+    partidosEliminacion: 0,
+    partidosEnVivo: 0,
+    puntosProvisorios: 0
   };
 }
 
@@ -44,37 +47,65 @@ function tieneGolesValidos(partido) {
   return Number.isInteger(partido.goles_local_real) && Number.isInteger(partido.goles_visita_real);
 }
 
+function estaFinalizado(partido) {
+  return String(partido?.estado || '').trim().toLowerCase() === 'finalizado';
+}
+
+function estaEnVivo(partido) {
+  return obtenerEstadoHorarioPartido(partido?.fecha_hora, partido?.estado).estado === 'En vivo';
+}
+
 function obtenerResultadosGruposPorPartido(partidos) {
-  return new Map(
-    partidos
-      .filter((partido) => partido.estado === 'Finalizado' && tieneGolesValidos(partido))
-      .map((partido) => [
-        partido.id,
-        {
-          golesLocal: partido.goles_local_real,
-          golesVisita: partido.goles_visita_real
-        }
-      ])
-  );
+  const resultadosPorPartido = new Map();
+  let incluyeEnVivo = false;
+
+  partidos.forEach((partido) => {
+    if (!tieneGolesValidos(partido)) return;
+
+    const provisorio = !estaFinalizado(partido) && estaEnVivo(partido);
+
+    if (!estaFinalizado(partido) && !provisorio) return;
+    if (provisorio) incluyeEnVivo = true;
+
+    resultadosPorPartido.set(partido.id, {
+      golesLocal: partido.goles_local_real,
+      golesVisita: partido.goles_visita_real,
+      provisorio
+    });
+  });
+
+  return {
+    resultadosPorPartido,
+    incluyeEnVivo
+  };
 }
 
 function obtenerResultadosEliminacionPorPartido(partidos) {
-  return new Map(
-    partidos
-      .filter((partido) => (
-        partido.estado === 'Finalizado' &&
-        tieneGolesValidos(partido) &&
-        ['local', 'visita'].includes(partido.clasificado_real_lado)
-      ))
-      .map((partido) => [
-        partido.id,
-        {
-          golesLocal: partido.goles_local_real,
-          golesVisita: partido.goles_visita_real,
-          clasificadoRealLado: partido.clasificado_real_lado
-        }
-      ])
-  );
+  const resultadosPorPartido = new Map();
+  let incluyeEnVivo = false;
+
+  partidos.forEach((partido) => {
+    if (!tieneGolesValidos(partido)) return;
+
+    const finalizado = estaFinalizado(partido);
+    const provisorio = !finalizado && estaEnVivo(partido);
+
+    if (!finalizado && !provisorio) return;
+    if (finalizado && !['local', 'visita'].includes(partido.clasificado_real_lado)) return;
+    if (provisorio) incluyeEnVivo = true;
+
+    resultadosPorPartido.set(partido.id, {
+      golesLocal: partido.goles_local_real,
+      golesVisita: partido.goles_visita_real,
+      clasificadoRealLado: partido.clasificado_real_lado,
+      provisorio
+    });
+  });
+
+  return {
+    resultadosPorPartido,
+    incluyeEnVivo
+  };
 }
 
 async function obtenerParticipantesActivosPolla(pollaId) {
@@ -97,7 +128,7 @@ async function obtenerParticipantesActivosPolla(pollaId) {
 async function obtenerPartidosGruposRanking() {
   const { data, error } = await supabase
     .from('partidos_grupos')
-    .select('id,goles_local_real,goles_visita_real,estado');
+    .select('id,fecha_hora,goles_local_real,goles_visita_real,estado');
 
   if (error) {
     throw new Error(error.message);
@@ -109,7 +140,7 @@ async function obtenerPartidosGruposRanking() {
 async function obtenerPartidosEliminacionRanking() {
   const { data, error } = await supabase
     .from('partidos_eliminacion')
-    .select('id,goles_local_real,goles_visita_real,clasificado_real_lado,estado');
+    .select('id,fecha_hora,goles_local_real,goles_visita_real,clasificado_real_lado,estado');
 
   if (error) {
     throw new Error(error.message);
@@ -137,6 +168,10 @@ function aplicarRankingGrupos(rankingPorParticipante, pronosticos, resultadosPor
 
     participante.puntosGrupos += detalle.total;
     participante.partidosGrupos += 1;
+    if (resultado.provisorio) {
+      participante.partidosEnVivo += 1;
+      participante.puntosProvisorios += detalle.total;
+    }
 
     if (detalle.exacto) participante.exactosGrupos += 1;
     if (detalle.ganadorEmpate) participante.ganadorEmpateGrupos += 1;
@@ -166,6 +201,10 @@ function aplicarRankingEliminacion(rankingPorParticipante, pronosticos, resultad
 
     participante.puntosEliminacion += detalle.total;
     participante.partidosEliminacion += 1;
+    if (resultado.provisorio) {
+      participante.partidosEnVivo += 1;
+      participante.puntosProvisorios += detalle.total;
+    }
 
     if (detalle.exacto) participante.exactosEliminacion += 1;
     if (detalle.ganadorEmpate) participante.ganadorEmpateEliminacion += 1;
@@ -214,20 +253,62 @@ export async function obtenerRankingPolla(pollaId) {
   const rankingPorParticipante = new Map(
     participantes.map((participante) => [participante.participanteId, participante])
   );
+  const resultadosGrupos = obtenerResultadosGruposPorPartido(partidosGrupos);
+  const resultadosEliminacion = obtenerResultadosEliminacionPorPartido(partidosEliminacion);
 
   aplicarRankingGrupos(
     rankingPorParticipante,
     pronosticosGrupos,
-    obtenerResultadosGruposPorPartido(partidosGrupos)
+    resultadosGrupos.resultadosPorPartido
   );
 
   aplicarRankingEliminacion(
     rankingPorParticipante,
     pronosticosEliminacion,
-    obtenerResultadosEliminacionPorPartido(partidosEliminacion)
+    resultadosEliminacion.resultadosPorPartido
   );
 
   return ordenarRanking(Array.from(rankingPorParticipante.values()));
+}
+
+export async function obtenerRankingPollaConMeta(pollaId) {
+  const participantes = await obtenerParticipantesActivosPolla(pollaId);
+  const participanteIds = participantes.map((participante) => participante.participanteId);
+
+  const [
+    pronosticosGrupos,
+    pronosticosEliminacion,
+    partidosGrupos,
+    partidosEliminacion
+  ] = await Promise.all([
+    obtenerPronosticosGruposParticipantes(participanteIds),
+    obtenerPronosticosEliminacionParticipantes(participanteIds),
+    obtenerPartidosGruposRanking(),
+    obtenerPartidosEliminacionRanking()
+  ]);
+
+  const rankingPorParticipante = new Map(
+    participantes.map((participante) => [participante.participanteId, participante])
+  );
+  const resultadosGrupos = obtenerResultadosGruposPorPartido(partidosGrupos);
+  const resultadosEliminacion = obtenerResultadosEliminacionPorPartido(partidosEliminacion);
+
+  aplicarRankingGrupos(
+    rankingPorParticipante,
+    pronosticosGrupos,
+    resultadosGrupos.resultadosPorPartido
+  );
+
+  aplicarRankingEliminacion(
+    rankingPorParticipante,
+    pronosticosEliminacion,
+    resultadosEliminacion.resultadosPorPartido
+  );
+
+  return {
+    ranking: ordenarRanking(Array.from(rankingPorParticipante.values())),
+    incluyeEnVivo: resultadosGrupos.incluyeEnVivo || resultadosEliminacion.incluyeEnVivo
+  };
 }
 
 export async function obtenerRanking(pollaId) {

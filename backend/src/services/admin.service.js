@@ -2,7 +2,13 @@ import { supabase } from '../supabaseClient.js';
 import { normalizarCodigoLegacy } from '../utils/codigos.js';
 import { obtenerEstadoHorarioPartido, obtenerFechaHoraChile } from '../utils/fechas.js';
 
-const ESTADOS_VALIDOS = new Set(['Pendiente', 'Abierto', 'Cerrado', 'En vivo', 'Finalizado']);
+const ESTADOS_VALIDOS = new Map([
+  ['pendiente', 'Pendiente'],
+  ['abierto', 'Abierto'],
+  ['cerrado', 'Cerrado'],
+  ['en vivo', 'En vivo'],
+  ['finalizado', 'Finalizado']
+]);
 const TIPOS_VALIDOS = new Set(['grupos', 'eliminacion']);
 
 function obtenerEstadoAdminCalculado(fila) {
@@ -89,15 +95,16 @@ function normalizarGoles(valor, campo) {
 }
 
 function normalizarEstado(valor) {
-  const estado = String(valor || '').trim();
+  const estado = String(valor || '').trim().toLowerCase();
+  const estadoCanonico = ESTADOS_VALIDOS.get(estado);
 
-  if (!ESTADOS_VALIDOS.has(estado)) {
+  if (!estadoCanonico) {
     const error = new Error('Estado invalido');
     error.status = 400;
     throw error;
   }
 
-  return estado;
+  return estadoCanonico;
 }
 
 function normalizarClasificado(valor) {
@@ -661,7 +668,7 @@ export async function actualizarPartidoAdmin(id, datos) {
   const estadoHorario = obtenerEstadoHorarioPartido(partidoActual.fecha_hora, partidoActual.estado);
 
   if (estado !== 'Finalizado') {
-    if (estadoHorario.enVivo) {
+    if (estadoHorario.enVivo && ['Pendiente', 'Abierto'].includes(estado)) {
       estado = 'En vivo';
     } else if (estadoHorario.cerradoPorHorario && ['Pendiente', 'Abierto'].includes(estado)) {
       estado = 'Cerrado';

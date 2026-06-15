@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 import { requerirAutenticacion } from '../middleware/autenticacion.js';
 import { validarParticipanteEnPolla } from '../services/pollas.service.js';
-import { obtenerRankingPolla } from '../services/ranking.service.js';
+import { obtenerRankingPollaConMeta } from '../services/ranking.service.js';
 
 const router = Router();
 
@@ -28,11 +28,12 @@ router.get('/', requerirAutenticacion, async (req, res, next) => {
       return;
     }
 
-    const ranking = await obtenerRankingPolla(pollaId);
+    const resultadoRanking = await obtenerRankingPollaConMeta(pollaId);
 
     res.json({
       ok: true,
-      ranking
+      ranking: resultadoRanking.ranking,
+      incluyeEnVivo: resultadoRanking.incluyeEnVivo
     });
   } catch (error) {
     next(error);

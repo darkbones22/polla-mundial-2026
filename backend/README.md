@@ -574,7 +574,7 @@ El importador valida:
 - IDs requeridos.
 - fechas y horas validas.
 - goles enteros `>= 0` o vacios.
-- estados: `Pendiente`, `Abierto`, `Cerrado`, `Finalizado`.
+- estados: `Pendiente`, `Abierto`, `Cerrado`, `En vivo`, `Finalizado`.
 - participante existente para relaciones y pronosticos.
 - polla existente para relaciones y pronosticos.
 - partido existente para pronosticos.

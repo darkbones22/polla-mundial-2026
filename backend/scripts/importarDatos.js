@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendDir = path.resolve(__dirname, '..');
 const csvDir = path.join(backendDir, 'data', 'csv');
 const modoDryRun = process.argv.includes('--dry-run') || !process.argv.includes('--import');
-const estadosValidos = new Set(['Pendiente', 'Abierto', 'Cerrado', 'Finalizado']);
+const estadosValidos = new Set(['Pendiente', 'Abierto', 'Cerrado', 'En vivo', 'Finalizado']);
 const ladosValidos = new Set(['local', 'visita']);
 
 const archivos = {

@@ -43,7 +43,7 @@ create table if not exists partidos_grupos (
   actualizado_en timestamptz not null default now(),
   constraint partidos_grupos_goles_local_real_check check (goles_local_real is null or goles_local_real >= 0),
   constraint partidos_grupos_goles_visita_real_check check (goles_visita_real is null or goles_visita_real >= 0),
-  constraint partidos_grupos_estado_check check (estado in ('Pendiente', 'Abierto', 'Cerrado', 'Finalizado'))
+  constraint partidos_grupos_estado_check check (estado in ('Pendiente', 'Abierto', 'Cerrado', 'En vivo', 'Finalizado'))
 );
 
 create table if not exists partidos_eliminacion (
@@ -65,7 +65,7 @@ create table if not exists partidos_eliminacion (
   constraint partidos_eliminacion_clasificado_real_lado_check check (
     clasificado_real_lado is null or clasificado_real_lado in ('local', 'visita')
   ),
-  constraint partidos_eliminacion_estado_check check (estado in ('Pendiente', 'Abierto', 'Cerrado', 'Finalizado'))
+  constraint partidos_eliminacion_estado_check check (estado in ('Pendiente', 'Abierto', 'Cerrado', 'En vivo', 'Finalizado'))
 );
 
 create table if not exists pronosticos_grupos (

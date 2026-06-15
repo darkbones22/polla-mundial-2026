@@ -18,12 +18,22 @@ function resultadoFinalizadoGrupo(partido) {
   return partido.estado === 'Finalizado' && tieneGolesValidos(partido);
 }
 
+function resultadoEnVivoGrupo(partido) {
+  return obtenerEstadoHorarioPartido(partido?.fecha_hora, partido?.estado).estado === 'En vivo' &&
+    tieneGolesValidos(partido);
+}
+
 function resultadoFinalizadoEliminacion(partido) {
   return (
     partido.estado === 'Finalizado' &&
     tieneGolesValidos(partido) &&
     ['local', 'visita'].includes(partido.clasificado_real_lado)
   );
+}
+
+function resultadoEnVivoEliminacion(partido) {
+  return obtenerEstadoHorarioPartido(partido?.fecha_hora, partido?.estado).estado === 'En vivo' &&
+    tieneGolesValidos(partido);
 }
 
 function esPartidoPendienteNoDisponible(partido, tipo) {
@@ -147,6 +157,8 @@ export async function obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, pa
 
   const disponibilidad = estaPartidoDisponibleParaPronosticar(partido, 'grupos');
   const finalizado = resultadoFinalizadoGrupo(partido);
+  const puntajeProvisorio = resultadoEnVivoGrupo(partido);
+  const calcularPuntos = finalizado || puntajeProvisorio;
   const resultado = {
     golesLocal: partido.goles_local_real,
     golesVisita: partido.goles_visita_real
@@ -191,7 +203,7 @@ export async function obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, pa
         golesVisita: pronostico.goles_visita
       }
       : null;
-    const detallePuntos = finalizado && pronosticoMapeado
+    const detallePuntos = calcularPuntos && pronosticoMapeado
       ? calcularPuntosGrupos(pronosticoMapeado, resultado)
       : null;
 
@@ -209,8 +221,9 @@ export async function obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, pa
     tipo: 'grupos',
     partido: mapearPartidoGrupo(partido),
     resultadoFinalizado: finalizado,
-    estadoDetalle: finalizado ? 'finalizado' : 'pendiente',
-    detalle: ordenarDetalle(detalle, finalizado)
+    puntajeProvisorio,
+    estadoDetalle: finalizado ? 'finalizado' : puntajeProvisorio ? 'en_vivo' : 'pendiente',
+    detalle: ordenarDetalle(detalle, calcularPuntos)
   };
 }
 
@@ -225,6 +238,8 @@ export async function obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoI
 
   const disponibilidad = estaPartidoDisponibleParaPronosticar(partido, 'eliminacion');
   const finalizado = resultadoFinalizadoEliminacion(partido);
+  const puntajeProvisorio = resultadoEnVivoEliminacion(partido);
+  const calcularPuntos = finalizado || puntajeProvisorio;
   const resultado = {
     golesLocal: partido.goles_local_real,
     golesVisita: partido.goles_visita_real,
@@ -272,7 +287,7 @@ export async function obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoI
         clasificadoLado: pronostico.clasificado_lado
       }
       : null;
-    const detallePuntos = finalizado && pronosticoMapeado
+    const detallePuntos = calcularPuntos && pronosticoMapeado
       ? calcularPuntosEliminacion(pronosticoMapeado, resultado)
       : null;
 
@@ -290,8 +305,9 @@ export async function obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoI
     tipo: 'eliminacion',
     partido: mapearPartidoEliminacion(partido),
     resultadoFinalizado: finalizado,
-    estadoDetalle: finalizado ? 'finalizado' : 'pendiente',
-    detalle: ordenarDetalle(detalle, finalizado)
+    puntajeProvisorio,
+    estadoDetalle: finalizado ? 'finalizado' : puntajeProvisorio ? 'en_vivo' : 'pendiente',
+    detalle: ordenarDetalle(detalle, calcularPuntos)
   };
 }
 
