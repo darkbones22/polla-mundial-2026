@@ -180,7 +180,7 @@ let partidos = [
 // =======================
 
 const MINUTOS_BLOQUEO_ANTES_PARTIDO = 30;
-const DIAS_VISIBLES_PRONOSTICOS_GRUPOS = 1;
+const HORAS_VISIBLES_PRONOSTICOS_GRUPOS = 24;
 const TOTAL_PARTIDOS_GRUPOS = 72;
 const TOTAL_PRONOSTICOS_ELIMINACION = 32;
 const CLAVE_SESION_USUARIO = "usuario";
@@ -338,6 +338,10 @@ function crearFechaLocal(fecha) {
 }
 
 function obtenerFechaHoraPartido(partido) {
+  if (partido.fecha && partido.hora) {
+    return new Date(`${obtenerFechaISO(partido.fecha)}T${obtenerHoraISO(partido.hora) || "00:00"}:00`);
+  }
+
   if (partido.fechaHora) {
     const fecha = obtenerFechaISO(partido.fechaHora);
     const hora = obtenerHoraISO(partido.fechaHora) || "00:00";
@@ -369,11 +373,9 @@ function esPartidoAnteriorGrupo(partido) {
 
   if (Number.isNaN(fechaPartido.getTime())) return false;
 
-  const limite = new Date(
-    obtenerAhoraChile().getTime() - DIAS_VISIBLES_PRONOSTICOS_GRUPOS * 24 * 60 * 60 * 1000
-  );
+  const horasDesdeInicio = (obtenerAhoraChile().getTime() - fechaPartido.getTime()) / (1000 * 60 * 60);
 
-  return fechaPartido < limite;
+  return horasDesdeInicio >= HORAS_VISIBLES_PRONOSTICOS_GRUPOS;
 }
 
 function separarPartidosActualesYAnteriores(partidosOrdenados) {
