@@ -10,10 +10,12 @@ router.post('/', limiteLogin, async (req, res, next) => {
     const resultado = await validarCodigoParticipante(req.body?.codigo);
 
     if (!resultado.ok) {
+      req.limiteLogin?.registrarFallo?.();
       res.status(401).json(resultado);
       return;
     }
 
+    req.limiteLogin?.resetear?.();
     res.json(resultado);
   } catch (error) {
     next(error);

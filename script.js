@@ -218,6 +218,10 @@ function obtenerParticipanteActual() {
   return sessionStorage.getItem(CLAVE_SESION_USUARIO) || "Participante";
 }
 
+function normalizarCodigoUsuario(codigo) {
+  return String(codigo || "").trim().toLowerCase().replace(/\s+/g, "");
+}
+
 function limpiarSesionActual() {
   sessionStorage.removeItem(CLAVE_SESION_USUARIO);
   sessionStorage.removeItem(CLAVE_SESION_CODIGO);
@@ -1408,7 +1412,7 @@ async function iniciarSesion() {
     return;
   }
 
-  const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
+  const codigoUsuario = normalizarCodigoUsuario(document.getElementById("codigoUsuario").value);
 
   console.info("[Login] código ingresado:", codigoUsuario);
 
@@ -1458,7 +1462,7 @@ async function iniciarSesion() {
 
 function abrirApp(validacionCodigo) {
   const usuario = obtenerNombreParticipanteValidado(validacionCodigo);
-  const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
+  const codigoUsuario = normalizarCodigoUsuario(document.getElementById("codigoUsuario").value);
 
   document.getElementById("loginView").classList.add("hidden");
   document.getElementById("appView").classList.remove("hidden");
@@ -1491,7 +1495,7 @@ function obtenerSesionGuardada() {
 
   return {
     usuario: usuarioGuardado.trim(),
-    codigo: codigoGuardado.trim().toLowerCase()
+    codigo: normalizarCodigoUsuario(codigoGuardado)
   };
 }
 
@@ -3986,7 +3990,7 @@ function actualizarContadorEliminacion() {
 
 async function enviar() {
     const usuario = obtenerParticipanteActual();
-    const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
+    const codigoUsuario = normalizarCodigoUsuario(document.getElementById("codigoUsuario").value);
     const btnEnviar = document.getElementById("btnEnviar");
 
   if (!codigoUsuario) {
@@ -4183,7 +4187,7 @@ function actualizarContadorPronosticos() {
 }
 
 function obtenerCodigoActual() {
-  return document.getElementById("codigoUsuario").value.trim().toLowerCase();
+  return normalizarCodigoUsuario(document.getElementById("codigoUsuario").value);
 }
 
 function crearClavePronostico(partidoId, tipo) {
@@ -4217,7 +4221,7 @@ function limpiarPronosticosLocalesPorPrefijo(prefijo) {
 }
 
 function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsuario) {
-  const codigo = String(codigoUsuario || "").trim().toLowerCase();
+  const codigo = normalizarCodigoUsuario(codigoUsuario);
 
   if (!codigo) return;
 
@@ -4360,7 +4364,7 @@ function limpiarFormulario() {
 
 async function enviarEliminacion() {
   const usuario = obtenerParticipanteActual();
-  const codigoUsuario = document.getElementById("codigoUsuario").value.trim().toLowerCase();
+  const codigoUsuario = normalizarCodigoUsuario(document.getElementById("codigoUsuario").value);
   const btnEnviar = document.getElementById("btnEnviarEliminacion");
 
   if (!codigoUsuario) {
