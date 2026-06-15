@@ -388,8 +388,7 @@ body {
   font-weight: 800;
 }
 
-.result-detail-note.match-detail--live,
-.ranking-live-note {
+.result-detail-note.match-detail--live {
   display: inline-flex;
   max-width: 100%;
   margin: 0 0 8px;
@@ -401,10 +400,6 @@ body {
   font-size: 10px;
   font-weight: 800;
   line-height: 1.25;
-}
-
-.ranking-live-note {
-  margin-bottom: 4px;
 }
 
 .result-detail-private strong {
@@ -2656,6 +2651,11 @@ body {
 .result-score {
   background: linear-gradient(135deg, #0f172a, #1d4ed8);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+}
+
+.result-score--live {
+  background: linear-gradient(135deg, #be123c, #f97316);
+  box-shadow: 0 8px 18px rgba(190, 18, 60, 0.18);
 }
 
 .result-pending {

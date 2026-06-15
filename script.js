@@ -665,6 +665,16 @@ function obtenerEstadoResultadoPartido(partido, tipo = "grupos") {
   };
 }
 
+function obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado) {
+  if (resultadoFinalizado) return "result-score";
+
+  if (estadoResultado.clave === "live" && estadoResultado.marcador) {
+    return "result-score result-score--live";
+  }
+
+  return `result-status result-status--${estadoResultado.clave}`;
+}
+
 function ordenarPartidosPorFechaHora(listaPartidos) {
   return [...listaPartidos].sort((a, b) => {
     const fechaA = obtenerFechaHoraPartido(a);
@@ -890,7 +900,7 @@ function renderizarResultadosGruposLegacy() {
       <div class="result-row">
         <div class="team local">${localSeguro}</div>
         <div
-          class="${resultadoFinalizado ? "result-score" : `result-status result-status--${estadoResultado.clave}`}"
+          class="${obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)}"
           title="${escapeHTML(estadoResultado.descripcion)}"
         >${escapeHTML(marcador)}</div>
         <div class="team visitante">${visitaSeguro}</div>
@@ -998,7 +1008,7 @@ function renderizarTarjetaResultadoGrupo(partido) {
     <div class="result-row">
       <div class="team local">${localSeguro}</div>
       <div
-        class="${resultadoFinalizado ? "result-score" : `result-status result-status--${estadoResultado.clave}`}"
+        class="${obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)}"
         title="${escapeHTML(estadoResultado.descripcion)}"
       >${escapeHTML(marcador)}</div>
       <div class="team visitante">${visitaSeguro}</div>
@@ -3396,13 +3406,7 @@ function mostrarRanking(ranking) {
 
   rankingContent.className = "ranking-list";
 
-  const leyendaRanking = rankingIncluyeEnVivo
-    ? `
-      <div class="ranking-live-note">
-        Incluye puntaje provisorio de partidos en vivo. Puede cambiar cuando finalicen.
-      </div>
-    `
-    : "";
+  const leyendaRanking = "";
 
   rankingContent.innerHTML = leyendaRanking + rankingOrdenado
     .map((participante, index) => {
@@ -3698,7 +3702,7 @@ function renderizarResultadosEliminacion(llavesCerradas) {
         <div class="team local">${localSeguro}</div>
         <div>
           <div
-            class="${resultadoFinalizado ? "result-score" : `result-status result-status--${estadoResultado.clave}`}"
+            class="${obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)}"
             title="${escapeHTML(estadoResultado.descripcion)}"
           >${escapeHTML(marcador)}</div>
           ${clasificaSeguro}
