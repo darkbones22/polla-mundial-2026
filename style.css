@@ -424,20 +424,19 @@ body {
 
 .standings-table-wrap {
   width: 100%;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  overflow: hidden;
 }
 
 .standings-table {
   width: 100%;
-  min-width: 430px;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 11px;
 }
 
 .standings-table th,
 .standings-table td {
-  padding: 5px 4px;
+  padding: 5px 2px;
   border-bottom: 1px solid #e0ecff;
   text-align: center;
   white-space: nowrap;
@@ -445,9 +444,28 @@ body {
 
 .standings-table th:first-child,
 .standings-table td:first-child {
-  width: 100%;
-  min-width: 120px;
+  width: auto;
   text-align: left;
+  overflow: hidden;
+}
+
+.standings-table th:not(:first-child),
+.standings-table td:not(:first-child) {
+  width: 28px;
+}
+
+.standings-table .team-with-flag {
+  display: flex;
+}
+
+.standings-table .team-flag {
+  width: 16px;
+  height: 11px;
+}
+
+.standings-table .team-name {
+  display: block;
+  max-width: 100%;
 }
 
 .standings-table th {
@@ -1005,13 +1023,26 @@ body {
   }
 
   .standings-table {
-    min-width: 390px;
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .standings-table th,
   .standings-table td {
-    padding: 4px 3px;
+    padding: 4px 1px;
+  }
+
+  .standings-table th:not(:first-child),
+  .standings-table td:not(:first-child) {
+    width: 23px;
+  }
+
+  .standings-table .team-with-flag {
+    gap: 3px;
+  }
+
+  .standings-table .team-flag {
+    width: 13px;
+    height: 9px;
   }
 
   .bracket-match-row {
@@ -1064,6 +1095,22 @@ body {
   .result-detail-points {
     align-self: center;
     font-size: 11px;
+  }
+}
+
+@media (max-width: 430px) {
+  .standings-table th:nth-child(3),
+  .standings-table td:nth-child(3),
+  .standings-table th:nth-child(4),
+  .standings-table td:nth-child(4),
+  .standings-table th:nth-child(5),
+  .standings-table td:nth-child(5) {
+    display: none;
+  }
+
+  .standings-table th:not(:first-child),
+  .standings-table td:not(:first-child) {
+    width: 28px;
   }
 }
 
