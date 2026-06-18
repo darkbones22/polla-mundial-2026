@@ -244,6 +244,9 @@
           <button id="adminSubtabPollas" class="admin-subtab" type="button" data-admin-subtab="pollas">
             Pollas
           </button>
+          <button id="adminSubtabEspn" class="admin-subtab" type="button" data-admin-subtab="espn">
+            ESPN Sync
+          </button>
         </div>
 
         <div id="adminFeedback" class="admin-feedback hidden"></div>
@@ -282,6 +285,21 @@
         <section id="adminPanelPollas" class="admin-panel hidden">
           <div id="adminPollasForm"></div>
           <div id="adminPollasLista" class="admin-entity-list"></div>
+        </section>
+
+        <section id="adminPanelEspn" class="admin-panel hidden">
+          <div class="admin-espn-header">
+            <div>
+              <h3>ESPN Sync</h3>
+              <p>Consulta ESPN, revisa coincidencias y aplica resultados uno por uno.</p>
+            </div>
+            <button class="admin-save-button compact" type="button" onclick="consultarAdminEspn()">
+              Consultar ESPN
+            </button>
+          </div>
+
+          <div id="adminEspnResumen" class="admin-espn-summary"></div>
+          <div id="adminEspnLista" class="admin-espn-list"></div>
         </section>
       </section>
     </section>

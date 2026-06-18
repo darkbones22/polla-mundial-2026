@@ -1778,6 +1778,7 @@ let adminSubtabActual = "resultados";
 let adminPartidosActuales = [];
 let adminParticipantesActuales = [];
 let adminPollasActuales = [];
+let adminEspnEventosActuales = [];
 let adminSubtabsInicializadas = false;
 let adminCargaSubtabActual = 0;
 let adminResultadoAbiertoId = "";
@@ -2460,7 +2461,7 @@ function obtenerOpcionesPollasAdmin(pollasSeleccionadas = []) {
 }
 
 function normalizarSubseccionAdmin(seccion) {
-  return ["resultados", "usuarios", "pollas"].includes(seccion) ? seccion : "resultados";
+  return ["resultados", "usuarios", "pollas", "espn"].includes(seccion) ? seccion : "resultados";
 }
 
 function obtenerConfigSubseccionesAdmin() {
@@ -2476,6 +2477,10 @@ function obtenerConfigSubseccionesAdmin() {
     pollas: {
       boton: document.getElementById("adminSubtabPollas"),
       panel: document.getElementById("adminPanelPollas")
+    },
+    espn: {
+      boton: document.getElementById("adminSubtabEspn"),
+      panel: document.getElementById("adminPanelEspn")
     }
   };
 }
@@ -2522,6 +2527,11 @@ async function cambiarSubseccionAdmin(seccion) {
 
     if (subtab === "pollas") {
       await cargarAdminPollas();
+      return;
+    }
+
+    if (subtab === "espn") {
+      renderizarAdminEspn();
     }
   } catch (error) {
     if (idCarga === adminCargaSubtabActual) {
@@ -2556,6 +2566,185 @@ function inicializarSubtabsAdmin() {
     console.info("[Admin] click subtab:", seccion);
     cambiarSubseccionAdmin(seccion);
   });
+}
+
+function obtenerClaseConfianzaEspn(confianza) {
+  const valor = String(confianza || "Baja").toLowerCase();
+  if (valor === "alta") return "high";
+  if (valor === "media") return "medium";
+  return "low";
+}
+
+function tieneMarcadorEspn(evento) {
+  return evento &&
+    evento.golesLocal !== null &&
+    evento.golesLocal !== undefined &&
+    evento.golesVisita !== null &&
+    evento.golesVisita !== undefined;
+}
+
+function obtenerTextoMatchEspn(evento) {
+  const match = evento?.match;
+
+  if (!match?.partido) {
+    return "Sin coincidencia local";
+  }
+
+  return `${match.partido.tipo} · ${match.partido.id} · ${match.partido.local} vs ${match.partido.visita}`;
+}
+
+function renderizarAdminEspn() {
+  const resumen = document.getElementById("adminEspnResumen");
+  const lista = document.getElementById("adminEspnLista");
+
+  if (!resumen || !lista) return;
+
+  if (!usuarioAdminActual) {
+    resumen.innerHTML = "";
+    lista.innerHTML = `<div class="admin-empty">No autorizado.</div>`;
+    return;
+  }
+
+  if (!adminEspnEventosActuales.length) {
+    resumen.innerHTML = `
+      <div class="admin-espn-note">
+        ESPN no actualiza nada solo. Primero consulta, revisa la confianza y aplica manualmente cada resultado.
+      </div>
+    `;
+    lista.innerHTML = `<div class="admin-empty">Todavía no hay consulta ESPN cargada.</div>`;
+    return;
+  }
+
+  const total = adminEspnEventosActuales.length;
+  const altas = adminEspnEventosActuales.filter((evento) => evento.match?.confianza === "Alta").length;
+  const medias = adminEspnEventosActuales.filter((evento) => evento.match?.confianza === "Media").length;
+  const bajas = adminEspnEventosActuales.filter((evento) => evento.match?.confianza === "Baja").length;
+
+  resumen.innerHTML = `
+    <div class="admin-espn-note">
+      ${escapeHTML(total)} partidos ESPN · Alta: ${escapeHTML(altas)} · Media: ${escapeHTML(medias)} · Baja: ${escapeHTML(bajas)}
+    </div>
+  `;
+
+  lista.innerHTML = adminEspnEventosActuales.map((evento) => {
+    const confianza = evento.match?.confianza || "Baja";
+    const claseConfianza = obtenerClaseConfianzaEspn(confianza);
+    const puedeAplicar = evento.match?.partido &&
+      confianza !== "Baja" &&
+      ["En vivo", "Finalizado"].includes(evento.estadoSugerido) &&
+      tieneMarcadorEspn(evento);
+    const marcador = tieneMarcadorEspn(evento)
+      ? `${escapeHTML(evento.golesLocal)} - ${escapeHTML(evento.golesVisita)}`
+      : "Sin marcador";
+    const reloj = evento.reloj ? ` · ${escapeHTML(evento.reloj)}` : "";
+
+    return `
+      <article class="admin-espn-card">
+        <div class="admin-espn-card-head">
+          <div>
+            <strong>${escapeHTML(evento.local)} vs ${escapeHTML(evento.visita)}</strong>
+            <span>ESPN event ${escapeHTML(evento.eventId)} · ${escapeHTML(evento.fecha)} ${escapeHTML(evento.hora)} hrs</span>
+          </div>
+          <span class="admin-espn-confidence ${claseConfianza}">${escapeHTML(confianza)}</span>
+        </div>
+
+        <div class="admin-espn-grid">
+          <span><strong>Marcador:</strong> ${marcador}</span>
+          <span><strong>ESPN:</strong> ${escapeHTML(evento.estadoEspn)}${reloj}</span>
+          <span><strong>Sugerido:</strong> ${escapeHTML(evento.estadoSugerido)}</span>
+          <span><strong>Match:</strong> ${escapeHTML(obtenerTextoMatchEspn(evento))}</span>
+          <span><strong>Eventos:</strong> ${evento.tieneEventos ? "Sí" : "No"}</span>
+          <span><strong>Goles:</strong> ${escapeHTML(evento.eventos?.goles || 0)}</span>
+          <span><strong>Amarillas:</strong> ${escapeHTML(evento.eventos?.amarillas || 0)}</span>
+          <span><strong>Rojas:</strong> ${escapeHTML(evento.eventos?.rojas || 0)}</span>
+        </div>
+
+        <div class="admin-espn-actions">
+          <button
+            class="admin-save-button compact"
+            type="button"
+            ${puedeAplicar ? "" : "disabled"}
+            onclick="aplicarAdminEspn('${escapeHTML(evento.eventId)}')"
+          >
+            Aplicar resultado
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function consultarAdminEspn() {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  mostrarPanelAdmin("espn");
+  mostrarFeedbackAdmin("Consultando ESPN...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminConsultarEspnScoreboard();
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudo consultar ESPN.", "error");
+      }
+      return;
+    }
+
+    adminEspnEventosActuales = respuesta.eventos || [];
+    renderizarAdminEspn();
+    mostrarFeedbackAdmin("Consulta ESPN cargada. Revisa antes de aplicar.", "success");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al consultar ESPN.", "error");
+  }
+}
+
+async function aplicarAdminEspn(eventId) {
+  const evento = adminEspnEventosActuales.find((item) => String(item.eventId) === String(eventId));
+
+  if (!evento || !evento.match?.partido) {
+    mostrarFeedbackAdmin("No hay coincidencia local para aplicar.", "error");
+    return;
+  }
+
+  if (evento.match.confianza === "Baja") {
+    mostrarFeedbackAdmin("No se aplica coincidencia baja.", "error");
+    return;
+  }
+
+  mostrarFeedbackAdmin("Aplicando resultado ESPN...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminAplicarResultadoEspn({
+      eventId: evento.eventId,
+      partidoId: evento.match.partido.id,
+      tipo: evento.match.partido.tipo,
+      golesLocal: evento.golesLocal,
+      golesVisita: evento.golesVisita,
+      estadoSugerido: evento.estadoSugerido,
+      confianza: evento.match.confianza,
+      equipoLocal: evento.local,
+      equipoVisita: evento.visita
+    });
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudo aplicar el resultado ESPN.", "error");
+      }
+      return;
+    }
+
+    await refrescarDatosDespuesDeAdmin(evento.match.partido.tipo);
+    mostrarPanelAdmin("espn");
+    renderizarAdminEspn();
+    mostrarFeedbackAdmin("Resultado ESPN aplicado.", "success");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al aplicar resultado ESPN.", "error");
+  }
 }
 
 async function recargarAdminUsuariosDatos() {

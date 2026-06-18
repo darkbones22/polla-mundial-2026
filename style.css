@@ -3165,6 +3165,120 @@ body {
   min-width: 0;
 }
 
+.admin-espn-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-espn-header h3 {
+  margin: 0 0 3px;
+  color: #0f172a;
+}
+
+.admin-espn-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-espn-summary {
+  margin-bottom: 10px;
+}
+
+.admin-espn-note {
+  padding: 10px 12px;
+  border-radius: 13px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-espn-list {
+  display: grid;
+  gap: 9px;
+}
+
+.admin-espn-card {
+  padding: 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.admin-espn-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.admin-espn-card-head strong,
+.admin-espn-card-head span {
+  display: block;
+}
+
+.admin-espn-card-head strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.admin-espn-card-head span {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.admin-espn-confidence {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.admin-espn-confidence.high {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-espn-confidence.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-espn-confidence.low {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-espn-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  color: #334155;
+  font-size: 11px;
+}
+
+.admin-espn-grid span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-espn-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 9px;
+}
+
 .admin-toolbar {
   flex-wrap: wrap;
   margin-bottom: 12px;
@@ -3672,6 +3786,31 @@ body {
     min-height: 42px;
     padding: 0 14px;
     white-space: nowrap;
+  }
+
+  .admin-espn-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-espn-grid {
+    grid-template-columns: 1fr 1fr;
+    font-size: 10px;
+  }
+
+  .admin-espn-card-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .admin-espn-confidence {
+    width: max-content;
+  }
+
+  .admin-espn-actions,
+  .admin-espn-actions .admin-save-button {
+    width: 100%;
   }
 
   .admin-toolbar,

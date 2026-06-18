@@ -14,6 +14,10 @@ import {
   obtenerPollasAdmin,
   obtenerPartidosAdmin
 } from '../services/admin.service.js';
+import {
+  aplicarResultadoEspn,
+  consultarScoreboardEspn
+} from '../services/espn.service.js';
 
 const router = Router();
 
@@ -38,6 +42,32 @@ router.get('/partidos', async (req, res, next) => {
 router.patch('/partidos/:id', async (req, res, next) => {
   try {
     const partido = await actualizarPartidoAdmin(req.params.id, req.body);
+
+    res.json({
+      ok: true,
+      partido
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/espn/scoreboard', async (req, res, next) => {
+  try {
+    const resultado = await consultarScoreboardEspn();
+
+    res.json({
+      ok: true,
+      ...resultado
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/espn/apply', async (req, res, next) => {
+  try {
+    const partido = await aplicarResultadoEspn(req.body);
 
     res.json({
       ok: true,
