@@ -1650,6 +1650,48 @@ body {
   gap: 6px;
 }
 
+.ranking-progress-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 11px;
+  background: #eff6ff;
+}
+
+.ranking-progress-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #1e3a8a;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.ranking-progress-summary span,
+.ranking-progress-summary strong {
+  min-width: 0;
+}
+
+.ranking-progress-summary strong {
+  text-align: right;
+}
+
+.ranking-progress-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dbeafe;
+}
+
+.ranking-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb 0%, #0891b2 100%);
+}
+
 .ranking-item {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) minmax(82px, auto);
@@ -1669,14 +1711,16 @@ body {
 
 .ranking-total-item,
 .ranking-groups-item,
-.ranking-elimination-item {
+.ranking-elimination-item,
+.ranking-plenos-item {
   grid-template-columns: 30px minmax(0, 1fr) max-content 12px;
   cursor: pointer;
 }
 
 .ranking-total-item:focus-visible,
 .ranking-groups-item:focus-visible,
-.ranking-elimination-item:focus-visible {
+.ranking-elimination-item:focus-visible,
+.ranking-plenos-item:focus-visible {
   outline: 2px solid rgba(37, 99, 235, 0.42);
   outline-offset: 2px;
 }
@@ -1764,7 +1808,8 @@ body {
 
 .ranking-total-item.open .ranking-chevron,
 .ranking-groups-item.open .ranking-chevron,
-.ranking-elimination-item.open .ranking-chevron {
+.ranking-elimination-item.open .ranking-chevron,
+.ranking-plenos-item.open .ranking-chevron {
   transform: rotate(225deg);
 }
 
@@ -1859,8 +1904,18 @@ body {
 
   .ranking-total-item,
   .ranking-groups-item,
-  .ranking-elimination-item {
+  .ranking-elimination-item,
+  .ranking-plenos-item {
     grid-template-columns: 26px minmax(0, 1fr) max-content 10px;
+  }
+
+  .ranking-progress-card {
+    padding: 7px 8px;
+  }
+
+  .ranking-progress-summary {
+    gap: 6px;
+    font-size: 10px;
   }
 
   .ranking-points {
@@ -2353,9 +2408,19 @@ body {
 
   .ranking-total-item,
   .ranking-groups-item,
-  .ranking-elimination-item {
+  .ranking-elimination-item,
+  .ranking-plenos-item {
     grid-template-columns: 24px minmax(0, 1fr) max-content 9px;
     gap: 6px;
+  }
+
+  .ranking-progress-card {
+    padding: 7px;
+  }
+
+  .ranking-progress-summary {
+    gap: 6px;
+    font-size: 10px;
   }
 
   .ranking-position {
@@ -2412,7 +2477,7 @@ body {
 
 .ranking-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 7px;
   margin-bottom: 10px;
 }
@@ -2448,7 +2513,7 @@ body {
 
 @media (max-width: 600px) {
   .ranking-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
   }
 

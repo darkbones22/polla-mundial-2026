@@ -1518,6 +1518,7 @@ let llavesEliminacion = [];
 let tipoRankingActual = "total";
 let ultimoRankingCargado = [];
 let rankingIncluyeEnVivo = false;
+let avanceRankingActual = null;
 let pollasUsuarioActual = [];
 let usuarioAdminActual = false;
 let adminTipoActual = "grupos";
@@ -3718,6 +3719,43 @@ function cargarRankingConServidor() {
   return window.PollaApiClient.apiObtenerRanking(idPolla);
 }
 
+async function cargarDatosAvanceRanking() {
+  try {
+    const [
+      cargaPartidos,
+      cargaLlaves,
+      cargaResultados,
+      cargaResultadosEliminacion
+    ] = await Promise.all([
+      cargarPartidosConServidor(),
+      cargarLlavesConServidor(),
+      cargarResultadosConServidor(),
+      cargarResultadosEliminacionConServidor()
+    ]);
+
+    if (cargaPartidos.ok && Array.isArray(cargaPartidos.partidos)) {
+      partidos = cargaPartidos.partidos;
+    }
+
+    if (cargaLlaves.ok && Array.isArray(cargaLlaves.llaves)) {
+      llavesEliminacion = cargaLlaves.llaves;
+    }
+
+    if (cargaResultados.ok && Array.isArray(cargaResultados.resultados)) {
+      guardarResultadosEnMemoria(cargaResultados.resultados);
+    }
+
+    if (cargaResultadosEliminacion.ok && Array.isArray(cargaResultadosEliminacion.resultados)) {
+      guardarResultadosEliminacionEnMemoria(cargaResultadosEliminacion.resultados);
+    }
+
+    avanceRankingActual = calcularAvanceRanking();
+  } catch (error) {
+    console.warn("[Ranking] no se pudo cargar avance de partidos:", error);
+    avanceRankingActual = calcularAvanceRanking();
+  }
+}
+
 function llenarSelectorRanking(pollas) {
   const selector = document.getElementById("selectorPollaRanking");
 
@@ -3754,7 +3792,10 @@ async function cargarRankingSeleccionado() {
   rankingContent.textContent = "Cargando ranking... ⏳";
 
   try {
-    const respuesta = await cargarRankingConServidor();
+    const [, respuesta] = await Promise.all([
+      cargarDatosAvanceRanking(),
+      cargarRankingConServidor()
+    ]);
 
     console.info("[Ranking] respuesta:", respuesta);
 
@@ -3779,6 +3820,147 @@ async function cargarRankingSeleccionado() {
   }
 }
 
+function obtenerPlenosTotales(participante) {
+  return (participante.exactosGrupos || 0) + (participante.exactosEliminacion || 0);
+}
+
+function esEstadoFinalizado(valor) {
+  return String(valor || "").trim().toLowerCase() === "finalizado";
+}
+
+function obtenerEstadoFinalizacionPartido(partido, tipo) {
+  const resultado = tipo === "eliminacion"
+    ? resultadosEliminacion[partido.id]
+    : resultadosGrupos[partido.id];
+
+  return resultado?.estado || partido.estado || "";
+}
+
+function contarFinalizadosPorResultados(resultados) {
+  return Object.values(resultados || {}).filter((resultado) => esEstadoFinalizado(resultado.estado)).length;
+}
+
+function calcularAvanceRanking() {
+  const listaGrupos = Array.isArray(partidos) ? partidos : [];
+  const listaEliminacion = Array.isArray(llavesEliminacion) ? llavesEliminacion : [];
+  const totalGrupos = listaGrupos.length || 72;
+  const totalEliminacion = listaEliminacion.length || 32;
+  const finalizadosGrupos = listaGrupos.length
+    ? listaGrupos.filter((partido) => esEstadoFinalizado(obtenerEstadoFinalizacionPartido(partido, "grupos"))).length
+    : contarFinalizadosPorResultados(resultadosGrupos);
+  const finalizadosEliminacion = listaEliminacion.length
+    ? listaEliminacion.filter((partido) => esEstadoFinalizado(obtenerEstadoFinalizacionPartido(partido, "eliminacion"))).length
+    : contarFinalizadosPorResultados(resultadosEliminacion);
+
+  return {
+    grupos: {
+      finalizados: finalizadosGrupos,
+      total: totalGrupos,
+      porcentaje: totalGrupos ? Math.round((finalizadosGrupos / totalGrupos) * 100) : 0
+    },
+    eliminacion: {
+      finalizados: finalizadosEliminacion,
+      total: totalEliminacion,
+      porcentaje: totalEliminacion ? Math.round((finalizadosEliminacion / totalEliminacion) * 100) : 0
+    },
+    total: {
+      finalizados: finalizadosGrupos + finalizadosEliminacion,
+      total: totalGrupos + totalEliminacion,
+      porcentaje: (totalGrupos + totalEliminacion)
+        ? Math.round(((finalizadosGrupos + finalizadosEliminacion) / (totalGrupos + totalEliminacion)) * 100)
+        : 0
+    }
+  };
+}
+
+function obtenerAvanceRankingSegunTipo() {
+  const avance = avanceRankingActual || calcularAvanceRanking();
+
+  if (tipoRankingActual === "grupos") {
+    return {
+      etiqueta: "Fase de grupos",
+      ...avance.grupos
+    };
+  }
+
+  if (tipoRankingActual === "eliminacion") {
+    return {
+      etiqueta: "Fase de eliminaci\u00f3n",
+      ...avance.eliminacion
+    };
+  }
+
+  if (tipoRankingActual === "plenos") {
+    return {
+      etiqueta: "Partidos finalizados",
+      ...avance.total
+    };
+  }
+
+  return {
+    etiqueta: "Avance total",
+    ...avance.total
+  };
+}
+
+function renderizarAvanceRanking() {
+  const avance = obtenerAvanceRankingSegunTipo();
+  const porcentaje = Math.max(0, Math.min(100, avance.porcentaje || 0));
+
+  return `
+    <section class="ranking-progress-card" aria-label="${escapeHTML(avance.etiqueta)}">
+      <div class="ranking-progress-summary">
+        <span>${escapeHTML(avance.etiqueta)}</span>
+        <strong>${escapeHTML(avance.finalizados)} de ${escapeHTML(avance.total)} finalizados &middot; ${escapeHTML(porcentaje)}%</strong>
+      </div>
+      <div class="ranking-progress-track">
+        <div class="ranking-progress-fill" style="width: ${escapeHTML(porcentaje)}%;"></div>
+      </div>
+    </section>
+  `;
+}
+
+function ordenarRankingSegunTipo(ranking) {
+  return [...ranking].sort((a, b) => {
+    if (tipoRankingActual === "plenos") {
+      const plenosA = obtenerPlenosTotales(a);
+      const plenosB = obtenerPlenosTotales(b);
+
+      if (plenosB !== plenosA) return plenosB - plenosA;
+
+      const puntosA = a.puntosTotal || 0;
+      const puntosB = b.puntosTotal || 0;
+
+      if (puntosB !== puntosA) return puntosB - puntosA;
+
+      return a.nombre.localeCompare(b.nombre);
+    }
+
+    const puntosA = obtenerPuntosSegunTipo(a);
+    const puntosB = obtenerPuntosSegunTipo(b);
+
+    if (puntosB !== puntosA) return puntosB - puntosA;
+
+    const exactosA = obtenerExactosSegunTipo(a);
+    const exactosB = obtenerExactosSegunTipo(b);
+
+    if (exactosB !== exactosA) return exactosB - exactosA;
+
+    return a.nombre.localeCompare(b.nombre);
+  });
+}
+
+function obtenerDetalleRankingPlenosCompleto(participante) {
+  const plenosTotales = obtenerPlenosTotales(participante);
+
+  return `
+    <p>Plenos fase de grupos: ${escapeHTML(participante.exactosGrupos || 0)}</p>
+    <p>Plenos fase de eliminaci&oacute;n: ${escapeHTML(participante.exactosEliminacion || 0)}</p>
+    <p>Plenos totales: ${escapeHTML(plenosTotales)}</p>
+    <p>Puntos totales: ${escapeHTML(participante.puntosTotal || 0)}</p>
+  `;
+}
+
 function mostrarRanking(ranking) {
   const rankingContent = document.getElementById("rankingContent");
 
@@ -3792,25 +3974,23 @@ function mostrarRanking(ranking) {
 
   ultimoRankingCargado = ranking;
 
-  const rankingOrdenado = [...ranking].sort((a, b) => {
-    const puntosA = obtenerPuntosSegunTipo(a);
-    const puntosB = obtenerPuntosSegunTipo(b);
-
-    if (puntosB !== puntosA) return puntosB - puntosA;
-
-    const exactosA = obtenerExactosSegunTipo(a);
-    const exactosB = obtenerExactosSegunTipo(b);
-
-    if (exactosB !== exactosA) return exactosB - exactosA;
-
-    return a.nombre.localeCompare(b.nombre);
-  });
+  const rankingOrdenado = ordenarRankingSegunTipo(ranking);
+  const avanceRanking = renderizarAvanceRanking();
 
   rankingContent.className = "ranking-list";
 
-  const leyendaRanking = "";
+  if (
+    tipoRankingActual === "plenos" &&
+    !rankingOrdenado.some((participante) => obtenerPlenosTotales(participante) > 0)
+  ) {
+    rankingContent.innerHTML = `
+      ${avanceRanking}
+      <div class="ranking-empty">Todav&iacute;a no hay plenos registrados.</div>
+    `;
+    return;
+  }
 
-  rankingContent.innerHTML = leyendaRanking + rankingOrdenado
+  rankingContent.innerHTML = avanceRanking + rankingOrdenado
     .map((participante, index) => {
       const posicion = index + 1;
       const puntos = obtenerPuntosSegunTipo(participante);
@@ -3902,6 +4082,41 @@ function mostrarRanking(ranking) {
         `;
       }
 
+      if (tipoRankingActual === "plenos") {
+        const detalleId = `rankingDetallePlenos_${index}`;
+        const plenosGrupos = participante.exactosGrupos || 0;
+        const plenosEliminacion = participante.exactosEliminacion || 0;
+        const plenosTotales = plenosGrupos + plenosEliminacion;
+
+        return `
+          <article
+            class="ranking-item ranking-total-item ranking-plenos-item"
+            role="button"
+            tabindex="0"
+            aria-expanded="false"
+            aria-controls="${detalleId}"
+          >
+            <div class="ranking-position">${posicion}</div>
+
+            <div class="ranking-main">
+              <div class="ranking-name">${escapeHTML(participante.nombre)}</div>
+              <div class="ranking-details">
+                Grupos: ${escapeHTML(plenosGrupos)} &middot; Eliminaci&oacute;n: ${escapeHTML(plenosEliminacion)}
+              </div>
+              <div id="${detalleId}" class="ranking-total-detail hidden">
+                ${obtenerDetalleRankingPlenosCompleto(participante)}
+              </div>
+            </div>
+
+            <div class="ranking-points ranking-points-inline">
+              ${escapeHTML(plenosTotales)} <span>plenos</span>
+            </div>
+
+            <div class="ranking-chevron" aria-hidden="true"></div>
+          </article>
+        `;
+      }
+
       const detalle = tipoRankingActual === "total"
         ? obtenerDetalleRankingCompacto(participante)
         : obtenerDetalleSegunTipo(participante);
@@ -3930,7 +4145,8 @@ function mostrarRanking(ranking) {
   if (
     tipoRankingActual === "total" ||
     tipoRankingActual === "grupos" ||
-    tipoRankingActual === "eliminacion"
+    tipoRankingActual === "eliminacion" ||
+    tipoRankingActual === "plenos"
   ) {
     configurarDetalleRankingDesplegable();
   }
@@ -3942,14 +4158,17 @@ function cambiarTipoRanking(tipo) {
   const totalBtn = document.getElementById("rankingTotalBtn");
   const gruposBtn = document.getElementById("rankingGruposBtn");
   const eliminacionBtn = document.getElementById("rankingEliminacionBtn");
+  const plenosBtn = document.getElementById("rankingPlenosBtn");
 
-  totalBtn.classList.remove("active");
-  gruposBtn.classList.remove("active");
-  eliminacionBtn.classList.remove("active");
+  totalBtn?.classList.remove("active");
+  gruposBtn?.classList.remove("active");
+  eliminacionBtn?.classList.remove("active");
+  plenosBtn?.classList.remove("active");
 
-  if (tipo === "total") totalBtn.classList.add("active");
-  if (tipo === "grupos") gruposBtn.classList.add("active");
-  if (tipo === "eliminacion") eliminacionBtn.classList.add("active");
+  if (tipo === "total") totalBtn?.classList.add("active");
+  if (tipo === "grupos") gruposBtn?.classList.add("active");
+  if (tipo === "eliminacion") eliminacionBtn?.classList.add("active");
+  if (tipo === "plenos") plenosBtn?.classList.add("active");
 
   mostrarRanking(ultimoRankingCargado);
 }
