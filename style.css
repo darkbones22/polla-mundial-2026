@@ -169,6 +169,44 @@ body {
   text-align: left;
 }
 
+.team-with-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.team-with-flag--local {
+  flex-direction: row-reverse;
+}
+
+.team-flag {
+  width: 18px;
+  height: 13px;
+  flex: 0 0 auto;
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.team-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team.local .team-with-flag {
+  justify-content: flex-end;
+}
+
+.team.visitante .team-with-flag,
+.classify-option .team-with-flag {
+  justify-content: flex-start;
+}
+
 .score-input {
   max-width: 100%;
   width: 56px;
@@ -698,6 +736,15 @@ body {
 
   .team {
     font-size: 12px;
+  }
+
+  .team-with-flag {
+    gap: 4px;
+  }
+
+  .team-flag {
+    width: 16px;
+    height: 11px;
   }
 
   .previous-matches-section {

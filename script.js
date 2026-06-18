@@ -280,6 +280,99 @@ function escapeHTML(texto) {
     .replace(/'/g, "&#039;");
 }
 
+const CODIGOS_BANDERA_POR_PAIS = new Map();
+
+function normalizarNombreBandera(nombrePais) {
+  return String(nombrePais || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function registrarBanderaPais(codigo, nombres) {
+  nombres.forEach((nombre) => {
+    CODIGOS_BANDERA_POR_PAIS.set(normalizarNombreBandera(nombre), codigo);
+  });
+}
+
+[
+  ["mx", ["México", "MÃ©xico"]],
+  ["za", ["Sudáfrica", "SudÃ¡frica"]],
+  ["kr", ["Corea del Sur"]],
+  ["cz", ["República Checa", "RepÃºblica Checa"]],
+  ["ca", ["Canadá", "CanadÃ¡"]],
+  ["ba", ["Bosnia y Herzegovina"]],
+  ["qa", ["Catar"]],
+  ["ch", ["Suiza"]],
+  ["br", ["Brasil"]],
+  ["ma", ["Marruecos"]],
+  ["ht", ["Haití", "HaitÃ­"]],
+  ["gb-sct", ["Escocia"]],
+  ["us", ["EE.UU.", "Estados Unidos"]],
+  ["py", ["Paraguay"]],
+  ["au", ["Australia"]],
+  ["tr", ["Turquía", "TurquÃ­a"]],
+  ["de", ["Alemania"]],
+  ["cw", ["Curazao"]],
+  ["ci", ["Costa de Marfil"]],
+  ["ec", ["Ecuador"]],
+  ["nl", ["Países Bajos", "PaÃ­ses Bajos"]],
+  ["jp", ["Japón", "JapÃ³n"]],
+  ["se", ["Suecia"]],
+  ["tn", ["Túnez", "TÃºnez"]],
+  ["be", ["Bélgica", "BÃ©lgica"]],
+  ["eg", ["Egipto"]],
+  ["ir", ["Irán", "IrÃ¡n"]],
+  ["nz", ["Nueva Zelanda"]],
+  ["es", ["España", "EspaÃ±a"]],
+  ["cv", ["Cabo Verde"]],
+  ["sa", ["Arabia Saudí", "Arabia SaudÃ­"]],
+  ["uy", ["Uruguay"]],
+  ["fr", ["Francia"]],
+  ["sn", ["Senegal"]],
+  ["iq", ["Irak"]],
+  ["no", ["Noruega"]],
+  ["ar", ["Argentina"]],
+  ["dz", ["Argelia"]],
+  ["at", ["Austria"]],
+  ["jo", ["Jordania"]],
+  ["pt", ["Portugal"]],
+  ["cd", ["RD Congo", "República Democrática del Congo", "Republica Democratica del Congo"]],
+  ["uz", ["Uzbekistán", "UzbekistÃ¡n"]],
+  ["co", ["Colombia"]],
+  ["gb-eng", ["Inglaterra"]],
+  ["hr", ["Croacia"]],
+  ["gh", ["Ghana"]],
+  ["pa", ["Panamá", "PanamÃ¡"]]
+].forEach(([codigo, nombres]) => registrarBanderaPais(codigo, nombres));
+
+function obtenerCodigoBanderaPais(nombrePais) {
+  return CODIGOS_BANDERA_POR_PAIS.get(normalizarNombreBandera(nombrePais)) || "";
+}
+
+function obtenerUrlBanderaPais(nombrePais) {
+  const codigo = obtenerCodigoBanderaPais(nombrePais);
+  return codigo ? `https://flagcdn.com/${codigo}.svg` : "";
+}
+
+function renderizarEquipoConBandera(nombrePais, lado = "") {
+  const nombreSeguro = escapeHTML(nombrePais || "");
+  const urlBandera = obtenerUrlBanderaPais(nombrePais);
+
+  if (!urlBandera) {
+    return `<span class="team-name">${nombreSeguro}</span>`;
+  }
+
+  return `
+    <span class="team-with-flag ${lado ? `team-with-flag--${lado}` : ""}">
+      <img class="team-flag" src="${escapeHTML(urlBandera)}" alt="Bandera de ${nombreSeguro}" loading="lazy" />
+      <span class="team-name">${nombreSeguro}</span>
+    </span>
+  `;
+}
+
 function esBanderaVerdadera(valor) {
   return valor === true || valor === "true" || valor === 1 || valor === "1";
 }
@@ -793,8 +886,10 @@ function renderizarListaPartidosGrupos(listaPartidos, contenedor) {
     const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
     const horaSegura = escapeHTML(partido.hora);
     const grupoSeguro = escapeHTML(partido.grupo);
-    const localSeguro = escapeHTML(obtenerNombreEquipo(partido.local));
-    const visitaSeguro = escapeHTML(obtenerNombreEquipo(partido.visita));
+    const localMostrado = obtenerNombreEquipo(partido.local);
+    const visitaMostrada = obtenerNombreEquipo(partido.visita);
+    const localSeguro = renderizarEquipoConBandera(localMostrado, "local");
+    const visitaSeguro = renderizarEquipoConBandera(visitaMostrada, "visita");
     const partidoIdSeguro = escapeHTML(partido.id);
 
     const tarjeta = document.createElement("article");
@@ -965,8 +1060,10 @@ function renderizarResultadosGruposLegacy() {
     const grupoSeguro = escapeHTML(partido.grupo);
     const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
     const horaSegura = escapeHTML(partido.hora);
-    const localSeguro = escapeHTML(obtenerNombreEquipo(partido.local));
-    const visitaSeguro = escapeHTML(obtenerNombreEquipo(partido.visita));
+    const localMostrado = obtenerNombreEquipo(partido.local);
+    const visitaMostrada = obtenerNombreEquipo(partido.visita);
+    const localSeguro = renderizarEquipoConBandera(localMostrado, "local");
+    const visitaSeguro = renderizarEquipoConBandera(visitaMostrada, "visita");
 
     const tarjeta = document.createElement("article");
     tarjeta.className = "match-card result-card partido-bloqueado";
@@ -1128,8 +1225,10 @@ function renderizarTarjetaResultadoGrupo(partido, destino = contenedorResultados
   const grupoSeguro = escapeHTML(partido.grupo);
   const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
   const horaSegura = escapeHTML(partido.hora);
-  const localSeguro = escapeHTML(obtenerNombreEquipo(partido.local));
-  const visitaSeguro = escapeHTML(obtenerNombreEquipo(partido.visita));
+  const localMostrado = obtenerNombreEquipo(partido.local);
+  const visitaMostrada = obtenerNombreEquipo(partido.visita);
+  const localSeguro = renderizarEquipoConBandera(localMostrado, "local");
+  const visitaSeguro = renderizarEquipoConBandera(visitaMostrada, "visita");
 
   const tarjeta = document.createElement("article");
   tarjeta.className = "match-card result-card partido-bloqueado";
@@ -3969,8 +4068,8 @@ function renderizarTarjetaResultadoEliminacion(partido, destino = contenedorResu
   const visitaMostrada = partido.visita || partido.visitaPlaceholder;
   const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
   const horaSegura = escapeHTML(partido.hora);
-  const localSeguro = escapeHTML(localMostrado);
-  const visitaSeguro = escapeHTML(visitaMostrada);
+  const localSeguro = renderizarEquipoConBandera(localMostrado, "local");
+  const visitaSeguro = renderizarEquipoConBandera(visitaMostrada, "visita");
   const clasificaSeguro = resultadoFinalizado && partido.clasifica
     ? `<div class="result-qualified">Clasifica: ${escapeHTML(partido.clasifica)}</div>`
     : "";
@@ -4053,8 +4152,8 @@ function renderizarResultadosEliminacion(llavesCerradas) {
     const visitaMostrada = partido.visita || partido.visitaPlaceholder;
     const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
     const horaSegura = escapeHTML(partido.hora);
-    const localSeguro = escapeHTML(localMostrado);
-    const visitaSeguro = escapeHTML(visitaMostrada);
+    const localSeguro = renderizarEquipoConBandera(localMostrado, "local");
+    const visitaSeguro = renderizarEquipoConBandera(visitaMostrada, "visita");
     const clasificaSeguro = resultadoFinalizado && partido.clasifica
       ? `<div class="result-qualified">Clasifica: ${escapeHTML(partido.clasifica)}</div>`
       : "";
@@ -4299,6 +4398,8 @@ function renderizarEliminacion() {
     const horaSegura = escapeHTML(partido.hora);
     const localSeguro = escapeHTML(localMostrado);
     const visitaSeguro = escapeHTML(visitaMostrada);
+    const localConBandera = renderizarEquipoConBandera(localMostrado, "local");
+    const visitaConBandera = renderizarEquipoConBandera(visitaMostrada, "visita");
     const estadoNormalizado = String(partido.estado || "").trim().toLowerCase();
 
     const abierto = estadoNormalizado === "abierto";
@@ -4321,7 +4422,7 @@ function renderizarEliminacion() {
       </div>
 
       <div class="match-row">
-        <div class="team local">${localSeguro}</div>
+        <div class="team local">${localConBandera}</div>
 
         <input 
           class="score-input" 
@@ -4343,7 +4444,7 @@ function renderizarEliminacion() {
           ${bloqueado ? "disabled" : ""}
         />
 
-        <div class="team visitante">${visitaSeguro}</div>
+        <div class="team visitante">${visitaConBandera}</div>
       </div>
 
       <div class="classify-box">
@@ -4357,7 +4458,7 @@ function renderizarEliminacion() {
               value="${localSeguro}"
               ${bloqueado ? "disabled" : ""}
             />
-            ${localSeguro}
+            ${localConBandera}
           </label>
 
           <label class="classify-option">
@@ -4367,7 +4468,7 @@ function renderizarEliminacion() {
               value="${visitaSeguro}"
               ${bloqueado ? "disabled" : ""}
             />
-            ${visitaSeguro}
+            ${visitaConBandera}
           </label>
         </div>
       </div>
