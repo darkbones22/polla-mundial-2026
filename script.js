@@ -396,6 +396,7 @@ let resultadosGrupos = {};
 let resultadosEliminacion = {};
 let detalleResultadoAbierto = "";
 let mostrarResultadosAnteriores = false;
+let vistaResultadosActual = "partidos";
 
 function obtenerFechaISO(valor) {
   const texto = String(valor || "").trim();
@@ -1173,11 +1174,262 @@ function renderizarResultadosAnteriores(itemsAnteriores) {
   contenedorResultados.appendChild(seccion);
 }
 
+function actualizarTabsResultados() {
+  const botones = {
+    partidos: document.getElementById("resultadosPartidosBtn"),
+    grupos: document.getElementById("resultadosGruposBtn"),
+    llaves: document.getElementById("resultadosLlavesBtn")
+  };
+
+  Object.entries(botones).forEach(([vista, boton]) => {
+    boton?.classList.toggle("active", vistaResultadosActual === vista);
+  });
+}
+
+function cambiarVistaResultados(vista) {
+  vistaResultadosActual = ["partidos", "grupos", "llaves"].includes(vista) ? vista : "partidos";
+  detalleResultadoAbierto = "";
+  actualizarTabsResultados();
+  renderizarResultadosGrupos();
+}
+
+function crearFilaTablaEquipo(nombreEquipo, grupo) {
+  return {
+    equipo: nombreEquipo,
+    grupo,
+    pj: 0,
+    pg: 0,
+    pe: 0,
+    pp: 0,
+    gf: 0,
+    gc: 0,
+    dg: 0,
+    pts: 0
+  };
+}
+
+function actualizarFilaTablaEquipo(fila, golesFavor, golesContra) {
+  fila.pj += 1;
+  fila.gf += golesFavor;
+  fila.gc += golesContra;
+  fila.dg = fila.gf - fila.gc;
+
+  if (golesFavor > golesContra) {
+    fila.pg += 1;
+    fila.pts += 3;
+    return;
+  }
+
+  if (golesFavor === golesContra) {
+    fila.pe += 1;
+    fila.pts += 1;
+    return;
+  }
+
+  fila.pp += 1;
+}
+
+function calcularTablaGrupos() {
+  const tablas = new Map();
+
+  (Array.isArray(partidos) ? partidos : []).forEach((partido) => {
+    const grupo = String(partido.grupo || "").trim();
+    if (!grupo) return;
+
+    if (!tablas.has(grupo)) {
+      tablas.set(grupo, new Map());
+    }
+
+    const tablaGrupo = tablas.get(grupo);
+    const local = obtenerNombreEquipo(partido.local);
+    const visita = obtenerNombreEquipo(partido.visita);
+
+    if (!tablaGrupo.has(local)) tablaGrupo.set(local, crearFilaTablaEquipo(local, grupo));
+    if (!tablaGrupo.has(visita)) tablaGrupo.set(visita, crearFilaTablaEquipo(visita, grupo));
+
+    if (!resultadoGrupoFinalizadoValido(partido.id)) return;
+
+    const resultado = resultadosGrupos[partido.id];
+    const golesLocal = Number(resultado.golesLocalReal);
+    const golesVisita = Number(resultado.golesVisitaReal);
+
+    actualizarFilaTablaEquipo(tablaGrupo.get(local), golesLocal, golesVisita);
+    actualizarFilaTablaEquipo(tablaGrupo.get(visita), golesVisita, golesLocal);
+  });
+
+  return [...tablas.entries()]
+    .sort(([grupoA], [grupoB]) => grupoA.localeCompare(grupoB, "es", { numeric: true }))
+    .map(([grupo, equiposGrupo]) => ({
+      grupo,
+      equipos: [...equiposGrupo.values()].sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.dg !== a.dg) return b.dg - a.dg;
+        if (b.gf !== a.gf) return b.gf - a.gf;
+        return a.equipo.localeCompare(b.equipo, "es");
+      })
+    }));
+}
+
+function renderizarTablaGruposResultados() {
+  if (!contenedorResultados) return;
+
+  const tablas = calcularTablaGrupos();
+
+  if (tablas.length === 0) {
+    contenedorResultados.innerHTML = `
+      <div class="empty-state">
+        No hay grupos cargados por ahora.
+      </div>
+    `;
+    return;
+  }
+
+  contenedorResultados.innerHTML = `
+    <section class="group-standings-grid">
+      ${tablas.map(({ grupo, equipos }) => `
+        <article class="group-standings-card">
+          <h2>Grupo ${escapeHTML(grupo)}</h2>
+          <div class="standings-table-wrap">
+            <table class="standings-table">
+              <thead>
+                <tr>
+                  <th>Equipo</th>
+                  <th>PJ</th>
+                  <th>PG</th>
+                  <th>PE</th>
+                  <th>PP</th>
+                  <th>GF</th>
+                  <th>GC</th>
+                  <th>DG</th>
+                  <th>Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${equipos.map((fila) => `
+                  <tr>
+                    <td>${renderizarEquipoConBandera(fila.equipo, "visita")}</td>
+                    <td>${escapeHTML(fila.pj)}</td>
+                    <td>${escapeHTML(fila.pg)}</td>
+                    <td>${escapeHTML(fila.pe)}</td>
+                    <td>${escapeHTML(fila.pp)}</td>
+                    <td>${escapeHTML(fila.gf)}</td>
+                    <td>${escapeHTML(fila.gc)}</td>
+                    <td>${escapeHTML(fila.dg)}</td>
+                    <td><strong>${escapeHTML(fila.pts)}</strong></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      `).join("")}
+    </section>
+  `;
+}
+
+function obtenerRondasLlavesOrdenadas() {
+  const orden = ["16avos", "Octavos", "Cuartos", "Semifinal", "Tercer lugar", "Final"];
+
+  return [...new Set((Array.isArray(llavesEliminacion) ? llavesEliminacion : []).map((partido) => partido.ronda || "Eliminaci\u00f3n"))]
+    .sort((a, b) => {
+      const indiceA = orden.indexOf(a);
+      const indiceB = orden.indexOf(b);
+
+      if (indiceA !== -1 || indiceB !== -1) {
+        return (indiceA === -1 ? 999 : indiceA) - (indiceB === -1 ? 999 : indiceB);
+      }
+
+      return a.localeCompare(b, "es", { numeric: true });
+    });
+}
+
+function obtenerNombreLlaveEquipo(partido, lado) {
+  if (lado === "local") {
+    return partido.equipoLocal || partido.equipo_local || partido.local || partido.localPlaceholder || partido.placeholderLocal || "Por definir";
+  }
+
+  return partido.equipoVisita || partido.equipo_visita || partido.visita || partido.visitaPlaceholder || partido.placeholderVisita || "Por definir";
+}
+
+function renderizarLlavesEliminacionResultados() {
+  if (!contenedorResultados) return;
+
+  const llaves = ordenarPartidosPorFechaHora(Array.isArray(llavesEliminacion) ? llavesEliminacion : []);
+
+  if (llaves.length === 0) {
+    contenedorResultados.innerHTML = `
+      <div class="empty-state">
+        Todav&iacute;a no hay llaves de eliminaci&oacute;n cargadas.
+      </div>
+    `;
+    return;
+  }
+
+  const rondas = obtenerRondasLlavesOrdenadas();
+
+  contenedorResultados.innerHTML = `
+    <section class="bracket-results">
+      ${rondas.map((ronda) => {
+        const partidosRonda = llaves.filter((partido) => (partido.ronda || "Eliminaci\u00f3n") === ronda);
+
+        return `
+          <article class="bracket-round-card">
+            <h2>${escapeHTML(ronda)}</h2>
+            <div class="bracket-match-list">
+              ${partidosRonda.map((partido) => {
+                const resultadoEliminacion = resultadosEliminacion[partido.id];
+                const partidoResultado = {
+                  ...partido,
+                  ...(resultadoEliminacion || {})
+                };
+                const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
+                const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "eliminacion");
+                const marcador = resultadoFinalizado
+                  ? `${escapeHTML(partidoResultado.golesLocalReal)} - ${escapeHTML(partidoResultado.golesVisitaReal)}`
+                  : estadoResultado.marcador || estadoResultado.texto;
+                const local = obtenerNombreLlaveEquipo(partidoResultado, "local");
+                const visita = obtenerNombreLlaveEquipo(partidoResultado, "visita");
+
+                return `
+                  <article class="bracket-match-card">
+                    <div class="bracket-match-meta">
+                      ${escapeHTML(formatearFecha(partido.fecha))} &middot; ${escapeHTML(partido.hora)} hrs
+                    </div>
+                    <div class="bracket-match-row">
+                      <div class="team local">${renderizarEquipoConBandera(local, "local")}</div>
+                      <div
+                        class="${obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)}"
+                        title="${escapeHTML(estadoResultado.descripcion)}"
+                      >${escapeHTML(marcador)}</div>
+                      <div class="team visitante">${renderizarEquipoConBandera(visita, "visita")}</div>
+                    </div>
+                  </article>
+                `;
+              }).join("")}
+            </div>
+          </article>
+        `;
+      }).join("")}
+    </section>
+  `;
+}
+
 function renderizarResultadosGrupos() {
   if (!contenedorResultados) return;
 
   try {
     contenedorResultados.innerHTML = "";
+    actualizarTabsResultados();
+
+    if (vistaResultadosActual === "grupos") {
+      renderizarTablaGruposResultados();
+      return;
+    }
+
+    if (vistaResultadosActual === "llaves") {
+      renderizarLlavesEliminacionResultados();
+      return;
+    }
 
     const partidosResultados = ordenarPartidosPorFechaHora(Array.isArray(partidos) ? partidos : []);
     const llavesResultados = obtenerLlavesEliminacionParaResultados();
