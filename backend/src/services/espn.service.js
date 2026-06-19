@@ -499,6 +499,38 @@ export async function vincularEventosEspnBulk(datos = {}) {
   return resumen;
 }
 
+async function validarEspnEventIdDisponible(eventId, partidoId, tipo) {
+  const consultas = await Promise.all([
+    supabase
+      .from('partidos_grupos')
+      .select('id')
+      .eq('espn_event_id', eventId),
+    supabase
+      .from('partidos_eliminacion')
+      .select('id')
+      .eq('espn_event_id', eventId)
+  ]);
+
+  consultas.forEach(({ error }) => {
+    if (error) {
+      throw new Error(error.message);
+    }
+  });
+
+  const duplicado = consultas
+    .flatMap(({ data }, indice) => (data || []).map((fila) => ({
+      id: fila.id,
+      tipo: indice === 0 ? 'grupos' : 'eliminacion'
+    })))
+    .find((fila) => fila.id !== partidoId || fila.tipo !== tipo);
+
+  if (duplicado) {
+    const error = new Error(`ESPN event ${eventId} ya esta vinculado a ${duplicado.tipo}:${duplicado.id}`);
+    error.status = 409;
+    throw error;
+  }
+}
+
 export async function vincularEventoEspn(datos) {
   const partidoId = String(datos?.partidoId || '').trim();
   const tipo = String(datos?.tipo || '').trim().toLowerCase();
@@ -517,6 +549,8 @@ export async function vincularEventoEspn(datos) {
     error.status = 400;
     throw error;
   }
+
+  await validarEspnEventIdDisponible(eventId, partidoId, tipo);
 
   const { error } = await supabase
     .from(tabla)
