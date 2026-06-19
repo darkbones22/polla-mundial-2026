@@ -383,6 +383,13 @@
     });
   }
 
+  async function apiAdminVincularResultadoEspn(datos) {
+    return llamarNodeApi("/api/admin/espn/link", {
+      method: "POST",
+      body: datos
+    });
+  }
+
   async function apiAdminObtenerParticipantes() {
     return llamarNodeApi("/api/admin/participantes");
   }
@@ -453,6 +460,7 @@
     apiAdminActualizarPartido,
     apiAdminConsultarEspnScoreboard,
     apiAdminAplicarResultadoEspn,
+    apiAdminVincularResultadoEspn,
     apiAdminObtenerParticipantes,
     apiAdminCrearParticipante,
     apiAdminActualizarParticipante,

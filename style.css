@@ -3273,10 +3273,45 @@ body {
   white-space: nowrap;
 }
 
+.admin-espn-team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.admin-espn-team-card {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #dbeafe;
+  border-radius: 11px;
+  background: #f8fbff;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-espn-team-card strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .admin-espn-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 9px;
+}
+
+.admin-espn-actions .admin-secondary-button,
+.admin-espn-actions .admin-save-button {
+  min-height: 36px;
 }
 
 .admin-toolbar {
@@ -3796,6 +3831,10 @@ body {
   .admin-espn-grid {
     grid-template-columns: 1fr 1fr;
     font-size: 10px;
+  }
+
+  .admin-espn-team-grid {
+    grid-template-columns: 1fr;
   }
 
   .admin-espn-card-head {

@@ -1,64 +1,20 @@
+import { supabase } from '../supabaseClient.js';
 import { actualizarPartidoAdmin, obtenerPartidosAdmin } from './admin.service.js';
 import { obtenerFechaHoraChile } from '../utils/fechas.js';
+import {
+  equiposEquivalentes,
+  obtenerNombreEquipoCanonico,
+  normalizarNombreEquipo
+} from '../utils/espnEquipos.js';
 
 const ESPN_SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 const MILISEGUNDOS_HORA = 60 * 60 * 1000;
+const TIPOS_VALIDOS = new Set(['grupos', 'eliminacion']);
 
-const MAPEO_NOMBRES_ESPN = new Map([
-  ['congo dr', 'RD Congo'],
-  ['dr congo', 'RD Congo'],
-  ['united states', 'EE.UU.'],
-  ['usa', 'EE.UU.'],
-  ['south korea', 'Corea del Sur'],
-  ['czechia', 'República Checa'],
-  ['czech republic', 'República Checa'],
-  ['ivory coast', 'Costa de Marfil'],
-  ['netherlands', 'Países Bajos'],
-  ['saudi arabia', 'Arabia Saudí'],
-  ['new zealand', 'Nueva Zelanda'],
-  ['cape verde', 'Cabo Verde'],
-  ['turkiye', 'Turquía'],
-  ['turkey', 'Turquía'],
-  ['curacao', 'Curazao'],
-  ['mexico', 'México'],
-  ['south africa', 'Sudáfrica'],
-  ['tunisia', 'Túnez'],
-  ['iran', 'Irán'],
-  ['japan', 'Japón'],
-  ['spain', 'España'],
-  ['belgium', 'Bélgica'],
-  ['canada', 'Canadá'],
-  ['panama', 'Panamá'],
-  ['uzbekistan', 'Uzbekistán'],
-  ['bosnia and herzegovina', 'Bosnia y Herzegovina'],
-  ['morocco', 'Marruecos'],
-  ['qatar', 'Catar'],
-  ['switzerland', 'Suiza'],
-  ['scotland', 'Escocia'],
-  ['sweden', 'Suecia'],
-  ['egypt', 'Egipto'],
-  ['iraq', 'Irak'],
-  ['norway', 'Noruega'],
-  ['algeria', 'Argelia'],
-  ['croatia', 'Croacia'],
-  ['germany', 'Alemania'],
-  ['england', 'Inglaterra']
-]);
-
-function normalizarTexto(valor) {
-  return String(valor || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function mapearNombreEspn(nombre) {
-  const nombreNormalizado = normalizarTexto(nombre);
-  return MAPEO_NOMBRES_ESPN.get(nombreNormalizado) || nombre || '';
+function obtenerTablaPorTipo(tipo) {
+  if (tipo === 'grupos') return 'partidos_grupos';
+  if (tipo === 'eliminacion') return 'partidos_eliminacion';
+  return null;
 }
 
 function obtenerCompetidor(competitors, homeAway) {
@@ -69,30 +25,6 @@ function normalizarScore(valor) {
   if (valor === null || valor === undefined || valor === '') return null;
   const numero = Number(valor);
   return Number.isFinite(numero) ? numero : null;
-}
-
-function contarEventos(details = []) {
-  return details.reduce((acumulador, evento) => {
-    const tipo = String(evento?.type?.text || evento?.type || '').toLowerCase();
-
-    if (evento?.scoringPlay || tipo.includes('goal')) {
-      acumulador.goles += 1;
-    }
-
-    if (evento?.yellowCard || tipo.includes('yellow')) {
-      acumulador.amarillas += 1;
-    }
-
-    if (evento?.redCard || tipo.includes('red')) {
-      acumulador.rojas += 1;
-    }
-
-    return acumulador;
-  }, {
-    goles: 0,
-    amarillas: 0,
-    rojas: 0
-  });
 }
 
 function normalizarEstadoEspn(status = {}) {
@@ -120,6 +52,85 @@ function normalizarEstadoEspn(status = {}) {
   };
 }
 
+function crearConteoEquipo() {
+  return {
+    goles: 0,
+    amarillas: 0,
+    rojas: 0,
+    fairPlayEstimado: 0
+  };
+}
+
+function obtenerTeamIdDesdeDetalle(detalle) {
+  return String(
+    detalle?.team?.id ||
+    detalle?.teamId ||
+    detalle?.competitorId ||
+    detalle?.athletesInvolved?.[0]?.team?.id ||
+    detalle?.athletesInvolved?.[0]?.teamId ||
+    ''
+  );
+}
+
+function obtenerLadoEvento(detalle, idsEquipos) {
+  const teamId = obtenerTeamIdDesdeDetalle(detalle);
+
+  if (teamId && teamId === idsEquipos.local) return 'local';
+  if (teamId && teamId === idsEquipos.visita) return 'visita';
+
+  const nombreEquipo = detalle?.team?.displayName || detalle?.team?.name || detalle?.athletesInvolved?.[0]?.team?.displayName || '';
+
+  if (nombreEquipo) {
+    if (equiposEquivalentes(nombreEquipo, idsEquipos.nombreLocal)) return 'local';
+    if (equiposEquivalentes(nombreEquipo, idsEquipos.nombreVisita)) return 'visita';
+  }
+
+  return 'sinEquipo';
+}
+
+function contarEventosPorEquipo(details = [], idsEquipos) {
+  const acumulador = {
+    local: crearConteoEquipo(),
+    visita: crearConteoEquipo(),
+    sinEquipo: crearConteoEquipo(),
+    total: {
+      goles: 0,
+      amarillas: 0,
+      rojas: 0
+    }
+  };
+
+  details.forEach((detalle) => {
+    const tipo = String(detalle?.type?.text || detalle?.type || '').toLowerCase();
+    const lado = obtenerLadoEvento(detalle, idsEquipos);
+    const bucket = acumulador[lado] || acumulador.sinEquipo;
+    const esGol = Boolean(detalle?.scoringPlay) || tipo.includes('goal');
+    const esAmarilla = Boolean(detalle?.yellowCard) || tipo.includes('yellow');
+    const esRoja = Boolean(detalle?.redCard) || tipo.includes('red');
+
+    if (esGol) {
+      bucket.goles += 1;
+      acumulador.total.goles += 1;
+    }
+
+    if (esAmarilla) {
+      bucket.amarillas += 1;
+      acumulador.total.amarillas += 1;
+    }
+
+    if (esRoja) {
+      bucket.rojas += 1;
+      acumulador.total.rojas += 1;
+    }
+  });
+
+  ['local', 'visita', 'sinEquipo'].forEach((lado) => {
+    acumulador[lado].fairPlayEstimado = (acumulador[lado].amarillas * -1) + (acumulador[lado].rojas * -4);
+  });
+
+  return acumulador;
+}
+
 function normalizarEventoEspn(evento) {
   const competencia = evento?.competitions?.[0] || {};
   const competitors = competencia.competitors || [];
@@ -128,17 +139,26 @@ function normalizarEventoEspn(evento) {
   const status = competencia.status || evento.status || {};
   const estado = normalizarEstadoEspn(status);
   const fechaHoraChile = obtenerFechaHoraChile(evento.date);
-  const conteoEventos = contarEventos(competencia.details || []);
+  const localEspn = local?.team?.displayName || local?.team?.shortDisplayName || '';
+  const visitaEspn = visita?.team?.displayName || visita?.team?.shortDisplayName || '';
+  const eventos = contarEventosPorEquipo(competencia.details || [], {
+    local: String(local?.team?.id || ''),
+    visita: String(visita?.team?.id || ''),
+    nombreLocal: localEspn,
+    nombreVisita: visitaEspn
+  });
 
   return {
     eventId: String(evento.id || ''),
     fechaHora: evento.date || '',
     fecha: fechaHoraChile.fecha,
     hora: fechaHoraChile.hora,
-    local: mapearNombreEspn(local?.team?.displayName || local?.team?.shortDisplayName || ''),
-    visita: mapearNombreEspn(visita?.team?.displayName || visita?.team?.shortDisplayName || ''),
-    localEspn: local?.team?.displayName || '',
-    visitaEspn: visita?.team?.displayName || '',
+    local: obtenerNombreEquipoCanonico(localEspn),
+    visita: obtenerNombreEquipoCanonico(visitaEspn),
+    localEspn,
+    visitaEspn,
+    espnTeamIdLocal: String(local?.team?.id || ''),
+    espnTeamIdVisita: String(visita?.team?.id || ''),
     abreviaturaLocal: local?.team?.abbreviation || '',
     abreviaturaVisita: visita?.team?.abbreviation || '',
     logoLocal: local?.team?.logo || '',
@@ -151,11 +171,12 @@ function normalizarEventoEspn(evento) {
     reloj: status.displayClock || '',
     periodo: status.period || null,
     tieneEventos: (competencia.details || []).length > 0,
-    eventos: conteoEventos,
+    eventos,
     eventosResumen: (competencia.details || []).slice(0, 8).map((detalle) => ({
       minuto: detalle.clock?.displayValue || '',
       tipo: detalle.type?.text || '',
-      texto: detalle.displayName || detalle.text || ''
+      texto: detalle.displayName || detalle.text || '',
+      equipo: detalle.team?.displayName || ''
     }))
   };
 }
@@ -177,36 +198,59 @@ function calcularDiferenciaHoras(fechaA, fechaB) {
   return Math.abs(a - b) / MILISEGUNDOS_HORA;
 }
 
+function crearPartidoMatch(partido, invertido = false) {
+  return {
+    id: partido.id,
+    tipo: partido.tipo,
+    fecha: partido.fecha,
+    hora: partido.hora,
+    local: obtenerNombrePartido(partido, 'local'),
+    visita: obtenerNombrePartido(partido, 'visita'),
+    estado: partido.estado,
+    espnEventId: partido.espnEventId || '',
+    invertido
+  };
+}
+
+function crearMatch(confianza, partido, diferenciaHoras, origen, invertido = false) {
+  return {
+    confianza,
+    origen,
+    invertido,
+    diferenciaHoras: Number.isFinite(diferenciaHoras) ? Number(diferenciaHoras.toFixed(2)) : null,
+    partido: crearPartidoMatch(partido, invertido)
+  };
+}
+
 function matchearEventoConPartidos(evento, partidos) {
-  const localEspn = normalizarTexto(evento.local);
-  const visitaEspn = normalizarTexto(evento.visita);
+  const matchDirecto = partidos.find((partido) => partido.espnEventId && String(partido.espnEventId) === String(evento.eventId));
+
+  if (matchDirecto) {
+    return crearMatch('Alta', matchDirecto, 0, 'espn_event_id', false);
+  }
+
   let mejorMatch = null;
 
   partidos.forEach((partido) => {
-    const localPartido = normalizarTexto(obtenerNombrePartido(partido, 'local'));
-    const visitaPartido = normalizarTexto(obtenerNombrePartido(partido, 'visita'));
-    const equiposCoinciden = localEspn && visitaEspn && localEspn === localPartido && visitaEspn === visitaPartido;
+    const localPartido = obtenerNombrePartido(partido, 'local');
+    const visitaPartido = obtenerNombrePartido(partido, 'visita');
+    const directo = equiposEquivalentes(evento.local, localPartido) && equiposEquivalentes(evento.visita, visitaPartido);
+    const invertido = equiposEquivalentes(evento.local, visitaPartido) && equiposEquivalentes(evento.visita, localPartido);
 
-    if (!equiposCoinciden) return;
+    if (!directo && !invertido) return;
 
     const diferenciaHoras = calcularDiferenciaHoras(evento.fechaHora, partido.fechaHora || `${partido.fecha}T${partido.hora}:00-04:00`);
     const confianza = diferenciaHoras <= 3 ? 'Alta' : 'Media';
-    const puntaje = confianza === 'Alta' ? 2 : 1;
+    const puntaje = (confianza === 'Alta' ? 4 : 2) - (invertido ? 0.5 : 0);
 
     if (!mejorMatch || puntaje > mejorMatch.puntaje || diferenciaHoras < mejorMatch.diferenciaHoras) {
       mejorMatch = {
         puntaje,
         diferenciaHoras,
         confianza,
-        partido: {
-          id: partido.id,
-          tipo: partido.tipo,
-          fecha: partido.fecha,
-          hora: partido.hora,
-          local: obtenerNombrePartido(partido, 'local'),
-          visita: obtenerNombrePartido(partido, 'visita'),
-          estado: partido.estado
-        }
+        origen: invertido ? 'equipos_invertidos_fecha' : 'equipos_fecha',
+        invertido,
+        partido
       };
     }
   });
@@ -214,16 +258,20 @@ function matchearEventoConPartidos(evento, partidos) {
   if (!mejorMatch) {
     return {
       confianza: 'Baja',
+      origen: 'sin_match',
+      invertido: false,
       diferenciaHoras: null,
       partido: null
     };
   }
 
-  return {
-    confianza: mejorMatch.confianza,
-    diferenciaHoras: Number(mejorMatch.diferenciaHoras.toFixed(2)),
-    partido: mejorMatch.partido
-  };
+  return crearMatch(
+    mejorMatch.confianza,
+    mejorMatch.partido,
+    mejorMatch.diferenciaHoras,
+    mejorMatch.origen,
+    mejorMatch.invertido
+  );
 }
 
 async function obtenerPartidosLocalesParaMatch() {
@@ -270,15 +318,55 @@ export async function consultarScoreboardEspn() {
   };
 }
 
+export async function vincularEventoEspn(datos) {
+  const partidoId = String(datos?.partidoId || '').trim();
+  const tipo = String(datos?.tipo || '').trim().toLowerCase();
+  const eventId = String(datos?.eventId || datos?.espnEventId || '').trim();
+  const confianza = String(datos?.confianza || '').trim().toLowerCase();
+  const tabla = obtenerTablaPorTipo(tipo);
+
+  if (!partidoId || !tabla || !eventId) {
+    const error = new Error('Debes indicar partidoId, tipo y eventId');
+    error.status = 400;
+    throw error;
+  }
+
+  if (confianza !== 'alta') {
+    const error = new Error('Solo se puede vincular ESPN con confianza alta');
+    error.status = 400;
+    throw error;
+  }
+
+  const { error } = await supabase
+    .from(tabla)
+    .update({
+      espn_event_id: eventId,
+      actualizado_en: new Date().toISOString()
+    })
+    .eq('id', partidoId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    id: partidoId,
+    tipo,
+    espnEventId: eventId
+  };
+}
+
 export async function aplicarResultadoEspn(datos) {
   const partidoId = String(datos?.partidoId || '').trim();
   const tipo = String(datos?.tipo || '').trim().toLowerCase();
   const estadoSugerido = String(datos?.estadoSugerido || datos?.estado || '').trim();
   const confianza = String(datos?.confianza || '').trim().toLowerCase();
-  const golesLocal = normalizarScore(datos?.golesLocal);
-  const golesVisita = normalizarScore(datos?.golesVisita);
+  const invertido = datos?.invertido === true || datos?.invertido === 'true';
+  const eventId = String(datos?.eventId || datos?.espnEventId || '').trim();
+  let golesLocal = normalizarScore(datos?.golesLocal);
+  let golesVisita = normalizarScore(datos?.golesVisita);
 
-  if (!partidoId || !['grupos', 'eliminacion'].includes(tipo)) {
+  if (!partidoId || !TIPOS_VALIDOS.has(tipo)) {
     const error = new Error('Debes indicar partidoId y tipo validos');
     error.status = 400;
     throw error;
@@ -302,12 +390,15 @@ export async function aplicarResultadoEspn(datos) {
     throw error;
   }
 
+  if (invertido) {
+    [golesLocal, golesVisita] = [golesVisita, golesLocal];
+  }
+
   return actualizarPartidoAdmin(partidoId, {
     tipo,
     golesLocalReal: golesLocal,
     golesVisitaReal: golesVisita,
     estado: estadoSugerido,
-    equipoLocal: datos?.equipoLocal,
-    equipoVisita: datos?.equipoVisita
+    espnEventId: eventId || undefined
   });
 }

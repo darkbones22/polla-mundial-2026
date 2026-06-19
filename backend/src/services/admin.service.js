@@ -29,6 +29,7 @@ function mapearPartidoGrupo(fila) {
     equipoVisita: fila.equipo_visita,
     golesLocalReal: fila.goles_local_real,
     golesVisitaReal: fila.goles_visita_real,
+    espnEventId: fila.espn_event_id,
     estado: estadoAdmin.estado,
     estadoBase: estadoAdmin.estadoBase,
     cerradoPorHorario: estadoAdmin.cerradoPorHorario,
@@ -52,6 +53,7 @@ function mapearPartidoEliminacion(fila) {
     equipoVisita: fila.equipo_visita,
     golesLocalReal: fila.goles_local_real,
     golesVisitaReal: fila.goles_visita_real,
+    espnEventId: fila.espn_event_id,
     clasificadoRealLado: fila.clasificado_real_lado,
     estado: estadoAdmin.estado,
     estadoBase: estadoAdmin.estadoBase,
@@ -64,7 +66,7 @@ function obtenerConfigTipo(tipo) {
   if (tipo === 'grupos') {
     return {
       tabla: 'partidos_grupos',
-      columnas: 'id,grupo,fecha_hora,equipo_local,equipo_visita,goles_local_real,goles_visita_real,estado',
+      columnas: 'id,grupo,fecha_hora,equipo_local,equipo_visita,goles_local_real,goles_visita_real,estado,espn_event_id',
       mapear: mapearPartidoGrupo
     };
   }
@@ -72,7 +74,7 @@ function obtenerConfigTipo(tipo) {
   if (tipo === 'eliminacion') {
     return {
       tabla: 'partidos_eliminacion',
-      columnas: 'id,ronda,fecha_hora,placeholder_local,equipo_local,placeholder_visita,equipo_visita,goles_local_real,goles_visita_real,clasificado_real_lado,estado',
+      columnas: 'id,ronda,fecha_hora,placeholder_local,equipo_local,placeholder_visita,equipo_visita,goles_local_real,goles_visita_real,clasificado_real_lado,estado,espn_event_id',
       mapear: mapearPartidoEliminacion
     };
   }
@@ -682,6 +684,10 @@ export async function actualizarPartidoAdmin(id, datos) {
     actualizado_en: new Date().toISOString()
   };
 
+  if (Object.prototype.hasOwnProperty.call(datos || {}, 'espnEventId')) {
+    cambios.espn_event_id = String(datos.espnEventId || '').trim() || null;
+  }
+
   if (estado === 'Finalizado' && (golesLocalReal === null || golesVisitaReal === null)) {
     const error = new Error('Un partido finalizado debe tener goles reales completos');
     error.status = 400;
@@ -689,9 +695,17 @@ export async function actualizarPartidoAdmin(id, datos) {
   }
 
   if (tipo === 'eliminacion') {
-    cambios.clasificado_real_lado = normalizarClasificado(datos?.clasificadoRealLado);
-    cambios.equipo_local = normalizarEquipoReal(datos?.equipoLocal);
-    cambios.equipo_visita = normalizarEquipoReal(datos?.equipoVisita);
+    if (Object.prototype.hasOwnProperty.call(datos || {}, 'clasificadoRealLado')) {
+      cambios.clasificado_real_lado = normalizarClasificado(datos?.clasificadoRealLado);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(datos || {}, 'equipoLocal')) {
+      cambios.equipo_local = normalizarEquipoReal(datos?.equipoLocal);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(datos || {}, 'equipoVisita')) {
+      cambios.equipo_visita = normalizarEquipoReal(datos?.equipoVisita);
+    }
   }
 
   const { data, error } = await supabase

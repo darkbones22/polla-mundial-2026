@@ -2593,6 +2593,18 @@ function obtenerTextoMatchEspn(evento) {
   return `${match.partido.tipo} · ${match.partido.id} · ${match.partido.local} vs ${match.partido.visita}`;
 }
 
+function obtenerTarjetaEquipoEspn(titulo, equipo, datos) {
+  return `
+    <div class="admin-espn-team-card">
+      <strong>${escapeHTML(titulo)}: ${escapeHTML(equipo)}</strong>
+      <span>Goles: ${escapeHTML(datos?.goles || 0)}</span>
+      <span>Amarillas: ${escapeHTML(datos?.amarillas || 0)}</span>
+      <span>Rojas: ${escapeHTML(datos?.rojas || 0)}</span>
+      <span>Fair play estimado: ${escapeHTML(datos?.fairPlayEstimado || 0)}</span>
+    </div>
+  `;
+}
+
 function renderizarAdminEspn() {
   const resumen = document.getElementById("adminEspnResumen");
   const lista = document.getElementById("adminEspnLista");
@@ -2633,10 +2645,20 @@ function renderizarAdminEspn() {
       confianza !== "Baja" &&
       ["En vivo", "Finalizado"].includes(evento.estadoSugerido) &&
       tieneMarcadorEspn(evento);
+    const yaVinculado = Boolean(evento.match?.partido?.espnEventId);
+    const puedeVincular = evento.match?.partido &&
+      confianza === "Alta" &&
+      !yaVinculado &&
+      evento.eventId;
     const marcador = tieneMarcadorEspn(evento)
       ? `${escapeHTML(evento.golesLocal)} - ${escapeHTML(evento.golesVisita)}`
       : "Sin marcador";
     const reloj = evento.reloj ? ` · ${escapeHTML(evento.reloj)}` : "";
+
+    const invertido = evento.match?.invertido ? "Si" : "No";
+    const vinculado = yaVinculado
+      ? `Vinculado: ${escapeHTML(evento.match.partido.espnEventId)}`
+      : "No vinculado";
 
     return `
       <article class="admin-espn-card">
@@ -2654,12 +2676,25 @@ function renderizarAdminEspn() {
           <span><strong>Sugerido:</strong> ${escapeHTML(evento.estadoSugerido)}</span>
           <span><strong>Match:</strong> ${escapeHTML(obtenerTextoMatchEspn(evento))}</span>
           <span><strong>Eventos:</strong> ${evento.tieneEventos ? "Sí" : "No"}</span>
-          <span><strong>Goles:</strong> ${escapeHTML(evento.eventos?.goles || 0)}</span>
-          <span><strong>Amarillas:</strong> ${escapeHTML(evento.eventos?.amarillas || 0)}</span>
-          <span><strong>Rojas:</strong> ${escapeHTML(evento.eventos?.rojas || 0)}</span>
+          <span><strong>Vinculo:</strong> ${vinculado}</span>
+          <span><strong>Invertido:</strong> ${invertido}</span>
+          <span><strong>Sin equipo:</strong> A ${escapeHTML(evento.eventos?.sinEquipo?.amarillas || 0)} / R ${escapeHTML(evento.eventos?.sinEquipo?.rojas || 0)}</span>
+        </div>
+
+        <div class="admin-espn-team-grid">
+          ${obtenerTarjetaEquipoEspn("Local ESPN", evento.local, evento.eventos?.local)}
+          ${obtenerTarjetaEquipoEspn("Visita ESPN", evento.visita, evento.eventos?.visita)}
         </div>
 
         <div class="admin-espn-actions">
+          <button
+            class="admin-secondary-button compact"
+            type="button"
+            ${puedeVincular ? "" : "disabled"}
+            onclick="vincularAdminEspn('${escapeHTML(evento.eventId)}')"
+          >
+            Vincular ESPN
+          </button>
           <button
             class="admin-save-button compact"
             type="button"
@@ -2672,6 +2707,46 @@ function renderizarAdminEspn() {
       </article>
     `;
   }).join("");
+}
+
+async function vincularAdminEspn(eventId) {
+  const evento = adminEspnEventosActuales.find((item) => String(item.eventId) === String(eventId));
+
+  if (!evento || !evento.match?.partido) {
+    mostrarFeedbackAdmin("No hay coincidencia local para vincular.", "error");
+    return;
+  }
+
+  if (evento.match.confianza !== "Alta") {
+    mostrarFeedbackAdmin("Solo se puede vincular una coincidencia alta.", "error");
+    return;
+  }
+
+  mostrarFeedbackAdmin("Vinculando ESPN...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminVincularResultadoEspn({
+      eventId: evento.eventId,
+      partidoId: evento.match.partido.id,
+      tipo: evento.match.partido.tipo,
+      confianza: evento.match.confianza
+    });
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudo vincular ESPN.", "error");
+      }
+      return;
+    }
+
+    evento.match.partido.espnEventId = evento.eventId;
+    evento.match.origen = "espn_event_id";
+    renderizarAdminEspn();
+    mostrarFeedbackAdmin("Partido vinculado con ESPN.", "success");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al vincular ESPN.", "error");
+  }
 }
 
 async function consultarAdminEspn() {
@@ -2726,6 +2801,7 @@ async function aplicarAdminEspn(eventId) {
       golesVisita: evento.golesVisita,
       estadoSugerido: evento.estadoSugerido,
       confianza: evento.match.confianza,
+      invertido: Boolean(evento.match.invertido),
       equipoLocal: evento.local,
       equipoVisita: evento.visita
     });

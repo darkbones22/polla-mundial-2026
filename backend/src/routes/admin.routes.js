@@ -16,7 +16,8 @@ import {
 } from '../services/admin.service.js';
 import {
   aplicarResultadoEspn,
-  consultarScoreboardEspn
+  consultarScoreboardEspn,
+  vincularEventoEspn
 } from '../services/espn.service.js';
 
 const router = Router();
@@ -68,6 +69,19 @@ router.get('/espn/scoreboard', async (req, res, next) => {
 router.post('/espn/apply', async (req, res, next) => {
   try {
     const partido = await aplicarResultadoEspn(req.body);
+
+    res.json({
+      ok: true,
+      partido
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/espn/link', async (req, res, next) => {
+  try {
+    const partido = await vincularEventoEspn(req.body);
 
     res.json({
       ok: true,
