@@ -1,0 +1,17 @@
+name: ESPN Sync
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync-linked:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync linked ESPN matches
+        run: |
+          curl --fail --show-error --silent \
+            --request POST \
+            --header "x-espn-sync-secret: ${{ secrets.ESPN_SYNC_SECRET }}" \
+            https://polla-mundial-2026-backend.onrender.com/api/cron/espn/sync-linked

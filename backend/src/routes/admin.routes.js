@@ -17,6 +17,8 @@ import {
 import {
   aplicarResultadoEspn,
   consultarScoreboardEspn,
+  sincronizarPartidosVinculadosEspn,
+  vincularEventosEspnBulk,
   vincularEventoEspn
 } from '../services/espn.service.js';
 
@@ -55,7 +57,11 @@ router.patch('/partidos/:id', async (req, res, next) => {
 
 router.get('/espn/scoreboard', async (req, res, next) => {
   try {
-    const resultado = await consultarScoreboardEspn();
+    const dates = String(req.query.dates || '')
+      .split(',')
+      .map((fecha) => fecha.trim())
+      .filter(Boolean);
+    const resultado = await consultarScoreboardEspn({ dates });
 
     res.json({
       ok: true,
@@ -86,6 +92,32 @@ router.post('/espn/link', async (req, res, next) => {
     res.json({
       ok: true,
       partido
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/espn/link-bulk', async (req, res, next) => {
+  try {
+    const resumen = await vincularEventosEspnBulk(req.body);
+
+    res.json({
+      ok: true,
+      resumen
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/espn/sync-linked', async (req, res, next) => {
+  try {
+    const resumen = await sincronizarPartidosVinculadosEspn();
+
+    res.json({
+      ok: true,
+      resumen
     });
   } catch (error) {
     next(error);

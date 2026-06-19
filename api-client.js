@@ -390,6 +390,20 @@
     });
   }
 
+  async function apiAdminVincularResultadosEspnBulk(datos) {
+    return llamarNodeApi("/api/admin/espn/link-bulk", {
+      method: "POST",
+      body: datos
+    });
+  }
+
+  async function apiAdminSincronizarResultadosEspnVinculados() {
+    return llamarNodeApi("/api/admin/espn/sync-linked", {
+      method: "POST",
+      body: {}
+    });
+  }
+
   async function apiAdminObtenerParticipantes() {
     return llamarNodeApi("/api/admin/participantes");
   }
@@ -461,6 +475,8 @@
     apiAdminConsultarEspnScoreboard,
     apiAdminAplicarResultadoEspn,
     apiAdminVincularResultadoEspn,
+    apiAdminVincularResultadosEspnBulk,
+    apiAdminSincronizarResultadosEspnVinculados,
     apiAdminObtenerParticipantes,
     apiAdminCrearParticipante,
     apiAdminActualizarParticipante,

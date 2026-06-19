@@ -2749,6 +2749,111 @@ async function vincularAdminEspn(eventId) {
   }
 }
 
+function obtenerFechaEspnDesdeTexto(fecha) {
+  return String(fecha || "").replace(/\D/g, "").slice(0, 8);
+}
+
+function obtenerFechaEspnHoy() {
+  const ahoraChile = obtenerAhoraChile();
+  const year = ahoraChile.getFullYear();
+  const month = String(ahoraChile.getMonth() + 1).padStart(2, "0");
+  const day = String(ahoraChile.getDate()).padStart(2, "0");
+
+  return `${year}${month}${day}`;
+}
+
+function obtenerFechasAdminEspnConsultadas() {
+  const fechas = adminEspnEventosActuales
+    .map((evento) => obtenerFechaEspnDesdeTexto(evento.fecha))
+    .filter(Boolean);
+  const unicas = [...new Set(fechas)];
+
+  return unicas.length ? unicas : [obtenerFechaEspnHoy()];
+}
+
+function obtenerTextoResumenEspnBulk(resumen) {
+  if (!resumen) return "Sin resumen.";
+
+  return `Revisados: ${resumen.revisados || 0} · Vinculados: ${resumen.vinculados || 0} · Ya vinculados: ${resumen.yaVinculados || 0} · Sin match: ${resumen.sinMatch || 0} · Baja confianza: ${resumen.bajaConfianza || 0} · Errores: ${resumen.errores || 0}`;
+}
+
+async function ejecutarVinculacionAdminEspn(datos, mensajeCarga) {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  mostrarFeedbackAdmin(mensajeCarga, "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminVincularResultadosEspnBulk(datos);
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudo vincular ESPN.", "error");
+      }
+      return;
+    }
+
+    mostrarFeedbackAdmin(obtenerTextoResumenEspnBulk(respuesta.resumen), "success");
+    await consultarAdminEspn();
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al vincular ESPN.", "error");
+  }
+}
+
+async function vincularAdminEspnFechaConsultada() {
+  await ejecutarVinculacionAdminEspn(
+    { dates: obtenerFechasAdminEspnConsultadas() },
+    "Vinculando fecha consultada..."
+  );
+}
+
+async function vincularAdminEspnProximos7Dias() {
+  await ejecutarVinculacionAdminEspn(
+    { mode: "next7days" },
+    "Vinculando próximos 7 días..."
+  );
+}
+
+async function vincularAdminEspnTodosSinId() {
+  await ejecutarVinculacionAdminEspn(
+    { mode: "allUnlinked" },
+    "Vinculando partidos sin ESPN ID..."
+  );
+}
+
+async function sincronizarAdminEspnVinculados() {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  mostrarFeedbackAdmin("Sincronizando partidos vinculados...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminSincronizarResultadosEspnVinculados();
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudo sincronizar ESPN.", "error");
+      }
+      return;
+    }
+
+    const resumen = respuesta.resumen || {};
+    await refrescarDatosDespuesDeAdmin("grupos");
+    await refrescarDatosDespuesDeAdmin("eliminacion");
+    mostrarPanelAdmin("espn");
+    renderizarAdminEspn();
+    mostrarFeedbackAdmin(`Revisados: ${resumen.revisados || 0} · Actualizados: ${resumen.actualizados || 0} · Omitidos: ${resumen.omitidos || 0} · Errores: ${resumen.errores || 0}`, "success");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al sincronizar ESPN.", "error");
+  }
+}
+
 async function consultarAdminEspn() {
   if (!usuarioAdminActual) {
     mostrarFeedbackAdmin("No autorizado.", "error");

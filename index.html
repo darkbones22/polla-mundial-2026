@@ -293,9 +293,23 @@
               <h3>ESPN Sync</h3>
               <p>Consulta ESPN, revisa coincidencias y aplica resultados uno por uno.</p>
             </div>
-            <button class="admin-save-button compact" type="button" onclick="consultarAdminEspn()">
-              Consultar ESPN
-            </button>
+            <div class="admin-espn-header-actions">
+              <button class="admin-save-button compact" type="button" onclick="consultarAdminEspn()">
+                Consultar ESPN
+              </button>
+              <button class="admin-secondary-button compact" type="button" onclick="vincularAdminEspnFechaConsultada()">
+                Vincular fecha consultada
+              </button>
+              <button class="admin-secondary-button compact" type="button" onclick="vincularAdminEspnProximos7Dias()">
+                Vincular próximos 7 días
+              </button>
+              <button class="admin-secondary-button compact" type="button" onclick="vincularAdminEspnTodosSinId()">
+                Vincular todos sin ESPN ID
+              </button>
+              <button class="admin-secondary-button compact" type="button" onclick="sincronizarAdminEspnVinculados()">
+                Sincronizar vinculados ahora
+              </button>
+            </div>
           </div>
 
           <div id="adminEspnResumen" class="admin-espn-summary"></div>

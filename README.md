@@ -166,6 +166,33 @@ WHERE codigo_legacy = 'codigo-del-participante';
 
 El participante debe estar activo para usar el panel administrador. Si `activo = false` o `es_admin = false`, las rutas de administración responden `403`.
 
+## ESPN Sync
+
+Admin -> ESPN Sync permite consultar ESPN desde el backend, vincular partidos por `espn_event_id` y aplicar resultados manualmente.
+
+Columnas necesarias en Supabase:
+
+```sql
+ALTER TABLE partidos_grupos ADD COLUMN IF NOT EXISTS espn_event_id text;
+ALTER TABLE partidos_eliminacion ADD COLUMN IF NOT EXISTS espn_event_id text;
+
+CREATE INDEX IF NOT EXISTS idx_partidos_grupos_espn_event_id
+ON partidos_grupos(espn_event_id);
+
+CREATE INDEX IF NOT EXISTS idx_partidos_eliminacion_espn_event_id
+ON partidos_eliminacion(espn_event_id);
+```
+
+Para el cron automatico de partidos ya vinculados:
+
+- En Render, configurar `ESPN_SYNC_SECRET` como variable de entorno del backend.
+- En GitHub, crear el secret del repositorio `ESPN_SYNC_SECRET` con el mismo valor.
+- El workflow `.github/workflows/espn-sync.yml` llama cada 10 minutos a:
+  `POST https://polla-mundial-2026-backend.onrender.com/api/cron/espn/sync-linked`
+- Para desactivar el cron, deshabilitar el workflow en GitHub Actions o eliminar/comentar el bloque `schedule`.
+
+El cron solo sincroniza partidos que ya tienen `espn_event_id`. No vincula ni actualiza partidos sin ESPN ID.
+
 ## Reglas de puntaje fase de grupos
 
 - 10 puntos por marcador exacto. Si es exacto, no suma otros criterios.

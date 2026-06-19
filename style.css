@@ -3173,6 +3173,13 @@ body {
   margin-bottom: 12px;
 }
 
+.admin-espn-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .admin-espn-header h3 {
   margin: 0 0 3px;
   color: #0f172a;
@@ -3826,6 +3833,15 @@ body {
   .admin-espn-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .admin-espn-header-actions {
+    justify-content: stretch;
+  }
+
+  .admin-espn-header-actions .admin-save-button,
+  .admin-espn-header-actions .admin-secondary-button {
+    width: 100%;
   }
 
   .admin-espn-grid {

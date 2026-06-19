@@ -9,12 +9,50 @@ import {
 
 const ESPN_SCOREBOARD_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
 const MILISEGUNDOS_HORA = 60 * 60 * 1000;
+const MILISEGUNDOS_DIA = 24 * MILISEGUNDOS_HORA;
 const TIPOS_VALIDOS = new Set(['grupos', 'eliminacion']);
 
 function obtenerTablaPorTipo(tipo) {
   if (tipo === 'grupos') return 'partidos_grupos';
   if (tipo === 'eliminacion') return 'partidos_eliminacion';
   return null;
+}
+
+function normalizarFechaEspn(valor) {
+  const texto = String(valor || '').trim();
+  const soloDigitos = texto.replace(/\D/g, '');
+
+  return soloDigitos.length === 8 ? soloDigitos : '';
+}
+
+function obtenerFechaEspnDesdeFechaHora(fechaHora) {
+  const fechaChile = obtenerFechaHoraChile(fechaHora).fecha;
+  return fechaChile ? fechaChile.replace(/-/g, '') : '';
+}
+
+function obtenerFechasEspnUnicas(fechas) {
+  return [...new Set((fechas || []).map(normalizarFechaEspn).filter(Boolean))].sort();
+}
+
+function obtenerFechaEspnDesdeDate(fecha) {
+  return obtenerFechaEspnDesdeFechaHora(fecha.toISOString());
+}
+
+function obtenerFechasProximosDias(cantidadDias = 7) {
+  const hoy = new Date();
+
+  return Array.from({ length: cantidadDias }, (_, indice) => {
+    const fecha = new Date(hoy.getTime() + indice * MILISEGUNDOS_DIA);
+    return obtenerFechaEspnDesdeDate(fecha);
+  }).filter(Boolean);
+}
+
+function crearUrlScoreboardEspn(fechaEspn = '') {
+  if (!fechaEspn) return ESPN_SCOREBOARD_URL;
+
+  const url = new URL(ESPN_SCOREBOARD_URL);
+  url.searchParams.set('dates', fechaEspn);
+  return url.toString();
 }
 
 function obtenerCompetidor(competitors, homeAway) {
@@ -286,8 +324,8 @@ async function obtenerPartidosLocalesParaMatch() {
   ];
 }
 
-export async function consultarScoreboardEspn() {
-  const respuesta = await fetch(ESPN_SCOREBOARD_URL, {
+async function consultarScoreboardEspnPorFecha(fechaEspn = '') {
+  const respuesta = await fetch(crearUrlScoreboardEspn(fechaEspn), {
     headers: {
       accept: 'application/json',
       'user-agent': 'polla-mundial-2026-admin-sync/1.0'
@@ -300,22 +338,165 @@ export async function consultarScoreboardEspn() {
     throw error;
   }
 
-  const data = await respuesta.json();
-  const partidosLocales = await obtenerPartidosLocalesParaMatch();
-  const eventos = (data.events || []).map(normalizarEventoEspn);
+  return respuesta.json();
+}
+
+async function consultarEventosEspn(fechas = []) {
+  const fechasUnicas = obtenerFechasEspnUnicas(fechas);
+  const respuestas = fechasUnicas.length
+    ? await Promise.all(fechasUnicas.map((fecha) => consultarScoreboardEspnPorFecha(fecha)))
+    : [await consultarScoreboardEspnPorFecha()];
+  const eventosPorId = new Map();
+  let liga = null;
+
+  respuestas.forEach((data) => {
+    if (!liga) {
+      liga = {
+        id: data.leagues?.[0]?.id || '',
+        slug: data.leagues?.[0]?.slug || 'fifa.world',
+        nombre: data.leagues?.[0]?.name || ''
+      };
+    }
+
+    (data.events || []).forEach((evento) => {
+      const id = String(evento.id || '');
+      if (id && !eventosPorId.has(id)) {
+        eventosPorId.set(id, evento);
+      }
+    });
+  });
 
   return {
-    liga: {
-      id: data.leagues?.[0]?.id || '',
-      slug: data.leagues?.[0]?.slug || 'fifa.world',
-      nombre: data.leagues?.[0]?.name || ''
+    liga: liga || {
+      id: '',
+      slug: 'fifa.world',
+      nombre: ''
     },
+    eventos: [...eventosPorId.values()].map(normalizarEventoEspn),
+    fechas: fechasUnicas
+  };
+}
+
+export async function consultarScoreboardEspn(opciones = {}) {
+  const { liga, eventos, fechas } = await consultarEventosEspn(opciones.dates || opciones.fechas || []);
+  const partidosLocales = await obtenerPartidosLocalesParaMatch();
+
+  return {
+    liga,
+    fechas,
     consultadoEn: new Date().toISOString(),
     eventos: eventos.map((evento) => ({
       ...evento,
       match: matchearEventoConPartidos(evento, partidosLocales)
     }))
   };
+}
+
+function obtenerFechasParaVinculacion(datos, partidosLocales) {
+  const fechasPayload = obtenerFechasEspnUnicas(datos?.dates || datos?.fechas || []);
+
+  if (fechasPayload.length) return fechasPayload;
+
+  const modo = String(datos?.mode || '').trim().toLowerCase();
+
+  if (modo === 'next7days' || modo === 'proximos7dias') {
+    return obtenerFechasProximosDias(7);
+  }
+
+  if (modo === 'allunlinked' || modo === 'todos-sin-espn' || modo === 'todos') {
+    return obtenerFechasEspnUnicas(
+      partidosLocales
+        .filter((partido) => !partido.espnEventId)
+        .map((partido) => obtenerFechaEspnDesdeFechaHora(partido.fechaHora))
+    );
+  }
+
+  return obtenerFechasProximosDias(1);
+}
+
+export async function vincularEventosEspnBulk(datos = {}) {
+  const partidosLocales = await obtenerPartidosLocalesParaMatch();
+  const fechas = obtenerFechasParaVinculacion(datos, partidosLocales);
+  const { eventos } = await consultarEventosEspn(fechas);
+  const vinculadosIds = new Set(partidosLocales.filter((partido) => partido.espnEventId).map((partido) => `${partido.tipo}:${partido.id}`));
+  const resumen = {
+    fechas,
+    revisados: eventos.length,
+    vinculados: 0,
+    yaVinculados: 0,
+    sinMatch: 0,
+    bajaConfianza: 0,
+    errores: 0,
+    detalles: []
+  };
+
+  for (const evento of eventos) {
+    const match = matchearEventoConPartidos(evento, partidosLocales);
+    const clavePartido = match.partido ? `${match.partido.tipo}:${match.partido.id}` : '';
+
+    if (!match.partido) {
+      resumen.sinMatch += 1;
+      resumen.detalles.push({
+        eventId: evento.eventId,
+        estado: 'sin_match',
+        local: evento.local,
+        visita: evento.visita
+      });
+      continue;
+    }
+
+    if (match.partido.espnEventId || vinculadosIds.has(clavePartido)) {
+      resumen.yaVinculados += 1;
+      resumen.detalles.push({
+        eventId: evento.eventId,
+        estado: 'ya_vinculado',
+        partidoId: match.partido.id,
+        tipo: match.partido.tipo
+      });
+      continue;
+    }
+
+    if (match.confianza !== 'Alta') {
+      resumen.bajaConfianza += 1;
+      resumen.detalles.push({
+        eventId: evento.eventId,
+        estado: 'baja_confianza',
+        confianza: match.confianza,
+        partidoId: match.partido.id,
+        tipo: match.partido.tipo
+      });
+      continue;
+    }
+
+    try {
+      await vincularEventoEspn({
+        eventId: evento.eventId,
+        partidoId: match.partido.id,
+        tipo: match.partido.tipo,
+        confianza: match.confianza
+      });
+
+      vinculadosIds.add(clavePartido);
+      resumen.vinculados += 1;
+      resumen.detalles.push({
+        eventId: evento.eventId,
+        estado: 'vinculado',
+        partidoId: match.partido.id,
+        tipo: match.partido.tipo
+      });
+    } catch (error) {
+      resumen.errores += 1;
+      resumen.detalles.push({
+        eventId: evento.eventId,
+        estado: 'error',
+        partidoId: match.partido.id,
+        tipo: match.partido.tipo,
+        error: error.message
+      });
+    }
+  }
+
+  return resumen;
 }
 
 export async function vincularEventoEspn(datos) {
@@ -401,4 +582,131 @@ export async function aplicarResultadoEspn(datos) {
     estado: estadoSugerido,
     espnEventId: eventId || undefined
   });
+}
+
+async function consultarPartidosVinculados(tabla, tipo) {
+  const { data, error } = await supabase
+    .from(tabla)
+    .select('id,fecha_hora,estado,goles_local_real,goles_visita_real,espn_event_id')
+    .not('espn_event_id', 'is', null);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []).map((fila) => ({
+    id: fila.id,
+    tipo,
+    fechaHora: fila.fecha_hora,
+    estado: fila.estado || 'Pendiente',
+    golesLocalReal: fila.goles_local_real,
+    golesVisitaReal: fila.goles_visita_real,
+    espnEventId: fila.espn_event_id
+  }));
+}
+
+function estaEnVentanaSync(partido) {
+  const estado = String(partido.estado || '').trim().toLowerCase();
+
+  if (estado === 'finalizado') return false;
+  if (estado === 'en vivo') return true;
+
+  const inicio = new Date(partido.fechaHora).getTime();
+  if (Number.isNaN(inicio)) return false;
+
+  const ahora = Date.now();
+  return inicio >= ahora - 12 * MILISEGUNDOS_HORA && inicio <= ahora + 4 * MILISEGUNDOS_HORA;
+}
+
+function obtenerEstadoAplicableDesdeEspn(evento) {
+  if (evento.estadoSugerido === 'En vivo') return 'En vivo';
+  if (evento.estadoSugerido === 'Finalizado') return 'Finalizado';
+  return '';
+}
+
+export async function sincronizarPartidosVinculadosEspn() {
+  const [grupos, eliminacion] = await Promise.all([
+    consultarPartidosVinculados('partidos_grupos', 'grupos'),
+    consultarPartidosVinculados('partidos_eliminacion', 'eliminacion')
+  ]);
+  const candidatos = [...grupos, ...eliminacion].filter((partido) => partido.espnEventId && estaEnVentanaSync(partido));
+  const fechas = obtenerFechasEspnUnicas(candidatos.map((partido) => obtenerFechaEspnDesdeFechaHora(partido.fechaHora)));
+  const { eventos } = fechas.length ? await consultarEventosEspn(fechas) : { eventos: [] };
+  const eventosPorId = new Map(eventos.map((evento) => [String(evento.eventId), evento]));
+  const resumen = {
+    revisados: candidatos.length,
+    actualizados: 0,
+    omitidos: 0,
+    errores: 0,
+    detalles: []
+  };
+
+  for (const partido of candidatos) {
+    const evento = eventosPorId.get(String(partido.espnEventId));
+
+    if (!evento) {
+      resumen.omitidos += 1;
+      resumen.detalles.push({
+        partidoId: partido.id,
+        tipo: partido.tipo,
+        estado: 'evento_no_encontrado'
+      });
+      continue;
+    }
+
+    const estadoAplicable = obtenerEstadoAplicableDesdeEspn(evento);
+
+    if (!estadoAplicable) {
+      resumen.omitidos += 1;
+      resumen.detalles.push({
+        partidoId: partido.id,
+        tipo: partido.tipo,
+        eventId: evento.eventId,
+        estado: 'sin_estado_aplicable'
+      });
+      continue;
+    }
+
+    if (evento.golesLocal === null || evento.golesVisita === null) {
+      resumen.omitidos += 1;
+      resumen.detalles.push({
+        partidoId: partido.id,
+        tipo: partido.tipo,
+        eventId: evento.eventId,
+        estado: 'sin_marcador'
+      });
+      continue;
+    }
+
+    try {
+      const actualizado = await actualizarPartidoAdmin(partido.id, {
+        tipo: partido.tipo,
+        golesLocalReal: evento.golesLocal,
+        golesVisitaReal: evento.golesVisita,
+        estado: estadoAplicable,
+        espnEventId: partido.espnEventId
+      });
+
+      resumen.actualizados += 1;
+      resumen.detalles.push({
+        partidoId: partido.id,
+        tipo: partido.tipo,
+        eventId: evento.eventId,
+        estado: 'actualizado',
+        estadoAplicado: actualizado.estado,
+        marcador: `${evento.golesLocal}-${evento.golesVisita}`
+      });
+    } catch (error) {
+      resumen.errores += 1;
+      resumen.detalles.push({
+        partidoId: partido.id,
+        tipo: partido.tipo,
+        eventId: evento.eventId,
+        estado: 'error',
+        error: error.message
+      });
+    }
+  }
+
+  return resumen;
 }
