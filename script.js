@@ -2874,7 +2874,7 @@ async function sincronizarAdminEspnVinculados() {
 }
 
 function obtenerFiltrosAdminAuditoria() {
-  const idPolla = obtenerPollaGlobalSeleccionada()?.id || "";
+  const idPolla = obtenerPollaGlobalSeleccionada() || "";
 
   return {
     tipo: document.getElementById("adminAuditoriaTipo")?.value || "todos",
@@ -2911,7 +2911,7 @@ function renderizarSelectorAdminAuditoriaParticipantes(participantes = []) {
 }
 
 async function cargarParticipantesAdminAuditoria() {
-  const polla = obtenerPollaGlobalSeleccionada();
+  const idPolla = obtenerPollaGlobalSeleccionada() || "";
   const resumen = document.getElementById("adminAuditoriaResumen");
   const lista = document.getElementById("adminAuditoriaLista");
 
@@ -2921,7 +2921,7 @@ async function cargarParticipantesAdminAuditoria() {
   if (resumen) resumen.innerHTML = "";
   if (lista) lista.innerHTML = "";
 
-  if (!polla?.id) {
+  if (!idPolla) {
     if (lista) lista.innerHTML = `<div class="admin-empty">Selecciona una polla para auditar.</div>`;
     return;
   }
@@ -2929,7 +2929,7 @@ async function cargarParticipantesAdminAuditoria() {
   mostrarFeedbackAdmin("Cargando participantes de la polla...", "info");
 
   try {
-    const respuesta = await window.PollaApiClient.apiAdminObtenerParticipantes({ pollaId: polla.id });
+    const respuesta = await window.PollaApiClient.apiAdminObtenerParticipantes({ pollaId: idPolla });
 
     if (!respuesta.ok) {
       if (!manejarErrorAdmin(respuesta)) {
@@ -3253,7 +3253,7 @@ async function compararAdminAuditoriaConRanking() {
   }
 
   const participante = obtenerParticipanteAdminAuditoriaSeleccionado();
-  const idPolla = obtenerPollaGlobalSeleccionada()?.id || "";
+  const idPolla = obtenerPollaGlobalSeleccionada() || "";
 
   if (!participante?.codigoLegacy && !participante?.codigo) {
     mostrarFeedbackAdmin("Selecciona un participante para comparar.", "error");
