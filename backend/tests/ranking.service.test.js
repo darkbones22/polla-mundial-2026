@@ -32,7 +32,7 @@ function partidoEliminacion(estado, clasificado = 'local') {
 }
 
 describe('ranking oficial por estado de partido', () => {
-  it('incluye grupos solo si el partido esta Finalizado', () => {
+  it('incluye grupos Finalizado y En vivo, pero no Cerrado/Pendiente/Abierto', () => {
     const partidos = [
       partidoGrupo('Finalizado'),
       partidoGrupo('En vivo'),
@@ -43,16 +43,16 @@ describe('ranking oficial por estado de partido', () => {
 
     const { resultadosPorPartido, incluyeEnVivo } = obtenerResultadosGruposPorPartido(partidos);
 
-    assert.equal(resultadosPorPartido.size, 1);
+    assert.equal(resultadosPorPartido.size, 2);
     assert.equal(resultadosPorPartido.has('G-Finalizado'), true);
-    assert.equal(resultadosPorPartido.has('G-En vivo'), false);
+    assert.equal(resultadosPorPartido.has('G-En vivo'), true);
     assert.equal(resultadosPorPartido.has('G-Cerrado'), false);
     assert.equal(resultadosPorPartido.has('G-Pendiente'), false);
     assert.equal(resultadosPorPartido.has('G-Abierto'), false);
-    assert.equal(incluyeEnVivo, false);
+    assert.equal(incluyeEnVivo, true);
   });
 
-  it('incluye eliminacion solo si esta Finalizado y tiene clasificado real', () => {
+  it('incluye eliminacion Finalizado con clasificado y En vivo con marcador parcial', () => {
     const partidos = [
       partidoEliminacion('Finalizado'),
       partidoEliminacion('Finalizado', null),
@@ -64,13 +64,13 @@ describe('ranking oficial por estado de partido', () => {
 
     const { resultadosPorPartido, incluyeEnVivo } = obtenerResultadosEliminacionPorPartido(partidos);
 
-    assert.equal(resultadosPorPartido.size, 1);
+    assert.equal(resultadosPorPartido.size, 2);
     assert.equal(resultadosPorPartido.has('E-Finalizado'), true);
-    assert.equal(resultadosPorPartido.has('E-En vivo'), false);
+    assert.equal(resultadosPorPartido.has('E-En vivo'), true);
     assert.equal(resultadosPorPartido.has('E-Cerrado'), false);
     assert.equal(resultadosPorPartido.has('E-Pendiente'), false);
     assert.equal(resultadosPorPartido.has('E-Abierto'), false);
-    assert.equal(incluyeEnVivo, false);
+    assert.equal(incluyeEnVivo, true);
   });
 });
 

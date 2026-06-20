@@ -73,12 +73,22 @@ function estaFinalizado(partido) {
   return String(partido?.estado || '').trim().toLowerCase() === 'finalizado';
 }
 
+function estaEnVivo(partido) {
+  return String(partido?.estado || '').trim().toLowerCase() === 'en vivo';
+}
+
+function esEstadoCalculable(partido) {
+  return estaFinalizado(partido) || estaEnVivo(partido);
+}
+
 export function obtenerResultadosGruposPorPartido(partidos) {
   const resultadosPorPartido = new Map();
+  let incluyeEnVivo = false;
 
   partidos.forEach((partido) => {
     if (!tieneGolesValidos(partido)) return;
-    if (!estaFinalizado(partido)) return;
+    if (!esEstadoCalculable(partido)) return;
+    if (estaEnVivo(partido)) incluyeEnVivo = true;
 
     resultadosPorPartido.set(partido.id, {
       golesLocal: partido.goles_local_real,
@@ -88,20 +98,23 @@ export function obtenerResultadosGruposPorPartido(partidos) {
 
   return {
     resultadosPorPartido,
-    incluyeEnVivo: false
+    incluyeEnVivo
   };
 }
 
 export function obtenerResultadosEliminacionPorPartido(partidos) {
   const resultadosPorPartido = new Map();
+  let incluyeEnVivo = false;
 
   partidos.forEach((partido) => {
     if (!tieneGolesValidos(partido)) return;
 
     const finalizado = estaFinalizado(partido);
+    const enVivo = estaEnVivo(partido);
 
-    if (!finalizado) return;
+    if (!finalizado && !enVivo) return;
     if (finalizado && !['local', 'visita'].includes(partido.clasificado_real_lado)) return;
+    if (enVivo) incluyeEnVivo = true;
 
     resultadosPorPartido.set(partido.id, {
       golesLocal: partido.goles_local_real,
@@ -112,7 +125,7 @@ export function obtenerResultadosEliminacionPorPartido(partidos) {
 
   return {
     resultadosPorPartido,
-    incluyeEnVivo: false
+    incluyeEnVivo
   };
 }
 
@@ -204,7 +217,7 @@ export async function calcularRankingDesdePronosticosYResultados(pollaId) {
 
   return {
     ranking: armarRankingDesdeItemsCalculados(participantes, base.items),
-    incluyeEnVivo: false,
+    incluyeEnVivo: Boolean(base.resumen?.incluyeEnVivo),
     base
   };
 }

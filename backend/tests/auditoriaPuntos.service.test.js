@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 process.env.SUPABASE_URL ||= 'https://example.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY ||= 'test-service-role-key';
 
-const { auditarTipo } = await import('../src/services/auditoriaPuntos.service.js');
+const {
+  auditarTipo,
+  consultarTodasLasPaginas
+} = await import('../src/services/auditoriaPuntos.service.js');
 
 const participantes = [
   {
@@ -85,12 +88,37 @@ describe('auditoria de puntos', () => {
     assert.equal(item.desglose.diferencia.puntos, 1);
   });
 
-  it('no suma partidos En vivo', () => {
+  it('suma partidos En vivo como puntaje provisorio', () => {
     const item = auditarGrupo(partidoGrupo({ estado: 'En vivo' }), pronosticoGrupo({ local: 2, visita: 1 }));
 
-    assert.equal(item.puntos, 0);
-    assert.equal(item.calculable, false);
-    assert.equal(item.alertas.includes('No suma: partido no finalizado.'), true);
+    assert.equal(item.puntos, 10);
+    assert.equal(item.calculable, true);
+    assert.equal(item.provisorio, true);
+    assert.equal(item.definitivo, false);
+    assert.equal(item.alertas.includes('Puntaje provisorio: partido en vivo.'), true);
+  });
+
+  it('no suma partidos Cerrado, Pendiente ni Abierto', () => {
+    ['Cerrado', 'Pendiente', 'Abierto'].forEach((estado) => {
+      const item = auditarGrupo(partidoGrupo({ estado }), pronosticoGrupo({ local: 2, visita: 1 }));
+
+      assert.equal(item.puntos, 0);
+      assert.equal(item.calculable, false);
+      assert.equal(item.provisorio, false);
+      assert.equal(item.alertas.includes('No suma: partido no finalizado ni en vivo.'), true);
+    });
+  });
+
+  it('calcula En vivo con marcador parcial 1-0', () => {
+    const item = auditarGrupo(
+      partidoGrupo({ estado: 'En vivo', local: 1, visita: 0 }),
+      pronosticoGrupo({ local: 2, visita: 0 })
+    );
+
+    assert.equal(item.puntos, 7);
+    assert.equal(item.desglose.ganador.puntos, 5);
+    assert.equal(item.desglose.golVisita.puntos, 2);
+    assert.equal(item.provisorio, true);
   });
 
   it('usa eliminacion exacto + clasificado = 13', () => {
@@ -120,5 +148,21 @@ describe('auditoria de puntos', () => {
     assert.equal(item.puntos, 13);
     assert.equal(item.desglose.exacto.puntos, 10);
     assert.equal(item.desglose.clasificado.puntos, 3);
+  });
+
+  it('lee todas las paginas de Supabase cuando hay mas de 1000 filas', async () => {
+    const filas = Array.from({ length: 1001 }, (_, indice) => ({ id: indice + 1 }));
+
+    const resultado = await consultarTodasLasPaginas(() => ({
+      range(desde, hasta) {
+        return Promise.resolve({
+          data: filas.slice(desde, hasta + 1),
+          error: null
+        });
+      }
+    }));
+
+    assert.equal(resultado.length, 1001);
+    assert.equal(resultado[1000].id, 1001);
   });
 });

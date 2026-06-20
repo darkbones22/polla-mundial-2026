@@ -20,6 +20,14 @@ function estaFinalizado(partido) {
   return String(partido?.estado || '').trim().toLowerCase() === 'finalizado';
 }
 
+function estaEnVivo(partido) {
+  return String(partido?.estado || '').trim().toLowerCase() === 'en vivo';
+}
+
+function esEstadoCalculable(partido) {
+  return estaFinalizado(partido) || estaEnVivo(partido);
+}
+
 function crearDesglose(detalle, tipo) {
   return {
     exacto: {
@@ -72,6 +80,7 @@ function crearObservacion(desglose, detalle, tipo) {
 function crearItemBase({ tipo, partido, participante, pronostico, detalle, alertas = [] }) {
   const fechaHoraChile = obtenerFechaHoraChile(partido.fecha_hora);
   const desglose = crearDesglose(detalle, tipo);
+  const provisorio = estaEnVivo(partido) && Boolean(detalle?.calculable);
   const local = tipo === 'grupos'
     ? partido.equipo_local
     : partido.equipo_local || partido.placeholder_local;
@@ -105,6 +114,8 @@ function crearItemBase({ tipo, partido, participante, pronostico, detalle, alert
       }
       : null,
     estado: partido.estado,
+    provisorio,
+    definitivo: estaFinalizado(partido) && Boolean(detalle?.calculable),
     puntos: detalle?.puntos || 0,
     calculable: Boolean(detalle?.calculable),
     motivo: detalle?.motivo || '',
@@ -176,7 +187,7 @@ async function obtenerPartidosEliminacion() {
   return data || [];
 }
 
-async function consultarTodasLasPaginas(crearQuery, tamanoPagina = 1000) {
+export async function consultarTodasLasPaginas(crearQuery, tamanoPagina = 1000) {
   const filas = [];
   let desde = 0;
 
@@ -252,11 +263,14 @@ export function calcularItemsAuditoriaTipo({ tipo, partidos, pronosticos, duplic
   const partidosPorId = new Map(partidosFiltrados.map((partido) => [partido.id, partido]));
   const items = [];
   let partidosFinalizadosConsiderados = 0;
+  let partidosEnVivoConsiderados = 0;
   let partidosOmitidosNoFinalizados = 0;
 
   partidosFiltrados.forEach((partido) => {
     if (estaFinalizado(partido)) {
       partidosFinalizadosConsiderados += 1;
+    } else if (estaEnVivo(partido)) {
+      partidosEnVivoConsiderados += 1;
     } else {
       partidosOmitidosNoFinalizados += 1;
     }
@@ -270,9 +284,10 @@ export function calcularItemsAuditoriaTipo({ tipo, partidos, pronosticos, duplic
     const alertas = [];
     const clave = `${pronostico.participante_id}|${pronostico.partido_id}`;
     if ((duplicados.get(clave) || 0) > 1) alertas.push('Pronostico duplicado: se usa el mas reciente.');
-    if (!estaFinalizado(partido)) alertas.push('No suma: partido no finalizado.');
+    if (!esEstadoCalculable(partido)) alertas.push('No suma: partido no finalizado ni en vivo.');
+    if (estaEnVivo(partido)) alertas.push('Puntaje provisorio: partido en vivo.');
     if (!tieneGolesValidos(partido)) alertas.push('No suma: resultado real incompleto.');
-    if (tipo === 'eliminacion' && !['local', 'visita'].includes(partido.clasificado_real_lado)) {
+    if (tipo === 'eliminacion' && estaFinalizado(partido) && !['local', 'visita'].includes(partido.clasificado_real_lado)) {
       alertas.push('No suma: falta clasificado real.');
     }
 
@@ -296,9 +311,9 @@ export function calcularItemsAuditoriaTipo({ tipo, partidos, pronosticos, duplic
         golesLocal: pronostico.goles_local,
         golesVisita: pronostico.goles_visita
       };
-    const puedeCalcular = estaFinalizado(partido) &&
+    const puedeCalcular = esEstadoCalculable(partido) &&
       tieneGolesValidos(partido) &&
-      (tipo !== 'eliminacion' || ['local', 'visita'].includes(partido.clasificado_real_lado));
+      (tipo !== 'eliminacion' || estaEnVivo(partido) || ['local', 'visita'].includes(partido.clasificado_real_lado));
     const detalle = puedeCalcular
       ? (tipo === 'eliminacion'
         ? calcularPuntosEliminacion(pronosticoPuntos, resultado)
@@ -318,6 +333,7 @@ export function calcularItemsAuditoriaTipo({ tipo, partidos, pronosticos, duplic
   return {
     items,
     partidosFinalizadosConsiderados,
+    partidosEnVivoConsiderados,
     partidosOmitidosNoFinalizados
   };
 }
@@ -380,14 +396,20 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
   const duplicadosDetectados = items.filter((item) =>
     (item.alertas || []).some((alerta) => alerta.toLowerCase().includes('duplicado'))
   ).length;
+  const totalPuntosProvisorios = items
+    .filter((item) => item.provisorio)
+    .reduce((suma, item) => suma + item.puntos, 0);
 
   return {
     resumen: {
       totalParticipantes: new Set(items.map((item) => item.participante.id)).size,
       totalPartidosFinalizados: resultados.reduce((suma, item) => suma + item.partidosFinalizadosConsiderados, 0),
+      totalPartidosEnVivo: resultados.reduce((suma, item) => suma + item.partidosEnVivoConsiderados, 0),
       totalPartidosOmitidosNoFinalizados: resultados.reduce((suma, item) => suma + item.partidosOmitidosNoFinalizados, 0),
       totalPronosticosAuditados: items.length,
       totalPuntos,
+      totalPuntosProvisorios,
+      incluyeEnVivo: items.some((item) => item.provisorio),
       duplicadosDetectados,
       totalesPorParticipante
     },

@@ -2903,7 +2903,9 @@ function renderizarAdminAuditoria(respuesta) {
     <div class="admin-audit-summary-grid">
       <span><strong>${escapeHTML(datosResumen.totalPronosticosAuditados || 0)}</strong> pronósticos auditados</span>
       <span><strong>${escapeHTML(datosResumen.totalPuntos || 0)}</strong> puntos calculados</span>
+      <span><strong>${escapeHTML(datosResumen.totalPuntosProvisorios || 0)}</strong> puntos provisorios</span>
       <span><strong>${escapeHTML(datosResumen.totalPartidosFinalizados || 0)}</strong> partidos finalizados</span>
+      <span><strong>${escapeHTML(datosResumen.totalPartidosEnVivo || 0)}</strong> partidos en vivo</span>
       <span><strong>${escapeHTML(datosResumen.totalPartidosOmitidosNoFinalizados || 0)}</strong> partidos no finalizados</span>
       <span><strong>${escapeHTML(datosResumen.duplicadosDetectados || 0)}</strong> duplicados detectados</span>
       ${totalUsuario ? `<span><strong>${escapeHTML(totalUsuario.puntosTotal)}</strong> total ${escapeHTML(totalUsuario.codigo)}</span>` : ""}
@@ -2926,15 +2928,20 @@ function renderizarAdminAuditoria(respuesta) {
     const alertas = (item.alertas || []).length
       ? `<div class="admin-audit-alerts">${item.alertas.map((alerta) => `<span>${escapeHTML(alerta)}</span>`).join("")}</div>`
       : "";
+    const claseEstadoPuntos = item.provisorio ? "provisional" : item.definitivo ? "definitive" : "";
+    const textoEstadoPuntos = item.provisorio ? "Puntaje provisorio" : item.definitivo ? "Puntaje definitivo" : "No calculado";
 
     return `
-      <article class="admin-audit-card ${item.puntos === 0 ? "zero" : ""}">
+      <article class="admin-audit-card ${item.puntos === 0 ? "zero" : ""} ${item.provisorio ? "provisional" : ""}">
         <div class="admin-audit-card-head">
           <div>
             <strong>${escapeHTML(item.participante?.nombre || "")}</strong>
             <span>${escapeHTML(item.participante?.codigo || "")} · ${escapeHTML(item.tipo)} · ${escapeHTML(item.partidoId)} · ${escapeHTML(item.grupoORonda || "")}</span>
           </div>
-          <strong class="admin-audit-points">${escapeHTML(item.puntos)} pts</strong>
+          <div class="admin-audit-points-wrap">
+            <strong class="admin-audit-points">${escapeHTML(item.puntos)} pts</strong>
+            <span class="admin-audit-status ${claseEstadoPuntos}">${escapeHTML(textoEstadoPuntos)}</span>
+          </div>
         </div>
         <div class="admin-audit-match">
           <span>${escapeHTML(item.local)} ${resultado} ${escapeHTML(item.visita)}</span>
@@ -4785,6 +4792,9 @@ function mostrarRanking(ranking) {
 
   const rankingOrdenado = ordenarRankingSegunTipo(ranking);
   const avanceRanking = renderizarAvanceRanking();
+  const avisoEnVivo = rankingIncluyeEnVivo
+    ? `<div class="ranking-live-note">Incluye puntaje provisorio de partidos en vivo. Puede cambiar cuando finalicen.</div>`
+    : "";
 
   rankingContent.className = "ranking-list";
 
@@ -4794,12 +4804,13 @@ function mostrarRanking(ranking) {
   ) {
     rankingContent.innerHTML = `
       ${avanceRanking}
+      ${avisoEnVivo}
       <div class="ranking-empty">Todav&iacute;a no hay plenos registrados.</div>
     `;
     return;
   }
 
-  rankingContent.innerHTML = avanceRanking + rankingOrdenado
+  rankingContent.innerHTML = avanceRanking + avisoEnVivo + rankingOrdenado
     .map((participante, index) => {
       const posicion = index + 1;
       const puntos = obtenerPuntosSegunTipo(participante);
