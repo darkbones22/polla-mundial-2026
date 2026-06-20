@@ -1783,6 +1783,7 @@ let adminPartidosActuales = [];
 let adminParticipantesActuales = [];
 let adminPollasActuales = [];
 let adminAuditoriaParticipantesActuales = [];
+let adminAuditoriaRespuestaActual = null;
 let adminEspnEventosActuales = [];
 let adminSubtabsInicializadas = false;
 let adminCargaSubtabActual = 0;
@@ -2916,6 +2917,7 @@ async function cargarParticipantesAdminAuditoria() {
   const lista = document.getElementById("adminAuditoriaLista");
 
   adminAuditoriaParticipantesActuales = [];
+  adminAuditoriaRespuestaActual = null;
   renderizarSelectorAdminAuditoriaParticipantes([]);
 
   if (resumen) resumen.innerHTML = "";
@@ -2979,6 +2981,149 @@ function renderizarAdminAuditoria(respuesta) {
   const lista = document.getElementById("adminAuditoriaLista");
 
   if (!resumen || !lista) return;
+
+  if (!respuesta) {
+    resumen.innerHTML = "";
+    lista.innerHTML = "";
+    return;
+  }
+
+  const datosResumenNuevo = respuesta?.resumen || {};
+  const todosLosPartidos = respuesta?.partidos || [];
+  const vistaAuditoria = document.getElementById("adminAuditoriaVista")?.value || "todos";
+  const partidosNuevo = todosLosPartidos.filter((partido) => {
+    if (vistaAuditoria === "con-puntos") return Number(partido.puntos || 0) > 0;
+    if (vistaAuditoria === "sin-pronostico") return !partido.pronostico?.existe;
+    if (vistaAuditoria === "no-calculables") return !partido.calculable;
+    return true;
+  });
+  const participanteNuevo = respuesta?.participante || {};
+  const pollaNueva = respuesta?.polla || null;
+  const totalPlenos = Number(datosResumenNuevo.plenosGrupos || 0) + Number(datosResumenNuevo.plenosEliminacion || 0);
+
+  resumen.innerHTML = `
+    <div class="admin-audit-summary-layout">
+      <section class="admin-audit-summary-card identity">
+        <span>Participante</span>
+        <strong>${escapeHTML(participanteNuevo.nombre || "-")}</strong>
+        <small>Código: ${escapeHTML(participanteNuevo.codigo || "-")}</small>
+        <small>Polla: ${escapeHTML(pollaNueva?.nombre || "-")}</small>
+      </section>
+      <section class="admin-audit-summary-card score">
+        <span>Total</span>
+        <strong>${escapeHTML(datosResumenNuevo.totalPuntos || 0)} pts</strong>
+        <small>Grupos: ${escapeHTML(datosResumenNuevo.puntosGrupos || 0)} pts · Eliminación: ${escapeHTML(datosResumenNuevo.puntosEliminacion || 0)} pts</small>
+        <small>Plenos: ${escapeHTML(totalPlenos)} total · Grupos: ${escapeHTML(datosResumenNuevo.plenosGrupos || 0)} · Eliminación: ${escapeHTML(datosResumenNuevo.plenosEliminacion || 0)}</small>
+      </section>
+      <section class="admin-audit-summary-card counts">
+        <span>Auditoría</span>
+        <div class="admin-audit-counts">
+          <b>${escapeHTML(datosResumenNuevo.partidosTotales || 0)}</b><small>totales</small>
+          <b>${escapeHTML(datosResumenNuevo.partidosConPronostico || 0)}</b><small>con pronóstico</small>
+          <b>${escapeHTML(datosResumenNuevo.partidosSinPronostico || 0)}</b><small>sin pronóstico</small>
+          <b>${escapeHTML(datosResumenNuevo.partidosCalculables || 0)}</b><small>calculables</small>
+          <b>${escapeHTML(datosResumenNuevo.partidosDefinitivos || 0)}</b><small>definitivos</small>
+          <b>${escapeHTML(datosResumenNuevo.partidosProvisorios || 0)}</b><small>en vivo</small>
+          <b>${escapeHTML(datosResumenNuevo.partidosNoCalculables || 0)}</b><small>no calculables</small>
+        </div>
+      </section>
+    </div>
+  `;
+
+  if (!partidosNuevo.length) {
+    lista.innerHTML = `<div class="admin-empty">No hay partidos para mostrar con este filtro.</div>`;
+    return;
+  }
+
+  const renderizarPronosticoNuevo = (partido) => {
+    if (!partido.pronostico?.existe) return "Sin pronóstico";
+    const clasifica = partido.tipo === "eliminacion" ? ` · Clasifica ${escapeHTML(partido.pronostico.clasificado || "-")}` : "";
+    return `${escapeHTML(partido.pronostico.golesLocal)} - ${escapeHTML(partido.pronostico.golesVisita)}${clasifica}`;
+  };
+  const renderizarResultadoNuevo = (partido) => {
+    if (!partido.resultado?.existe) return "Sin resultado";
+    const clasifica = partido.tipo === "eliminacion" ? ` · Clasifica ${escapeHTML(partido.resultado.clasificado || "-")}` : "";
+    return `${escapeHTML(partido.resultado.golesLocal)} - ${escapeHTML(partido.resultado.golesVisita)}${clasifica}`;
+  };
+  const renderizarBadgeEstado = (estado = "") => {
+    const clase = String(estado || "").toLowerCase().replace(/\s+/g, "-");
+    return `<span class="admin-audit-state ${escapeHTML(clase)}">${escapeHTML(estado || "-")}</span>`;
+  };
+  const renderizarDetalleNuevo = (partido) => {
+    const desglose = partido.desglose || {};
+    const chips = [
+      ["Exacto", desglose.exacto],
+      ["Ganador", desglose.ganadorEmpate],
+      ["GL", desglose.golLocal],
+      ["GV", desglose.golVisita],
+      ["Dif", desglose.diferencia]
+    ];
+    if (desglose.clasificado) chips.push(["Clasificado", desglose.clasificado]);
+
+    return `
+      <details class="admin-audit-detail">
+        <summary>Ver</summary>
+        <div class="admin-audit-detail-content">
+          <div class="admin-audit-breakdown compact">
+            ${chips.map(([label, item]) => `
+              <span class="admin-audit-chip ${item?.acierto ? "hit" : "miss"}">
+                ${escapeHTML(label)}: ${item?.acierto ? "Sí" : "No"} ${item?.puntos ? `+${escapeHTML(item.puntos)}` : ""}
+              </span>
+            `).join("")}
+          </div>
+          ${partido.observacion ? `<p>${escapeHTML(partido.observacion)}</p>` : ""}
+          ${(partido.alertas || []).length ? `<p>${(partido.alertas || []).map(escapeHTML).join(" · ")}</p>` : ""}
+        </div>
+      </details>
+    `;
+  };
+  const renderizarFilaNueva = (partido) => {
+    const partidoTexto = `${partido.tipo === "grupos" ? "Grupos" : "Eliminación"} · ${partido.partidoId} · ${partido.grupoORonda || ""}`;
+    const equipos = `${partido.partidoId} · ${partido.local || "-"} vs ${partido.visita || "-"}`;
+    return `
+      <tr class="${partido.provisorio ? "is-provisional" : ""} ${!partido.calculable ? "is-muted" : ""}">
+        <td data-label="#">${escapeHTML(partido.index)}</td>
+        <td data-label="Partido"><strong>${escapeHTML(partidoTexto)}</strong><span>${escapeHTML(equipos)}</span></td>
+        <td data-label="Fecha">${escapeHTML(partido.fecha || "")}<br><span>${escapeHTML(partido.hora || "")}</span></td>
+        <td data-label="Local">${escapeHTML(partido.local || "-")}</td>
+        <td data-label="Visita">${escapeHTML(partido.visita || "-")}</td>
+        <td data-label="Pronóstico">${renderizarPronosticoNuevo(partido)}</td>
+        <td data-label="Resultado">${renderizarResultadoNuevo(partido)}</td>
+        <td data-label="Estado">${renderizarBadgeEstado(partido.estado)}</td>
+        <td data-label="Pts"><strong class="admin-audit-points-inline">${escapeHTML(partido.puntos || 0)} pts</strong></td>
+        <td data-label="Detalle">${renderizarDetalleNuevo(partido)}</td>
+      </tr>
+    `;
+  };
+  const renderizarTablaNueva = (titulo, filas) => filas.length ? `
+    <section class="admin-audit-group">
+      <h4>${escapeHTML(titulo)} (${escapeHTML(filas.length)})</h4>
+      <div class="admin-audit-table-wrap">
+        <table class="admin-audit-table compact">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Partido</th>
+              <th>Fecha</th>
+              <th>Local</th>
+              <th>Visita</th>
+              <th>Pronóstico</th>
+              <th>Resultado</th>
+              <th>Estado</th>
+              <th>Pts</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>${filas.map(renderizarFilaNueva).join("")}</tbody>
+        </table>
+      </div>
+    </section>
+  ` : "";
+
+  const gruposNuevo = partidosNuevo.filter((partido) => partido.tipo === "grupos");
+  const eliminacionNueva = partidosNuevo.filter((partido) => partido.tipo === "eliminacion");
+  lista.innerHTML = `${renderizarTablaNueva("Fase de grupos", gruposNuevo)}${renderizarTablaNueva("Fase de eliminación", eliminacionNueva)}`;
+  return;
 
   const datosResumen = respuesta?.resumen || {};
   const items = respuesta?.items || [];
@@ -3212,6 +3357,7 @@ async function cargarAdminAuditoria() {
       return;
     }
 
+    adminAuditoriaRespuestaActual = respuesta;
     renderizarAdminAuditoriaParticipante(respuesta);
     mostrarFeedbackAdmin("Auditoría calculada.", "success");
   } catch (error) {

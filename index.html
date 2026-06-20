@@ -347,6 +347,15 @@
               <input id="adminAuditoriaPartido" type="text" placeholder="Ej: GA1" />
             </label>
             <label>
+              Vista
+              <select id="adminAuditoriaVista" onchange="renderizarAdminAuditoriaParticipante(adminAuditoriaRespuestaActual)">
+                <option value="todos">Todos</option>
+                <option value="con-puntos">Con puntos</option>
+                <option value="sin-pronostico">Sin pronostico</option>
+                <option value="no-calculables">No calculables</option>
+              </select>
+            </label>
+            <label>
               Participante
               <select id="adminAuditoriaParticipante">
                 <option value="">Selecciona un participante</option>
