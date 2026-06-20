@@ -128,13 +128,33 @@ router.post('/espn/sync-linked', async (req, res, next) => {
 
 router.get('/auditoria-puntos', async (req, res, next) => {
   try {
+    const codigo = String(req.query.codigo || '').trim();
+    const pollaId = String(req.query.pollaId || '').trim();
+    const busqueda = String(req.query.busqueda || '').trim();
+
+    if (busqueda) {
+      const error = new Error('La auditoría solo permite código exacto.');
+      error.status = 400;
+      throw error;
+    }
+
+    if (!codigo) {
+      const error = new Error('Debes indicar código');
+      error.status = 400;
+      throw error;
+    }
+
+    if (!pollaId) {
+      const error = new Error('Debes indicar pollaId');
+      error.status = 400;
+      throw error;
+    }
+
     const resultado = await obtenerAuditoriaPuntos({
       tipo: req.query.tipo,
       partidoId: req.query.partidoId,
-      participanteId: req.query.participanteId,
-      codigo: req.query.codigo,
-      busqueda: req.query.busqueda,
-      pollaId: req.query.pollaId
+      codigo,
+      pollaId
     });
 
     res.json({
@@ -152,7 +172,7 @@ router.get('/auditoria-ranking', async (req, res, next) => {
     const pollaId = String(req.query.pollaId || '').trim();
 
     if (!codigo) {
-      const error = new Error('Debes indicar codigo');
+      const error = new Error('Debes indicar código');
       error.status = 400;
       throw error;
     }

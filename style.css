@@ -3398,6 +3398,22 @@ body {
   gap: 9px;
 }
 
+.admin-audit-group {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-audit-group h4 {
+  margin: 2px 0 0;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.admin-audit-group-list {
+  display: grid;
+  gap: 8px;
+}
+
 .admin-audit-card {
   padding: 10px;
   border: 1px solid #bfdbfe;
@@ -3565,6 +3581,14 @@ body {
   background: #ffffff;
   color: #0f172a;
   font-weight: 800;
+}
+
+.admin-field-help {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .admin-form-card,

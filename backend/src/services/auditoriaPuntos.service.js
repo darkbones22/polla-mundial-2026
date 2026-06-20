@@ -4,6 +4,7 @@ import {
   calcularPuntosGrupos
 } from './puntaje.service.js';
 import { obtenerFechaHoraChile } from '../utils/fechas.js';
+import { normalizarCodigoLegacy } from '../utils/codigos.js';
 
 const TIPOS_VALIDOS = new Set(['grupos', 'eliminacion', 'todos']);
 
@@ -232,15 +233,10 @@ async function obtenerPronosticosEliminacion(participanteIds) {
 function filtrarParticipantes(participantes, filtros) {
   const participanteId = String(filtros.participanteId || '').trim();
   const codigo = String(filtros.codigo || '').trim().toLowerCase();
-  const busqueda = String(filtros.busqueda || '').trim().toLowerCase();
 
   return participantes.filter((participante) => {
     if (participanteId && participante.id !== participanteId) return false;
     if (codigo && String(participante.codigo_legacy || '').toLowerCase() !== codigo) return false;
-    if (busqueda) {
-      const texto = `${participante.nombre_visible || ''} ${participante.codigo_legacy || ''}`.toLowerCase();
-      if (!texto.includes(busqueda)) return false;
-    }
     return true;
   });
 }
@@ -253,6 +249,72 @@ function filtrarPartidos(partidos, filtros) {
 
 function deduplicarParticipantes(participantes) {
   return [...new Map((participantes || []).map((participante) => [participante.id, participante])).values()];
+}
+
+function crearErrorAuditoria(mensaje, status = 400) {
+  const error = new Error(mensaje);
+  error.status = status;
+  return error;
+}
+
+async function obtenerPollaPorId(pollaId) {
+  if (!pollaId) return null;
+
+  const { data, error } = await supabase
+    .from('pollas')
+    .select('id,id_legacy,nombre,activa')
+    .eq('id', pollaId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function resolverParticipantePorCodigoExacto({ codigo, pollaId }) {
+  const codigoNormalizado = normalizarCodigoLegacy(codigo);
+
+  if (!codigoNormalizado) {
+    throw crearErrorAuditoria('Debes indicar código');
+  }
+
+  const { data: participantes, error } = await supabase
+    .from('participantes')
+    .select('id,codigo_legacy,nombre_visible,activo')
+    .eq('codigo_legacy', codigoNormalizado);
+
+  if (error) throw new Error(error.message);
+
+  if (!participantes?.length) {
+    throw crearErrorAuditoria('No existe un participante con ese código.', 404);
+  }
+
+  if (participantes.length > 1) {
+    throw crearErrorAuditoria('Código duplicado en participantes.', 409);
+  }
+
+  const participante = participantes[0];
+
+  if (!participante.activo) {
+    throw crearErrorAuditoria('No existe un participante activo con ese código.', 404);
+  }
+
+  if (pollaId) {
+    const { data: relacion, error: errorRelacion } = await supabase
+      .from('participantes_pollas')
+      .select('participante_id,polla_id,activo')
+      .eq('participante_id', participante.id)
+      .eq('polla_id', pollaId)
+      .eq('activo', true)
+      .maybeSingle();
+
+    if (errorRelacion) throw new Error(errorRelacion.message);
+
+    if (!relacion) {
+      throw crearErrorAuditoria('Este participante no pertenece a la polla seleccionada.', 403);
+    }
+  }
+
+  return participante;
 }
 
 export function calcularItemsAuditoriaTipo({ tipo, partidos, pronosticos, duplicados, participantes, filtros = {} }) {
@@ -342,8 +404,18 @@ export const auditarTipo = calcularItemsAuditoriaTipo;
 
 export async function obtenerAuditoriaPuntos(filtros = {}) {
   const tipo = normalizarTipo(filtros.tipo);
-  const participantes = deduplicarParticipantes(await obtenerParticipantesPolla(filtros.pollaId));
+  const participanteExacto = filtros.codigo
+    ? await resolverParticipantePorCodigoExacto({ codigo: filtros.codigo, pollaId: filtros.pollaId })
+    : null;
+  const participantes = participanteExacto
+    ? [participanteExacto]
+    : deduplicarParticipantes(await obtenerParticipantesPolla(filtros.pollaId));
   const participanteIds = participantes.map((participante) => participante.id);
+  const filtrosCalculo = {
+    ...filtros,
+    participanteId: participanteExacto?.id || filtros.participanteId,
+    codigo: participanteExacto?.codigo_legacy || filtros.codigo
+  };
   const tareas = [];
 
   if (tipo === 'grupos' || tipo === 'todos') {
@@ -356,7 +428,7 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
       pronosticos: pronosticos.pronosticos,
       duplicados: pronosticos.duplicados,
       participantes,
-      filtros
+      filtros: filtrosCalculo
     })));
   }
 
@@ -370,7 +442,7 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
       pronosticos: pronosticos.pronosticos,
       duplicados: pronosticos.duplicados,
       participantes,
-      filtros
+      filtros: filtrosCalculo
     })));
   }
 
@@ -399,16 +471,49 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
   const totalPuntosProvisorios = items
     .filter((item) => item.provisorio)
     .reduce((suma, item) => suma + item.puntos, 0);
+  const totalPuntosGrupos = items
+    .filter((item) => item.tipo === 'grupos')
+    .reduce((suma, item) => suma + item.puntos, 0);
+  const totalPuntosEliminacion = items
+    .filter((item) => item.tipo === 'eliminacion')
+    .reduce((suma, item) => suma + item.puntos, 0);
+  const totalPlenosGrupos = items
+    .filter((item) => item.tipo === 'grupos' && item.desglose?.exacto?.acierto)
+    .length;
+  const totalPlenosEliminacion = items
+    .filter((item) => item.tipo === 'eliminacion' && item.desglose?.exacto?.acierto)
+    .length;
+  const totalPartidosCalculados = items.filter((item) => item.calculable).length;
+  const polla = await obtenerPollaPorId(filtros.pollaId);
 
   return {
     resumen: {
+      participante: participanteExacto
+        ? {
+          id: participanteExacto.id,
+          nombre: participanteExacto.nombre_visible,
+          codigo: participanteExacto.codigo_legacy
+        }
+        : null,
+      polla: polla
+        ? {
+          id: polla.id,
+          idLegacy: polla.id_legacy,
+          nombre: polla.nombre
+        }
+        : null,
       totalParticipantes: new Set(items.map((item) => item.participante.id)).size,
       totalPartidosFinalizados: resultados.reduce((suma, item) => suma + item.partidosFinalizadosConsiderados, 0),
       totalPartidosEnVivo: resultados.reduce((suma, item) => suma + item.partidosEnVivoConsiderados, 0),
       totalPartidosOmitidosNoFinalizados: resultados.reduce((suma, item) => suma + item.partidosOmitidosNoFinalizados, 0),
+      totalPartidosCalculados,
       totalPronosticosAuditados: items.length,
       totalPuntos,
+      totalPuntosGrupos,
+      totalPuntosEliminacion,
       totalPuntosProvisorios,
+      totalPlenosGrupos,
+      totalPlenosEliminacion,
       incluyeEnVivo: items.some((item) => item.provisorio),
       duplicadosDetectados,
       totalesPorParticipante
