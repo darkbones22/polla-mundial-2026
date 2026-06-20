@@ -578,6 +578,20 @@ body {
   line-height: 1.25;
 }
 
+.result-detail-note.match-detail--final {
+  display: inline-flex;
+  max-width: 100%;
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
 .result-detail-private strong {
   color: #1d4ed8;
 }
@@ -689,6 +703,14 @@ body {
   color: #1d4ed8;
   font-size: 13px;
   white-space: nowrap;
+}
+
+.result-detail-points.provisional {
+  color: #c2410c;
+}
+
+.result-detail-points.definitive {
+  color: #1d4ed8;
 }
 
 .result-detail-message {

@@ -1672,11 +1672,22 @@ function mostrarDetallePartido(panel, respuesta) {
   const participantes = respuesta.participantes || [];
   const resultadoFinalizado = respuesta.resultadoFinalizado !== false;
   const estadoDetalle = String(respuesta.estadoDetalle || "").toLowerCase();
-  const avisoPendiente = resultadoFinalizado
-    ? ""
-    : `
+  const puntajeProvisorio = Boolean(respuesta.puntajeProvisorio) || estadoDetalle === "en_vivo";
+  const avisoDetalle = resultadoFinalizado
+    ? `
+        <p class="result-detail-note match-detail--final">
+          Puntos definitivos calculados con resultado final.
+        </p>
+      `
+    : puntajeProvisorio
+      ? `
+        <p class="result-detail-note match-detail--live">
+          Puntos provisorios con marcador en vivo. Pueden cambiar cuando finalice.
+        </p>
+      `
+      : `
         <p class="result-detail-note match-detail--closed">
-          Pron\u00f3sticos registrados. Los puntos se calcular\u00e1n cuando el resultado sea final.
+          Los puntos se calcular\u00e1n cuando el partido est\u00e9 en vivo o finalizado.
         </p>
       `;
 
@@ -1719,13 +1730,13 @@ function mostrarDetallePartido(panel, respuesta) {
             <strong class="result-detail-name">${escapeHTML(participante.nombre)}</strong>
             <span class="result-detail-prediction">${escapeHTML(obtenerTextoDetallePuntos(participante))}</span>
           </span>
-          <strong class="result-detail-points">${escapeHTML(participante.puntos || 0)} pts</strong>
+          <strong class="result-detail-points ${participante.provisorio ? "provisional" : participante.definitivo ? "definitive" : ""}">${escapeHTML(participante.puntos || 0)} pts</strong>
         </li>`).join("")
     : `<li class="result-detail-row empty">No hay participantes activos en esta polla.</li>`;
 
   panel.innerHTML = `
     <button class="result-detail-close" type="button" aria-label="Cerrar detalle">&times;</button>
-    ${avisoPendiente}
+    ${avisoDetalle}
 
     <ul class="result-detail-list">
       ${filas}
