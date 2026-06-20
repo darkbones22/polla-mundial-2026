@@ -2878,8 +2878,7 @@ function obtenerFiltrosAdminAuditoria() {
   const idPolla = obtenerPollaGlobalSeleccionada() || "";
 
   return {
-    tipo: document.getElementById("adminAuditoriaTipo")?.value || "todos",
-    partidoId: document.getElementById("adminAuditoriaPartido")?.value || "",
+    tipo: "todos",
     participanteId: document.getElementById("adminAuditoriaParticipante")?.value || "",
     pollaId: idPolla
   };
@@ -2990,13 +2989,7 @@ function renderizarAdminAuditoria(respuesta) {
 
   const datosResumenNuevo = respuesta?.resumen || {};
   const todosLosPartidos = respuesta?.partidos || [];
-  const vistaAuditoria = document.getElementById("adminAuditoriaVista")?.value || "todos";
-  const partidosNuevo = todosLosPartidos.filter((partido) => {
-    if (vistaAuditoria === "con-puntos") return Number(partido.puntos || 0) > 0;
-    if (vistaAuditoria === "sin-pronostico") return !partido.pronostico?.existe;
-    if (vistaAuditoria === "no-calculables") return !partido.calculable;
-    return true;
-  });
+  const partidosNuevo = todosLosPartidos;
   const participanteNuevo = respuesta?.participante || {};
   const pollaNueva = respuesta?.polla || null;
   const totalPlenos = Number(datosResumenNuevo.plenosGrupos || 0) + Number(datosResumenNuevo.plenosEliminacion || 0);
@@ -3358,7 +3351,7 @@ async function cargarAdminAuditoria() {
     }
 
     adminAuditoriaRespuestaActual = respuesta;
-    renderizarAdminAuditoriaParticipante(respuesta);
+    renderizarAdminAuditoria(respuesta);
     mostrarFeedbackAdmin("Auditoría calculada.", "success");
   } catch (error) {
     console.error(error);
@@ -3366,7 +3359,7 @@ async function cargarAdminAuditoria() {
   }
 }
 
-function renderizarComparacionAuditoriaRanking(respuesta) {
+function renderizarComparacionObsoleta(respuesta) {
   const lista = document.getElementById("adminAuditoriaLista");
   if (!lista) return;
 
@@ -3392,7 +3385,7 @@ function renderizarComparacionAuditoriaRanking(respuesta) {
   `);
 }
 
-async function compararAdminAuditoriaConRanking() {
+async function compararAuditoriaObsoleta() {
   if (!usuarioAdminActual) {
     mostrarFeedbackAdmin("No autorizado.", "error");
     return;
@@ -3422,7 +3415,7 @@ async function compararAdminAuditoriaConRanking() {
     }
 
     await cargarAdminAuditoria();
-    renderizarComparacionAuditoriaRanking(respuesta);
+    renderizarComparacionObsoleta(respuesta);
     mostrarFeedbackAdmin("Comparación lista.", respuesta.diferencias?.length ? "error" : "success");
   } catch (error) {
     console.error(error);
