@@ -51,6 +51,33 @@ describe('puntaje fase de grupos', () => {
     assert.equal(detalle.diferencia, false);
   });
 
+  it('suma goles local y goles visita como 2 puntos cada uno si no es exacto', () => {
+    const detalle = calcularPuntosGrupos(
+      { golesLocal: 2, golesVisita: 1 },
+      { golesLocal: 2, golesVisita: 1 }
+    );
+
+    assert.equal(detalle.puntos, 10);
+
+    const noExacto = calcularPuntosGrupos(
+      { golesLocal: 2, golesVisita: 1 },
+      { golesLocal: 2, golesVisita: 4 }
+    );
+
+    assert.equal(noExacto.puntos, 2);
+    assert.equal(noExacto.golesLocal, true);
+    assert.equal(noExacto.golesVisita, false);
+
+    const visita = calcularPuntosGrupos(
+      { golesLocal: 5, golesVisita: 3 },
+      { golesLocal: 2, golesVisita: 3 }
+    );
+
+    assert.equal(visita.puntos, 2);
+    assert.equal(visita.golesLocal, false);
+    assert.equal(visita.golesVisita, true);
+  });
+
   it('calcula empate exacto como pleno de 10 puntos', () => {
     const detalle = calcularPuntosGrupos(
       { golesLocal: 1, golesVisita: 1 },

@@ -7,7 +7,6 @@ import {
   obtenerPronosticosEliminacionParticipantes,
   obtenerPronosticosGruposParticipantes
 } from './pronosticos.service.js';
-import { obtenerEstadoHorarioPartido } from '../utils/fechas.js';
 
 function crearFilaRanking(fila) {
   return {
@@ -37,9 +36,7 @@ function crearFilaRanking(fila) {
     clasificados: 0,
 
     partidosGrupos: 0,
-    partidosEliminacion: 0,
-    partidosEnVivo: 0,
-    puntosProvisorios: 0
+    partidosEliminacion: 0
   };
 }
 
@@ -51,60 +48,46 @@ function estaFinalizado(partido) {
   return String(partido?.estado || '').trim().toLowerCase() === 'finalizado';
 }
 
-function estaEnVivo(partido) {
-  return obtenerEstadoHorarioPartido(partido?.fecha_hora, partido?.estado).estado === 'En vivo';
-}
-
-function obtenerResultadosGruposPorPartido(partidos) {
+export function obtenerResultadosGruposPorPartido(partidos) {
   const resultadosPorPartido = new Map();
-  let incluyeEnVivo = false;
 
   partidos.forEach((partido) => {
     if (!tieneGolesValidos(partido)) return;
-
-    const provisorio = !estaFinalizado(partido) && estaEnVivo(partido);
-
-    if (!estaFinalizado(partido) && !provisorio) return;
-    if (provisorio) incluyeEnVivo = true;
+    if (!estaFinalizado(partido)) return;
 
     resultadosPorPartido.set(partido.id, {
       golesLocal: partido.goles_local_real,
-      golesVisita: partido.goles_visita_real,
-      provisorio
+      golesVisita: partido.goles_visita_real
     });
   });
 
   return {
     resultadosPorPartido,
-    incluyeEnVivo
+    incluyeEnVivo: false
   };
 }
 
-function obtenerResultadosEliminacionPorPartido(partidos) {
+export function obtenerResultadosEliminacionPorPartido(partidos) {
   const resultadosPorPartido = new Map();
-  let incluyeEnVivo = false;
 
   partidos.forEach((partido) => {
     if (!tieneGolesValidos(partido)) return;
 
     const finalizado = estaFinalizado(partido);
-    const provisorio = !finalizado && estaEnVivo(partido);
 
-    if (!finalizado && !provisorio) return;
+    if (!finalizado) return;
     if (finalizado && !['local', 'visita'].includes(partido.clasificado_real_lado)) return;
-    if (provisorio) incluyeEnVivo = true;
 
     resultadosPorPartido.set(partido.id, {
       golesLocal: partido.goles_local_real,
       golesVisita: partido.goles_visita_real,
-      clasificadoRealLado: partido.clasificado_real_lado,
-      provisorio
+      clasificadoRealLado: partido.clasificado_real_lado
     });
   });
 
   return {
     resultadosPorPartido,
-    incluyeEnVivo
+    incluyeEnVivo: false
   };
 }
 
@@ -168,10 +151,6 @@ function aplicarRankingGrupos(rankingPorParticipante, pronosticos, resultadosPor
 
     participante.puntosGrupos += detalle.total;
     participante.partidosGrupos += 1;
-    if (resultado.provisorio) {
-      participante.partidosEnVivo += 1;
-      participante.puntosProvisorios += detalle.total;
-    }
 
     if (detalle.exacto) participante.exactosGrupos += 1;
     if (detalle.ganadorEmpate) participante.ganadorEmpateGrupos += 1;
@@ -201,10 +180,6 @@ function aplicarRankingEliminacion(rankingPorParticipante, pronosticos, resultad
 
     participante.puntosEliminacion += detalle.total;
     participante.partidosEliminacion += 1;
-    if (resultado.provisorio) {
-      participante.partidosEnVivo += 1;
-      participante.puntosProvisorios += detalle.total;
-    }
 
     if (detalle.exacto) participante.exactosEliminacion += 1;
     if (detalle.ganadorEmpate) participante.ganadorEmpateEliminacion += 1;

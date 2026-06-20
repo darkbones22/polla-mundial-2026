@@ -18,22 +18,12 @@ function resultadoFinalizadoGrupo(partido) {
   return partido.estado === 'Finalizado' && tieneGolesValidos(partido);
 }
 
-function resultadoEnVivoGrupo(partido) {
-  return obtenerEstadoHorarioPartido(partido?.fecha_hora, partido?.estado).estado === 'En vivo' &&
-    tieneGolesValidos(partido);
-}
-
 function resultadoFinalizadoEliminacion(partido) {
   return (
     partido.estado === 'Finalizado' &&
     tieneGolesValidos(partido) &&
     ['local', 'visita'].includes(partido.clasificado_real_lado)
   );
-}
-
-function resultadoEnVivoEliminacion(partido) {
-  return obtenerEstadoHorarioPartido(partido?.fecha_hora, partido?.estado).estado === 'En vivo' &&
-    tieneGolesValidos(partido);
 }
 
 function esPartidoPendienteNoDisponible(partido, tipo) {
@@ -157,8 +147,8 @@ export async function obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, pa
 
   const disponibilidad = estaPartidoDisponibleParaPronosticar(partido, 'grupos');
   const finalizado = resultadoFinalizadoGrupo(partido);
-  const puntajeProvisorio = resultadoEnVivoGrupo(partido);
-  const calcularPuntos = finalizado || puntajeProvisorio;
+  const estadoHorario = obtenerEstadoHorarioPartido(partido.fecha_hora, partido.estado);
+  const calcularPuntos = finalizado;
   const resultado = {
     golesLocal: partido.goles_local_real,
     golesVisita: partido.goles_visita_real
@@ -221,8 +211,8 @@ export async function obtenerDetallePartidoGruposSeguro({ pollaId, partidoId, pa
     tipo: 'grupos',
     partido: mapearPartidoGrupo(partido),
     resultadoFinalizado: finalizado,
-    puntajeProvisorio,
-    estadoDetalle: finalizado ? 'finalizado' : puntajeProvisorio ? 'en_vivo' : 'pendiente',
+    puntajeProvisorio: false,
+    estadoDetalle: finalizado ? 'finalizado' : estadoHorario.enVivo ? 'en_vivo' : 'pendiente',
     detalle: ordenarDetalle(detalle, calcularPuntos)
   };
 }
@@ -238,8 +228,8 @@ export async function obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoI
 
   const disponibilidad = estaPartidoDisponibleParaPronosticar(partido, 'eliminacion');
   const finalizado = resultadoFinalizadoEliminacion(partido);
-  const puntajeProvisorio = resultadoEnVivoEliminacion(partido);
-  const calcularPuntos = finalizado || puntajeProvisorio;
+  const estadoHorario = obtenerEstadoHorarioPartido(partido.fecha_hora, partido.estado);
+  const calcularPuntos = finalizado;
   const resultado = {
     golesLocal: partido.goles_local_real,
     golesVisita: partido.goles_visita_real,
@@ -305,8 +295,8 @@ export async function obtenerDetallePartidoEliminacionSeguro({ pollaId, partidoI
     tipo: 'eliminacion',
     partido: mapearPartidoEliminacion(partido),
     resultadoFinalizado: finalizado,
-    puntajeProvisorio,
-    estadoDetalle: finalizado ? 'finalizado' : puntajeProvisorio ? 'en_vivo' : 'pendiente',
+    puntajeProvisorio: false,
+    estadoDetalle: finalizado ? 'finalizado' : estadoHorario.enVivo ? 'en_vivo' : 'pendiente',
     detalle: ordenarDetalle(detalle, calcularPuntos)
   };
 }

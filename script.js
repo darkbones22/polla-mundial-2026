@@ -1671,17 +1671,10 @@ function mostrarDetallePartido(panel, respuesta) {
   const partido = respuesta.partido || {};
   const participantes = respuesta.participantes || [];
   const resultadoFinalizado = respuesta.resultadoFinalizado !== false;
-  const puntajeProvisorio = Boolean(respuesta.puntajeProvisorio);
   const estadoDetalle = String(respuesta.estadoDetalle || "").toLowerCase();
   const avisoPendiente = resultadoFinalizado
     ? ""
-    : puntajeProvisorio
-      ? `
-        <p class="result-detail-note match-detail--live">
-          Puntaje provisorio. Puede cambiar cuando finalice el partido.
-        </p>
-      `
-      : `
+    : `
         <p class="result-detail-note match-detail--closed">
           Pron\u00f3sticos registrados. Los puntos se calcular\u00e1n cuando el resultado sea final.
         </p>
