@@ -6,6 +6,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY ||= 'test-service-role-key';
 
 const {
   auditarTipo,
+  calcularItemsAuditoriaParticipanteTipo,
   consultarTodasLasPaginas
 } = await import('../src/services/auditoriaPuntos.service.js');
 
@@ -164,5 +165,32 @@ describe('auditoria de puntos', () => {
 
     assert.equal(resultado.length, 1001);
     assert.equal(resultado[1000].id, 1001);
+  });
+
+  it('auditoria por participante incluye todos los partidos aunque no tengan pronostico', () => {
+    const resultado = calcularItemsAuditoriaParticipanteTipo({
+      tipo: 'grupos',
+      partidos: [
+        partidoGrupo({ estado: 'Finalizado', local: 2, visita: 1 }),
+        { ...partidoGrupo({ estado: 'En vivo', local: 1, visita: 0 }), id: 'GA2' },
+        { ...partidoGrupo({ estado: 'Cerrado', local: null, visita: null }), id: 'GA3' }
+      ],
+      pronosticos: [
+        pronosticoGrupo({ local: 2, visita: 1 }),
+        { ...pronosticoGrupo({ local: 2, visita: 0 }), partido_id: 'GA2' }
+      ],
+      duplicados: new Map(),
+      participante: participantes[0],
+      filtros: {}
+    });
+
+    assert.equal(resultado.length, 3);
+    assert.equal(resultado[0].puntos, 10);
+    assert.equal(resultado[0].definitivo, true);
+    assert.equal(resultado[1].puntos, 7);
+    assert.equal(resultado[1].provisorio, true);
+    assert.equal(resultado[2].puntos, 0);
+    assert.equal(resultado[2].pronostico, null);
+    assert.equal(resultado[2].calculable, false);
   });
 });

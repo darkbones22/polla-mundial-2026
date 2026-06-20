@@ -3414,6 +3414,57 @@ body {
   gap: 8px;
 }
 
+.admin-audit-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.admin-audit-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.admin-audit-table th,
+.admin-audit-table td {
+  padding: 8px 7px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-audit-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-audit-table td {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.admin-audit-table td span {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.admin-audit-table tr.is-muted {
+  background: #f8fafc;
+}
+
+.admin-audit-table tr.is-provisional {
+  background: #fff7ed;
+}
+
 .admin-audit-card {
   padding: 10px;
   border: 1px solid #bfdbfe;
@@ -5224,6 +5275,71 @@ body {
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-audit-table-wrap {
+    overflow-x: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .admin-audit-table,
+  .admin-audit-table thead,
+  .admin-audit-table tbody,
+  .admin-audit-table tr,
+  .admin-audit-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-audit-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 11px;
+  }
+
+  .admin-audit-table thead {
+    display: none;
+  }
+
+  .admin-audit-table tr {
+    margin-bottom: 8px;
+    padding: 9px;
+    border: 1px solid #dbeafe;
+    border-radius: 13px;
+    background: #ffffff;
+  }
+
+  .admin-audit-table tr.is-muted {
+    background: #f8fafc;
+  }
+
+  .admin-audit-table tr.is-provisional {
+    background: #fff7ed;
+  }
+
+  .admin-audit-table td {
+    display: grid;
+    grid-template-columns: 94px minmax(0, 1fr);
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 0;
+    word-break: break-word;
+  }
+
+  .admin-audit-table td::before {
+    content: attr(data-label);
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .admin-audit-table .admin-audit-breakdown {
+    margin-top: 0;
   }
 }
 

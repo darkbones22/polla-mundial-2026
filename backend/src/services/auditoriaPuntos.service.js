@@ -317,6 +317,127 @@ async function resolverParticipantePorCodigoExacto({ codigo, pollaId }) {
   return participante;
 }
 
+async function resolverParticipantePorIdEnPolla({ participanteId, pollaId }) {
+  const id = String(participanteId || '').trim();
+
+  if (!id) {
+    throw crearErrorAuditoria('Debes indicar participanteId');
+  }
+
+  const { data: participante, error } = await supabase
+    .from('participantes')
+    .select('id,codigo_legacy,nombre_visible,activo')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  if (!participante || !participante.activo) {
+    throw crearErrorAuditoria('No existe un participante activo con ese id.', 404);
+  }
+
+  const { data: relacion, error: errorRelacion } = await supabase
+    .from('participantes_pollas')
+    .select('participante_id,polla_id,activo')
+    .eq('participante_id', participante.id)
+    .eq('polla_id', pollaId)
+    .eq('activo', true)
+    .maybeSingle();
+
+  if (errorRelacion) throw new Error(errorRelacion.message);
+
+  if (!relacion) {
+    throw crearErrorAuditoria('Este participante no pertenece a la polla seleccionada.', 403);
+  }
+
+  return participante;
+}
+
+function obtenerResultadoAuditoria(partido, tipo) {
+  return tipo === 'eliminacion'
+    ? {
+      golesLocal: partido.goles_local_real,
+      golesVisita: partido.goles_visita_real,
+      clasificadoRealLado: partido.clasificado_real_lado
+    }
+    : {
+      golesLocal: partido.goles_local_real,
+      golesVisita: partido.goles_visita_real
+    };
+}
+
+function obtenerPronosticoAuditoria(pronostico, tipo) {
+  if (!pronostico) return null;
+
+  return tipo === 'eliminacion'
+    ? {
+      golesLocal: pronostico.goles_local,
+      golesVisita: pronostico.goles_visita,
+      clasificadoLado: pronostico.clasificado_lado
+    }
+    : {
+      golesLocal: pronostico.goles_local,
+      golesVisita: pronostico.goles_visita
+    };
+}
+
+function calcularDetalleAuditoria({ tipo, partido, pronostico, alertas }) {
+  if (!pronostico) {
+    alertas.push('Sin pronóstico registrado.');
+    return { puntos: 0, total: 0, calculable: false, motivo: 'sin_pronostico' };
+  }
+
+  if (!esEstadoCalculable(partido)) {
+    alertas.push('No suma: partido no finalizado ni en vivo.');
+    return { puntos: 0, total: 0, calculable: false, motivo: 'partido_no_finalizado' };
+  }
+
+  if (estaEnVivo(partido)) {
+    alertas.push('Puntaje provisorio: partido en vivo.');
+  }
+
+  if (!tieneGolesValidos(partido)) {
+    alertas.push('No suma: resultado real incompleto.');
+    return { puntos: 0, total: 0, calculable: false, motivo: 'resultado_incompleto' };
+  }
+
+  if (tipo === 'eliminacion' && estaFinalizado(partido) && !['local', 'visita'].includes(partido.clasificado_real_lado)) {
+    alertas.push('No suma: falta clasificado real.');
+    return { puntos: 0, total: 0, calculable: false, motivo: 'falta_clasificado_real' };
+  }
+
+  const resultado = obtenerResultadoAuditoria(partido, tipo);
+  const pronosticoPuntos = obtenerPronosticoAuditoria(pronostico, tipo);
+
+  return tipo === 'eliminacion'
+    ? calcularPuntosEliminacion(pronosticoPuntos, resultado)
+    : calcularPuntosGrupos(pronosticoPuntos, resultado);
+}
+
+export function calcularItemsAuditoriaParticipanteTipo({ tipo, partidos, pronosticos, duplicados, participante, filtros = {} }) {
+  const partidosFiltrados = filtrarPartidos(partidos, filtros);
+  const pronosticosPorPartido = new Map((pronosticos || []).map((pronostico) => [pronostico.partido_id, pronostico]));
+
+  return partidosFiltrados.map((partido) => {
+    const pronostico = pronosticosPorPartido.get(partido.id) || null;
+    const alertas = [];
+    const clave = `${participante.id}|${partido.id}`;
+
+    if ((duplicados.get(clave) || 0) > 1) alertas.push('Pronóstico duplicado: se usa el más reciente.');
+
+    const detalle = calcularDetalleAuditoria({ tipo, partido, pronostico, alertas });
+
+    return crearItemBase({
+      tipo,
+      partido,
+      participante,
+      pronostico,
+      detalle,
+      alertas
+    });
+  });
+}
+
 export function calcularItemsAuditoriaTipo({ tipo, partidos, pronosticos, duplicados, participantes, filtros = {} }) {
   const participantesUnicos = deduplicarParticipantes(participantes);
   const partidosFiltrados = filtrarPartidos(partidos, filtros);
@@ -522,6 +643,148 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
       if (a.partidoId !== b.partidoId) return a.partidoId.localeCompare(b.partidoId);
       return a.participante.nombre.localeCompare(b.participante.nombre);
     })
+  };
+}
+
+function contarPlenos(items, tipo) {
+  return items.filter((item) => item.tipo === tipo && item.desglose?.exacto?.acierto).length;
+}
+
+function mapearFilaAuditoriaParticipante(item, index) {
+  return {
+    index: index + 1,
+    tipo: item.tipo,
+    partidoId: item.partidoId,
+    grupoORonda: item.grupoORonda,
+    fecha: item.fecha,
+    hora: item.hora,
+    fechaHora: `${item.fecha || ''} ${item.hora || ''}`.trim(),
+    local: item.local,
+    visita: item.visita,
+    estado: item.estado,
+    pronostico: {
+      existe: Boolean(item.pronostico),
+      golesLocal: item.pronostico?.golesLocal ?? null,
+      golesVisita: item.pronostico?.golesVisita ?? null,
+      clasificado: item.pronostico?.clasificadoLado ?? null
+    },
+    resultado: {
+      existe: Number.isInteger(item.resultadoReal?.golesLocal) && Number.isInteger(item.resultadoReal?.golesVisita),
+      golesLocal: item.resultadoReal?.golesLocal ?? null,
+      golesVisita: item.resultadoReal?.golesVisita ?? null,
+      clasificado: item.resultadoReal?.clasificadoLado ?? null
+    },
+    puntos: item.puntos,
+    definitivo: item.definitivo,
+    provisorio: item.provisorio,
+    calculable: item.calculable,
+    tipoPuntaje: item.definitivo ? 'Definitivo' : item.provisorio ? 'Provisorio' : 'No calculable',
+    desglose: {
+      exacto: item.desglose?.exacto || { acierto: false, puntos: 0 },
+      ganadorEmpate: item.desglose?.ganador || { acierto: false, puntos: 0 },
+      golLocal: item.desglose?.golLocal || { acierto: false, puntos: 0 },
+      golVisita: item.desglose?.golVisita || { acierto: false, puntos: 0 },
+      diferencia: item.desglose?.diferencia || { acierto: false, puntos: 0 },
+      clasificado: item.desglose?.clasificado || null
+    },
+    observacion: item.observacion,
+    alertas: item.alertas || []
+  };
+}
+
+export async function obtenerAuditoriaParticipante(filtros = {}) {
+  const tipo = normalizarTipo(filtros.tipo);
+  const pollaId = String(filtros.pollaId || '').trim();
+
+  if (!pollaId) {
+    throw crearErrorAuditoria('Debes indicar pollaId');
+  }
+
+  const participante = await resolverParticipantePorIdEnPolla({
+    participanteId: filtros.participanteId,
+    pollaId
+  });
+  const polla = await obtenerPollaPorId(pollaId);
+  const filtrosCalculo = {
+    tipo,
+    partidoId: filtros.partidoId,
+    participanteId: participante.id
+  };
+  const tareas = [];
+
+  if (tipo === 'grupos' || tipo === 'todos') {
+    tareas.push(Promise.all([
+      obtenerPartidosGrupos(),
+      obtenerPronosticosGrupos([participante.id])
+    ]).then(([partidos, pronosticos]) => calcularItemsAuditoriaParticipanteTipo({
+      tipo: 'grupos',
+      partidos,
+      pronosticos: pronosticos.pronosticos,
+      duplicados: pronosticos.duplicados,
+      participante,
+      filtros: filtrosCalculo
+    })));
+  }
+
+  if (tipo === 'eliminacion' || tipo === 'todos') {
+    tareas.push(Promise.all([
+      obtenerPartidosEliminacion(),
+      obtenerPronosticosEliminacion([participante.id])
+    ]).then(([partidos, pronosticos]) => calcularItemsAuditoriaParticipanteTipo({
+      tipo: 'eliminacion',
+      partidos,
+      pronosticos: pronosticos.pronosticos,
+      duplicados: pronosticos.duplicados,
+      participante,
+      filtros: filtrosCalculo
+    })));
+  }
+
+  const items = (await Promise.all(tareas))
+    .flat()
+    .sort((a, b) => {
+      if (a.tipo !== b.tipo) return a.tipo === 'grupos' ? -1 : 1;
+      if (a.fecha !== b.fecha) return String(a.fecha).localeCompare(String(b.fecha));
+      if (a.hora !== b.hora) return String(a.hora).localeCompare(String(b.hora));
+      return String(a.partidoId).localeCompare(String(b.partidoId));
+    });
+  const partidos = items.map(mapearFilaAuditoriaParticipante);
+  const puntosGrupos = items
+    .filter((item) => item.tipo === 'grupos')
+    .reduce((suma, item) => suma + item.puntos, 0);
+  const puntosEliminacion = items
+    .filter((item) => item.tipo === 'eliminacion')
+    .reduce((suma, item) => suma + item.puntos, 0);
+
+  return {
+    participante: {
+      id: participante.id,
+      nombre: participante.nombre_visible,
+      codigo: participante.codigo_legacy
+    },
+    polla: polla
+      ? {
+        id: polla.id,
+        idLegacy: polla.id_legacy,
+        nombre: polla.nombre
+      }
+      : { id: pollaId, nombre: '' },
+    resumen: {
+      totalPuntos: puntosGrupos + puntosEliminacion,
+      puntosGrupos,
+      puntosEliminacion,
+      plenosGrupos: contarPlenos(items, 'grupos'),
+      plenosEliminacion: contarPlenos(items, 'eliminacion'),
+      partidosTotales: items.length,
+      partidosConPronostico: items.filter((item) => Boolean(item.pronostico)).length,
+      partidosSinPronostico: items.filter((item) => !item.pronostico).length,
+      partidosCalculables: items.filter((item) => item.calculable).length,
+      partidosDefinitivos: items.filter((item) => item.definitivo).length,
+      partidosProvisorios: items.filter((item) => item.provisorio).length,
+      partidosNoCalculables: items.filter((item) => !item.calculable).length
+    },
+    partidos,
+    items
   };
 }
 

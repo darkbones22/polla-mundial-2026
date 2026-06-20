@@ -1782,6 +1782,7 @@ let adminSubtabActual = "resultados";
 let adminPartidosActuales = [];
 let adminParticipantesActuales = [];
 let adminPollasActuales = [];
+let adminAuditoriaParticipantesActuales = [];
 let adminEspnEventosActuales = [];
 let adminSubtabsInicializadas = false;
 let adminCargaSubtabActual = 0;
@@ -2373,6 +2374,11 @@ function cambiarPollaGlobal() {
     detalleResultadoAbierto = "";
     renderizarResultadosGrupos();
   }
+
+  const seccionAdmin = document.getElementById("seccionAdmin");
+  if (usuarioAdminActual && seccionAdmin && !seccionAdmin.classList.contains("hidden") && adminSubtabActual === "auditoria") {
+    cargarParticipantesAdminAuditoria();
+  }
 }
 
 function esAdminValidado(validacionCodigo) {
@@ -2544,7 +2550,7 @@ async function cambiarSubseccionAdmin(seccion) {
     }
 
     if (subtab === "auditoria") {
-      await cargarAdminAuditoria();
+      await cargarParticipantesAdminAuditoria();
     }
   } catch (error) {
     if (idCarga === adminCargaSubtabActual) {
@@ -2873,9 +2879,79 @@ function obtenerFiltrosAdminAuditoria() {
   return {
     tipo: document.getElementById("adminAuditoriaTipo")?.value || "todos",
     partidoId: document.getElementById("adminAuditoriaPartido")?.value || "",
-    codigo: document.getElementById("adminAuditoriaCodigo")?.value || "",
+    participanteId: document.getElementById("adminAuditoriaParticipante")?.value || "",
     pollaId: idPolla
   };
+}
+
+function obtenerParticipanteAdminAuditoriaSeleccionado() {
+  const participanteId = document.getElementById("adminAuditoriaParticipante")?.value || "";
+  return adminAuditoriaParticipantesActuales.find((participante) => participante.id === participanteId) || null;
+}
+
+function renderizarSelectorAdminAuditoriaParticipantes(participantes = []) {
+  const selector = document.getElementById("adminAuditoriaParticipante");
+  if (!selector) return;
+
+  if (!participantes.length) {
+    selector.innerHTML = `<option value="">No hay participantes activos en esta polla</option>`;
+    selector.disabled = true;
+    return;
+  }
+
+  selector.disabled = false;
+  selector.innerHTML = `
+    <option value="">Selecciona un participante</option>
+    ${participantes.map((participante) => `
+      <option value="${escapeHTML(participante.id)}">
+        ${escapeHTML(participante.nombre || "")} - ${escapeHTML(participante.codigoLegacy || participante.codigo || "")}
+      </option>
+    `).join("")}
+  `;
+}
+
+async function cargarParticipantesAdminAuditoria() {
+  const polla = obtenerPollaGlobalSeleccionada();
+  const resumen = document.getElementById("adminAuditoriaResumen");
+  const lista = document.getElementById("adminAuditoriaLista");
+
+  adminAuditoriaParticipantesActuales = [];
+  renderizarSelectorAdminAuditoriaParticipantes([]);
+
+  if (resumen) resumen.innerHTML = "";
+  if (lista) lista.innerHTML = "";
+
+  if (!polla?.id) {
+    if (lista) lista.innerHTML = `<div class="admin-empty">Selecciona una polla para auditar.</div>`;
+    return;
+  }
+
+  mostrarFeedbackAdmin("Cargando participantes de la polla...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminObtenerParticipantes({ pollaId: polla.id });
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudieron cargar los participantes.", "error");
+      }
+      return;
+    }
+
+    adminAuditoriaParticipantesActuales = respuesta.participantes || [];
+    renderizarSelectorAdminAuditoriaParticipantes(adminAuditoriaParticipantesActuales);
+
+    if (!adminAuditoriaParticipantesActuales.length) {
+      if (lista) lista.innerHTML = `<div class="admin-empty">No hay participantes activos en esta polla.</div>`;
+      mostrarFeedbackAdmin("No hay participantes activos en esta polla.", "info");
+      return;
+    }
+
+    mostrarFeedbackAdmin("Selecciona un participante para auditar.", "info");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al cargar participantes.", "error");
+  }
 }
 
 function renderizarDesgloseAuditoria(desglose = {}) {
@@ -3006,6 +3082,106 @@ function renderizarAdminAuditoria(respuesta) {
     .join("");
 }
 
+function renderizarAdminAuditoriaParticipante(respuesta) {
+  const resumen = document.getElementById("adminAuditoriaResumen");
+  const lista = document.getElementById("adminAuditoriaLista");
+
+  if (!resumen || !lista) return;
+
+  const datosResumen = respuesta?.resumen || {};
+  const partidos = respuesta?.partidos || [];
+  const participanteResumen = respuesta?.participante || {};
+  const pollaResumen = respuesta?.polla || obtenerPollaGlobalSeleccionada() || null;
+
+  resumen.innerHTML = `
+    <div class="admin-audit-summary-grid">
+      <span><strong>${escapeHTML(participanteResumen?.nombre || "-")}</strong> participante</span>
+      <span><strong>${escapeHTML(participanteResumen?.codigo || "-")}</strong> codigo</span>
+      <span><strong>${escapeHTML(pollaResumen?.nombre || "-")}</strong> polla</span>
+      <span><strong>${escapeHTML(datosResumen.totalPuntos || 0)}</strong> puntos totales</span>
+      <span><strong>${escapeHTML(datosResumen.puntosGrupos || 0)}</strong> puntos grupos</span>
+      <span><strong>${escapeHTML(datosResumen.puntosEliminacion || 0)}</strong> puntos eliminacion</span>
+      <span><strong>${escapeHTML(datosResumen.plenosGrupos || 0)}</strong> plenos grupos</span>
+      <span><strong>${escapeHTML(datosResumen.plenosEliminacion || 0)}</strong> plenos eliminacion</span>
+      <span><strong>${escapeHTML(datosResumen.partidosTotales || 0)}</strong> partidos totales</span>
+      <span><strong>${escapeHTML(datosResumen.partidosConPronostico || 0)}</strong> con pronostico</span>
+      <span><strong>${escapeHTML(datosResumen.partidosSinPronostico || 0)}</strong> sin pronostico</span>
+      <span><strong>${escapeHTML(datosResumen.partidosCalculables || 0)}</strong> calculables</span>
+      <span><strong>${escapeHTML(datosResumen.partidosDefinitivos || 0)}</strong> definitivos</span>
+      <span><strong>${escapeHTML(datosResumen.partidosProvisorios || 0)}</strong> provisorios/en vivo</span>
+      <span><strong>${escapeHTML(datosResumen.partidosNoCalculables || 0)}</strong> no calculables</span>
+    </div>
+  `;
+
+  if (!partidos.length) {
+    lista.innerHTML = `<div class="admin-empty">No hay partidos para auditar con estos filtros.</div>`;
+    return;
+  }
+
+  const renderizarPronostico = (partido) => {
+    if (!partido.pronostico?.existe) return "Sin pronostico";
+    const clasifica = partido.tipo === "eliminacion"
+      ? ` - Clasifica: ${escapeHTML(partido.pronostico.clasificado || "-")}`
+      : "";
+    return `${escapeHTML(partido.pronostico.golesLocal)} - ${escapeHTML(partido.pronostico.golesVisita)}${clasifica}`;
+  };
+  const renderizarResultado = (partido) => {
+    if (!partido.resultado?.existe) return "Sin resultado";
+    const clasifica = partido.tipo === "eliminacion"
+      ? ` - Clasifica: ${escapeHTML(partido.resultado.clasificado || "-")}`
+      : "";
+    return `${escapeHTML(partido.resultado.golesLocal)} - ${escapeHTML(partido.resultado.golesVisita)}${clasifica}`;
+  };
+  const renderizarFila = (partido) => `
+    <tr class="${partido.provisorio ? "is-provisional" : ""} ${!partido.calculable ? "is-muted" : ""}">
+      <td data-label="N">${escapeHTML(partido.index)}</td>
+      <td data-label="Tipo">${escapeHTML(partido.tipo === "grupos" ? "Grupos" : "Eliminacion")}</td>
+      <td data-label="Partido"><strong>${escapeHTML(partido.partidoId)}</strong><br><span>${escapeHTML(partido.grupoORonda || "")}</span></td>
+      <td data-label="Fecha/hora">${escapeHTML(partido.fecha || "")}<br><span>${escapeHTML(partido.hora || "")}</span></td>
+      <td data-label="Local">${escapeHTML(partido.local || "-")}</td>
+      <td data-label="Visita">${escapeHTML(partido.visita || "-")}</td>
+      <td data-label="Pronostico">${renderizarPronostico(partido)}</td>
+      <td data-label="Resultado">${renderizarResultado(partido)}</td>
+      <td data-label="Estado">${escapeHTML(partido.estado || "-")}</td>
+      <td data-label="Pts"><strong>${escapeHTML(partido.puntos || 0)}</strong></td>
+      <td data-label="Puntaje"><span class="admin-audit-status ${partido.provisorio ? "provisional" : partido.definitivo ? "definitive" : ""}">${escapeHTML(partido.tipoPuntaje || "No calculable")}</span></td>
+      <td data-label="Desglose"><div class="admin-audit-breakdown">${renderizarDesgloseAuditoria(partido.desglose)}</div></td>
+    </tr>
+  `;
+  const renderizarTabla = (titulo, filas) => filas.length ? `
+    <section class="admin-audit-group">
+      <h4>${escapeHTML(titulo)} (${escapeHTML(filas.length)})</h4>
+      <div class="admin-audit-table-wrap">
+        <table class="admin-audit-table">
+          <thead>
+            <tr>
+              <th>N</th>
+              <th>Tipo</th>
+              <th>Partido</th>
+              <th>Fecha/hora</th>
+              <th>Local</th>
+              <th>Visita</th>
+              <th>Pronostico</th>
+              <th>Resultado</th>
+              <th>Estado</th>
+              <th>Pts</th>
+              <th>Puntaje</th>
+              <th>Desglose</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filas.map(renderizarFila).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  ` : "";
+  const grupos = partidos.filter((partido) => partido.tipo === "grupos");
+  const eliminacion = partidos.filter((partido) => partido.tipo === "eliminacion");
+
+  lista.innerHTML = `${renderizarTabla("Fase de grupos", grupos)}${renderizarTabla("Fase de eliminacion", eliminacion)}`;
+}
+
 async function cargarAdminAuditoria() {
   if (!usuarioAdminActual) {
     mostrarFeedbackAdmin("No autorizado.", "error");
@@ -3014,15 +3190,20 @@ async function cargarAdminAuditoria() {
 
   const filtrosAuditoria = obtenerFiltrosAdminAuditoria();
 
-  if (!String(filtrosAuditoria.codigo || "").trim()) {
-    mostrarFeedbackAdmin("Escribe el código exacto del participante.", "error");
+  if (!filtrosAuditoria.pollaId) {
+    mostrarFeedbackAdmin("Selecciona una polla para auditar.", "error");
+    return;
+  }
+
+  if (!String(filtrosAuditoria.participanteId || "").trim()) {
+    mostrarFeedbackAdmin("Selecciona un participante para auditar.", "error");
     return;
   }
 
   mostrarFeedbackAdmin("Calculando auditoría...", "info");
 
   try {
-    const respuesta = await window.PollaApiClient.apiAdminObtenerAuditoriaPuntos(filtrosAuditoria);
+    const respuesta = await window.PollaApiClient.apiAdminObtenerAuditoriaParticipante(filtrosAuditoria);
 
     if (!respuesta.ok) {
       if (!manejarErrorAdmin(respuesta)) {
@@ -3031,7 +3212,7 @@ async function cargarAdminAuditoria() {
       return;
     }
 
-    renderizarAdminAuditoria(respuesta);
+    renderizarAdminAuditoriaParticipante(respuesta);
     mostrarFeedbackAdmin("Auditoría calculada.", "success");
   } catch (error) {
     console.error(error);
@@ -3071,11 +3252,11 @@ async function compararAdminAuditoriaConRanking() {
     return;
   }
 
-  const codigo = document.getElementById("adminAuditoriaCodigo")?.value || "";
+  const participante = obtenerParticipanteAdminAuditoriaSeleccionado();
   const idPolla = obtenerPollaGlobalSeleccionada()?.id || "";
 
-  if (!codigo.trim()) {
-    mostrarFeedbackAdmin("Escribe el código del participante para comparar.", "error");
+  if (!participante?.codigoLegacy && !participante?.codigo) {
+    mostrarFeedbackAdmin("Selecciona un participante para comparar.", "error");
     return;
   }
 
@@ -3083,7 +3264,7 @@ async function compararAdminAuditoriaConRanking() {
 
   try {
     const respuesta = await window.PollaApiClient.apiAdminCompararAuditoriaRanking({
-      codigo,
+      codigo: participante.codigoLegacy || participante.codigo,
       pollaId: idPolla
     });
 

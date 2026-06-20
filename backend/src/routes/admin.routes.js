@@ -21,7 +21,7 @@ import {
   vincularEventosEspnBulk,
   vincularEventoEspn
 } from '../services/espn.service.js';
-import { obtenerAuditoriaPuntos } from '../services/auditoriaPuntos.service.js';
+import { obtenerAuditoriaParticipante, obtenerAuditoriaPuntos } from '../services/auditoriaPuntos.service.js';
 import { calcularRankingDesdePronosticosYResultados } from '../services/ranking.service.js';
 
 const router = Router();
@@ -166,6 +166,39 @@ router.get('/auditoria-puntos', async (req, res, next) => {
   }
 });
 
+router.get('/auditoria-participante', async (req, res, next) => {
+  try {
+    const participanteId = String(req.query.participanteId || '').trim();
+    const pollaId = String(req.query.pollaId || '').trim();
+
+    if (!pollaId) {
+      const error = new Error('Debes indicar pollaId');
+      error.status = 400;
+      throw error;
+    }
+
+    if (!participanteId) {
+      const error = new Error('Debes indicar participanteId');
+      error.status = 400;
+      throw error;
+    }
+
+    const resultado = await obtenerAuditoriaParticipante({
+      tipo: req.query.tipo,
+      partidoId: req.query.partidoId,
+      participanteId,
+      pollaId
+    });
+
+    res.json({
+      ok: true,
+      ...resultado
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/auditoria-ranking', async (req, res, next) => {
   try {
     const codigo = String(req.query.codigo || '').trim();
@@ -253,7 +286,7 @@ router.get('/auditoria-ranking', async (req, res, next) => {
 
 router.get('/participantes', async (req, res, next) => {
   try {
-    const participantes = await obtenerParticipantesAdmin();
+    const participantes = await obtenerParticipantesAdmin(req.query.pollaId);
 
     res.json({
       ok: true,

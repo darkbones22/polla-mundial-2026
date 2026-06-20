@@ -296,7 +296,37 @@ async function validarIdLegacyPollaDuplicado(idLegacy, pollaIdActual = '') {
   }
 }
 
-export async function obtenerParticipantesAdmin() {
+export async function obtenerParticipantesAdmin(pollaId = '') {
+  const pollaFiltro = String(pollaId || '').trim();
+
+  if (pollaFiltro) {
+    const { data, error } = await supabase
+      .from('participantes_pollas')
+      .select('participante_id,participantes!inner(id,codigo_legacy,nombre_visible,activo,es_admin)')
+      .eq('polla_id', pollaFiltro)
+      .eq('activo', true)
+      .eq('participantes.activo', true)
+      .order('creado_en', { ascending: true });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return (data || [])
+      .map((fila) => fila.participantes)
+      .filter(Boolean)
+      .sort((a, b) => a.nombre_visible.localeCompare(b.nombre_visible))
+      .map((fila) => ({
+        id: fila.id,
+        nombre: fila.nombre_visible,
+        codigoLegacy: fila.codigo_legacy,
+        codigo: fila.codigo_legacy,
+        activo: Boolean(fila.activo),
+        esAdmin: Boolean(fila.es_admin),
+        pollas: []
+      }));
+  }
+
   const [participantesRespuesta, pollasPorParticipante] = await Promise.all([
     supabase
       .from('participantes')
