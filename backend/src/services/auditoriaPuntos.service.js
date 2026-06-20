@@ -176,27 +176,45 @@ async function obtenerPartidosEliminacion() {
   return data || [];
 }
 
+async function consultarTodasLasPaginas(crearQuery, tamanoPagina = 1000) {
+  const filas = [];
+  let desde = 0;
+
+  while (true) {
+    const hasta = desde + tamanoPagina - 1;
+    const { data, error } = await crearQuery().range(desde, hasta);
+
+    if (error) throw new Error(error.message);
+
+    const pagina = data || [];
+    filas.push(...pagina);
+
+    if (pagina.length < tamanoPagina) break;
+    desde += tamanoPagina;
+  }
+
+  return filas;
+}
+
 async function obtenerPronosticosGrupos(participanteIds) {
   if (!participanteIds.length) return { pronosticos: [], duplicados: new Map() };
 
-  const { data, error } = await supabase
+  const data = await consultarTodasLasPaginas(() => supabase
     .from('pronosticos_grupos')
     .select('id,participante_id,partido_id,goles_local,goles_visita,enviado_en,actualizado_en')
-    .in('participante_id', participanteIds);
+    .in('participante_id', participanteIds));
 
-  if (error) throw new Error(error.message);
   return obtenerUltimosPronosticos(data);
 }
 
 async function obtenerPronosticosEliminacion(participanteIds) {
   if (!participanteIds.length) return { pronosticos: [], duplicados: new Map() };
 
-  const { data, error } = await supabase
+  const data = await consultarTodasLasPaginas(() => supabase
     .from('pronosticos_eliminacion')
     .select('id,participante_id,partido_id,goles_local,goles_visita,clasificado_lado,enviado_en,actualizado_en')
-    .in('participante_id', participanteIds);
+    .in('participante_id', participanteIds));
 
-  if (error) throw new Error(error.message);
   return obtenerUltimosPronosticos(data);
 }
 
