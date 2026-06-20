@@ -416,6 +416,18 @@
     return llamarNodeApi(`/api/admin/auditoria-puntos${query ? `?${query}` : ""}`);
   }
 
+  async function apiAdminCompararAuditoriaRanking(filtros = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filtros || {}).forEach(([clave, valor]) => {
+      if (valor !== undefined && valor !== null && String(valor).trim() !== "") {
+        params.set(clave, String(valor).trim());
+      }
+    });
+
+    const query = params.toString();
+    return llamarNodeApi(`/api/admin/auditoria-ranking${query ? `?${query}` : ""}`);
+  }
+
   async function apiAdminObtenerParticipantes() {
     return llamarNodeApi("/api/admin/participantes");
   }
@@ -490,6 +502,7 @@
     apiAdminVincularResultadosEspnBulk,
     apiAdminSincronizarResultadosEspnVinculados,
     apiAdminObtenerAuditoriaPuntos,
+    apiAdminCompararAuditoriaRanking,
     apiAdminObtenerParticipantes,
     apiAdminCrearParticipante,
     apiAdminActualizarParticipante,

@@ -2895,6 +2895,9 @@ function renderizarAdminAuditoria(respuesta) {
 
   const datosResumen = respuesta?.resumen || {};
   const items = respuesta?.items || [];
+  const totalUsuario = (datosResumen.totalesPorParticipante || []).length === 1
+    ? datosResumen.totalesPorParticipante[0]
+    : null;
 
   resumen.innerHTML = `
     <div class="admin-audit-summary-grid">
@@ -2902,6 +2905,8 @@ function renderizarAdminAuditoria(respuesta) {
       <span><strong>${escapeHTML(datosResumen.totalPuntos || 0)}</strong> puntos calculados</span>
       <span><strong>${escapeHTML(datosResumen.totalPartidosFinalizados || 0)}</strong> partidos finalizados</span>
       <span><strong>${escapeHTML(datosResumen.totalPartidosOmitidosNoFinalizados || 0)}</strong> partidos no finalizados</span>
+      <span><strong>${escapeHTML(datosResumen.duplicadosDetectados || 0)}</strong> duplicados detectados</span>
+      ${totalUsuario ? `<span><strong>${escapeHTML(totalUsuario.puntosTotal)}</strong> total ${escapeHTML(totalUsuario.codigo)}</span>` : ""}
     </div>
   `;
 
@@ -2969,6 +2974,70 @@ async function cargarAdminAuditoria() {
   } catch (error) {
     console.error(error);
     mostrarFeedbackAdmin("Error al calcular auditoría.", "error");
+  }
+}
+
+function renderizarComparacionAuditoriaRanking(respuesta) {
+  const lista = document.getElementById("adminAuditoriaLista");
+  if (!lista) return;
+
+  const diferencias = respuesta.diferencias || [];
+  const clase = diferencias.length ? "admin-audit-compare error" : "admin-audit-compare ok";
+  const htmlDiferencias = diferencias.length
+    ? diferencias.map((item) => `
+      <div>
+        <strong>${escapeHTML(item.partidoId)}</strong>
+        <span>${escapeHTML(item.motivo)} · Ranking: ${escapeHTML(item.puntosRanking)} · Auditoría: ${escapeHTML(item.puntosAuditoria)}</span>
+      </div>
+    `).join("")
+    : `<div><strong>Sin diferencias</strong><span>Ranking y suma de tarjetas coinciden.</span></div>`;
+
+  lista.insertAdjacentHTML("afterbegin", `
+    <section class="${clase}">
+      <div>
+        <strong>${escapeHTML(respuesta.participante?.nombre || respuesta.codigo)}</strong>
+        <span>Ranking: ${escapeHTML(respuesta.ranking?.puntosTotal || 0)} pts · Auditoría: ${escapeHTML(respuesta.auditoria?.puntosTotal || 0)} pts</span>
+      </div>
+      ${htmlDiferencias}
+    </section>
+  `);
+}
+
+async function compararAdminAuditoriaConRanking() {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  const codigo = document.getElementById("adminAuditoriaBusqueda")?.value || "";
+  const idPolla = obtenerPollaGlobalSeleccionada()?.id || "";
+
+  if (!codigo.trim()) {
+    mostrarFeedbackAdmin("Escribe el código del participante para comparar.", "error");
+    return;
+  }
+
+  mostrarFeedbackAdmin("Comparando auditoría con ranking...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminCompararAuditoriaRanking({
+      codigo,
+      pollaId: idPolla
+    });
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudo comparar con ranking.", "error");
+      }
+      return;
+    }
+
+    await cargarAdminAuditoria();
+    renderizarComparacionAuditoriaRanking(respuesta);
+    mostrarFeedbackAdmin("Comparación lista.", respuesta.diferencias?.length ? "error" : "success");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al comparar con ranking.", "error");
   }
 }
 

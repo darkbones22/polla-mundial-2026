@@ -22,7 +22,7 @@ import {
   vincularEventoEspn
 } from '../services/espn.service.js';
 import { obtenerAuditoriaPuntos } from '../services/auditoriaPuntos.service.js';
-import { obtenerRankingPollaConMeta } from '../services/ranking.service.js';
+import { calcularRankingDesdePronosticosYResultados } from '../services/ranking.service.js';
 
 const router = Router();
 
@@ -164,7 +164,7 @@ router.get('/auditoria-ranking', async (req, res, next) => {
     }
 
     const [rankingRespuesta, auditoria] = await Promise.all([
-      obtenerRankingPollaConMeta(pollaId),
+      calcularRankingDesdePronosticosYResultados(pollaId),
       obtenerAuditoriaPuntos({ pollaId, codigo, tipo: 'todos' })
     ]);
     const rankingParticipante = rankingRespuesta.ranking.find((item) =>

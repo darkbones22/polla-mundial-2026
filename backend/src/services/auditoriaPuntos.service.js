@@ -222,9 +222,14 @@ function filtrarPartidos(partidos, filtros) {
   return partidos.filter((partido) => partido.id === partidoId);
 }
 
-export function auditarTipo({ tipo, partidos, pronosticos, duplicados, participantes, filtros }) {
+function deduplicarParticipantes(participantes) {
+  return [...new Map((participantes || []).map((participante) => [participante.id, participante])).values()];
+}
+
+export function calcularItemsAuditoriaTipo({ tipo, partidos, pronosticos, duplicados, participantes, filtros = {} }) {
+  const participantesUnicos = deduplicarParticipantes(participantes);
   const partidosFiltrados = filtrarPartidos(partidos, filtros);
-  const participantesFiltrados = filtrarParticipantes(participantes, filtros);
+  const participantesFiltrados = filtrarParticipantes(participantesUnicos, filtros);
   const participantesPorId = new Map(participantesFiltrados.map((participante) => [participante.id, participante]));
   const partidosPorId = new Map(partidosFiltrados.map((partido) => [partido.id, partido]));
   const items = [];
@@ -299,9 +304,11 @@ export function auditarTipo({ tipo, partidos, pronosticos, duplicados, participa
   };
 }
 
+export const auditarTipo = calcularItemsAuditoriaTipo;
+
 export async function obtenerAuditoriaPuntos(filtros = {}) {
   const tipo = normalizarTipo(filtros.tipo);
-  const participantes = await obtenerParticipantesPolla(filtros.pollaId);
+  const participantes = deduplicarParticipantes(await obtenerParticipantesPolla(filtros.pollaId));
   const participanteIds = participantes.map((participante) => participante.id);
   const tareas = [];
 
@@ -309,7 +316,7 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
     tareas.push(Promise.all([
       obtenerPartidosGrupos(),
       obtenerPronosticosGrupos(participanteIds)
-    ]).then(([partidos, pronosticos]) => auditarTipo({
+    ]).then(([partidos, pronosticos]) => calcularItemsAuditoriaTipo({
       tipo: 'grupos',
       partidos,
       pronosticos: pronosticos.pronosticos,
@@ -323,7 +330,7 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
     tareas.push(Promise.all([
       obtenerPartidosEliminacion(),
       obtenerPronosticosEliminacion(participanteIds)
-    ]).then(([partidos, pronosticos]) => auditarTipo({
+    ]).then(([partidos, pronosticos]) => calcularItemsAuditoriaTipo({
       tipo: 'eliminacion',
       partidos,
       pronosticos: pronosticos.pronosticos,
@@ -336,6 +343,25 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
   const resultados = await Promise.all(tareas);
   const items = resultados.flatMap((resultado) => resultado.items);
   const totalPuntos = items.reduce((suma, item) => suma + item.puntos, 0);
+  const totalesPorParticipante = [...items.reduce((mapa, item) => {
+    const actual = mapa.get(item.participante.id) || {
+      id: item.participante.id,
+      nombre: item.participante.nombre,
+      codigo: item.participante.codigo,
+      puntosGrupos: 0,
+      puntosEliminacion: 0,
+      puntosTotal: 0
+    };
+
+    if (item.tipo === 'grupos') actual.puntosGrupos += item.puntos;
+    if (item.tipo === 'eliminacion') actual.puntosEliminacion += item.puntos;
+    actual.puntosTotal = actual.puntosGrupos + actual.puntosEliminacion;
+    mapa.set(item.participante.id, actual);
+    return mapa;
+  }, new Map()).values()].sort((a, b) => b.puntosTotal - a.puntosTotal || a.nombre.localeCompare(b.nombre));
+  const duplicadosDetectados = items.filter((item) =>
+    (item.alertas || []).some((alerta) => alerta.toLowerCase().includes('duplicado'))
+  ).length;
 
   return {
     resumen: {
@@ -343,11 +369,17 @@ export async function obtenerAuditoriaPuntos(filtros = {}) {
       totalPartidosFinalizados: resultados.reduce((suma, item) => suma + item.partidosFinalizadosConsiderados, 0),
       totalPartidosOmitidosNoFinalizados: resultados.reduce((suma, item) => suma + item.partidosOmitidosNoFinalizados, 0),
       totalPronosticosAuditados: items.length,
-      totalPuntos
+      totalPuntos,
+      duplicadosDetectados,
+      totalesPorParticipante
     },
     items: items.sort((a, b) => {
       if (a.partidoId !== b.partidoId) return a.partidoId.localeCompare(b.partidoId);
       return a.participante.nombre.localeCompare(b.participante.nombre);
     })
   };
+}
+
+export async function calcularBasePuntosDesdePronosticosYResultados(pollaId) {
+  return obtenerAuditoriaPuntos({ pollaId, tipo: 'todos' });
 }
