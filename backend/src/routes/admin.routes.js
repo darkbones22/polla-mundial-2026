@@ -22,6 +22,7 @@ import {
   vincularEventoEspn
 } from '../services/espn.service.js';
 import { obtenerAuditoriaPuntos } from '../services/auditoriaPuntos.service.js';
+import { obtenerRankingPollaConMeta } from '../services/ranking.service.js';
 
 const router = Router();
 
@@ -139,6 +140,91 @@ router.get('/auditoria-puntos', async (req, res, next) => {
     res.json({
       ok: true,
       ...resultado
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/auditoria-ranking', async (req, res, next) => {
+  try {
+    const codigo = String(req.query.codigo || '').trim();
+    const pollaId = String(req.query.pollaId || '').trim();
+
+    if (!codigo) {
+      const error = new Error('Debes indicar codigo');
+      error.status = 400;
+      throw error;
+    }
+
+    if (!pollaId) {
+      const error = new Error('Debes indicar pollaId');
+      error.status = 400;
+      throw error;
+    }
+
+    const [rankingRespuesta, auditoria] = await Promise.all([
+      obtenerRankingPollaConMeta(pollaId),
+      obtenerAuditoriaPuntos({ pollaId, codigo, tipo: 'todos' })
+    ]);
+    const rankingParticipante = rankingRespuesta.ranking.find((item) =>
+      String(item.codigoLegacy || '').toLowerCase() === codigo.toLowerCase()
+    );
+    const itemsAuditoria = auditoria.items;
+    const partidosAuditoria = itemsAuditoria.map((item) => ({
+      partidoId: item.partidoId,
+      tipo: item.tipo,
+      estado: item.estado,
+      puntos: item.puntos,
+      resultadoReal: item.resultadoReal,
+      pronostico: item.pronostico,
+      observacion: item.observacion,
+      alertas: item.alertas
+    }));
+    const puntosGruposAuditoria = itemsAuditoria
+      .filter((item) => item.tipo === 'grupos')
+      .reduce((suma, item) => suma + item.puntos, 0);
+    const puntosEliminacionAuditoria = itemsAuditoria
+      .filter((item) => item.tipo === 'eliminacion')
+      .reduce((suma, item) => suma + item.puntos, 0);
+    const totalAuditoria = puntosGruposAuditoria + puntosEliminacionAuditoria;
+    const totalRanking = rankingParticipante?.puntosTotal || 0;
+    const diferencias = [];
+
+    if (totalRanking !== totalAuditoria) {
+      diferencias.push({
+        partidoId: '__total__',
+        motivo: 'Diferencia en total agregado',
+        puntosRanking: totalRanking,
+        puntosAuditoria: totalAuditoria,
+        estado: '',
+        resultadoReal: null,
+        pronostico: null
+      });
+    }
+
+    res.json({
+      ok: true,
+      codigo,
+      participante: rankingParticipante
+        ? {
+          id: rankingParticipante.participanteId,
+          nombre: rankingParticipante.nombre
+        }
+        : null,
+      ranking: {
+        puntosTotal: totalRanking,
+        puntosGrupos: rankingParticipante?.puntosGrupos || 0,
+        puntosEliminacion: rankingParticipante?.puntosEliminacion || 0,
+        partidosIncluidos: partidosAuditoria.filter((item) => item.puntos > 0 || item.estado === 'Finalizado')
+      },
+      auditoria: {
+        puntosTotal: totalAuditoria,
+        puntosGrupos: puntosGruposAuditoria,
+        puntosEliminacion: puntosEliminacionAuditoria,
+        partidosIncluidos: partidosAuditoria
+      },
+      diferencias
     });
   } catch (error) {
     next(error);

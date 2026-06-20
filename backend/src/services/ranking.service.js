@@ -7,6 +7,7 @@ import {
   obtenerPronosticosEliminacionParticipantes,
   obtenerPronosticosGruposParticipantes
 } from './pronosticos.service.js';
+import { obtenerAuditoriaPuntos } from './auditoriaPuntos.service.js';
 
 function crearFilaRanking(fila) {
   return {
@@ -210,79 +211,48 @@ function ordenarRanking(ranking) {
 }
 
 export async function obtenerRankingPolla(pollaId) {
-  const participantes = await obtenerParticipantesActivosPolla(pollaId);
-  const participanteIds = participantes.map((participante) => participante.participanteId);
-
-  const [
-    pronosticosGrupos,
-    pronosticosEliminacion,
-    partidosGrupos,
-    partidosEliminacion
-  ] = await Promise.all([
-    obtenerPronosticosGruposParticipantes(participanteIds),
-    obtenerPronosticosEliminacionParticipantes(participanteIds),
-    obtenerPartidosGruposRanking(),
-    obtenerPartidosEliminacionRanking()
-  ]);
-
-  const rankingPorParticipante = new Map(
-    participantes.map((participante) => [participante.participanteId, participante])
-  );
-  const resultadosGrupos = obtenerResultadosGruposPorPartido(partidosGrupos);
-  const resultadosEliminacion = obtenerResultadosEliminacionPorPartido(partidosEliminacion);
-
-  aplicarRankingGrupos(
-    rankingPorParticipante,
-    pronosticosGrupos,
-    resultadosGrupos.resultadosPorPartido
-  );
-
-  aplicarRankingEliminacion(
-    rankingPorParticipante,
-    pronosticosEliminacion,
-    resultadosEliminacion.resultadosPorPartido
-  );
-
-  return ordenarRanking(Array.from(rankingPorParticipante.values()));
+  const resultado = await obtenerRankingPollaConMeta(pollaId);
+  return resultado.ranking;
 }
 
 export async function obtenerRankingPollaConMeta(pollaId) {
   const participantes = await obtenerParticipantesActivosPolla(pollaId);
-  const participanteIds = participantes.map((participante) => participante.participanteId);
-
-  const [
-    pronosticosGrupos,
-    pronosticosEliminacion,
-    partidosGrupos,
-    partidosEliminacion
-  ] = await Promise.all([
-    obtenerPronosticosGruposParticipantes(participanteIds),
-    obtenerPronosticosEliminacionParticipantes(participanteIds),
-    obtenerPartidosGruposRanking(),
-    obtenerPartidosEliminacionRanking()
-  ]);
-
   const rankingPorParticipante = new Map(
     participantes.map((participante) => [participante.participanteId, participante])
   );
-  const resultadosGrupos = obtenerResultadosGruposPorPartido(partidosGrupos);
-  const resultadosEliminacion = obtenerResultadosEliminacionPorPartido(partidosEliminacion);
+  const auditoria = await obtenerAuditoriaPuntos({ pollaId, tipo: 'todos' });
 
-  aplicarRankingGrupos(
-    rankingPorParticipante,
-    pronosticosGrupos,
-    resultadosGrupos.resultadosPorPartido
-  );
+  auditoria.items.forEach((item) => {
+    const participante = rankingPorParticipante.get(item.participante.id);
 
-  aplicarRankingEliminacion(
-    rankingPorParticipante,
-    pronosticosEliminacion,
-    resultadosEliminacion.resultadosPorPartido
-  );
+    if (!participante || !item.calculable) return;
+
+    if (item.tipo === 'grupos') {
+      participante.puntosGrupos += item.puntos;
+      participante.partidosGrupos += 1;
+      if (item.desglose.exacto.acierto) participante.exactosGrupos += 1;
+      if (item.desglose.ganador.acierto) participante.ganadorEmpateGrupos += 1;
+      if (item.desglose.golLocal.acierto) participante.golesLocalGrupos += 1;
+      if (item.desglose.golVisita.acierto) participante.golesVisitaGrupos += 1;
+      if (item.desglose.diferencia.acierto) participante.diferenciaGrupos += 1;
+      return;
+    }
+
+    if (item.tipo === 'eliminacion') {
+      participante.puntosEliminacion += item.puntos;
+      participante.partidosEliminacion += 1;
+      if (item.desglose.exacto.acierto) participante.exactosEliminacion += 1;
+      if (item.desglose.ganador.acierto) participante.ganadorEmpateEliminacion += 1;
+      if (item.desglose.golLocal.acierto) participante.golesLocalEliminacion += 1;
+      if (item.desglose.golVisita.acierto) participante.golesVisitaEliminacion += 1;
+      if (item.desglose.diferencia.acierto) participante.diferenciaEliminacion += 1;
+      if (item.desglose.clasificado?.acierto) participante.clasificados += 1;
+    }
+  });
 
   return {
     ranking: ordenarRanking(Array.from(rankingPorParticipante.values())),
-    incluyeEnVivo: resultadosGrupos.incluyeEnVivo || resultadosEliminacion.incluyeEnVivo
+    incluyeEnVivo: false
   };
 }
 
