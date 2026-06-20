@@ -247,6 +247,9 @@
           <button id="adminSubtabEspn" class="admin-subtab" type="button" data-admin-subtab="espn">
             ESPN Sync
           </button>
+          <button id="adminSubtabAuditoria" class="admin-subtab" type="button" data-admin-subtab="auditoria">
+            Auditoría
+          </button>
         </div>
 
         <div id="adminFeedback" class="admin-feedback hidden"></div>
@@ -314,6 +317,40 @@
 
           <div id="adminEspnResumen" class="admin-espn-summary"></div>
           <div id="adminEspnLista" class="admin-espn-list"></div>
+        </section>
+
+        <section id="adminPanelAuditoria" class="admin-panel hidden">
+          <div class="admin-audit-header">
+            <div>
+              <h3>Auditoría de puntos</h3>
+              <p>Revisa el cálculo exacto por partido y participante. Solo lectura.</p>
+            </div>
+            <button class="admin-save-button compact" type="button" onclick="cargarAdminAuditoria()">
+              Calcular auditoría
+            </button>
+          </div>
+
+          <div class="admin-toolbar">
+            <label>
+              Fase
+              <select id="adminAuditoriaTipo" onchange="cargarAdminAuditoria()">
+                <option value="todos">Todos</option>
+                <option value="grupos">Grupos</option>
+                <option value="eliminacion">Eliminación</option>
+              </select>
+            </label>
+            <label>
+              Partido ID
+              <input id="adminAuditoriaPartido" type="text" placeholder="Ej: GA1" />
+            </label>
+            <label>
+              Participante o código
+              <input id="adminAuditoriaBusqueda" type="text" placeholder="Buscar" />
+            </label>
+          </div>
+
+          <div id="adminAuditoriaResumen" class="admin-audit-summary"></div>
+          <div id="adminAuditoriaLista" class="admin-audit-list"></div>
         </section>
       </section>
     </section>

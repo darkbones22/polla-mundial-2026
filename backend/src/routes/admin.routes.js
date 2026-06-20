@@ -21,6 +21,7 @@ import {
   vincularEventosEspnBulk,
   vincularEventoEspn
 } from '../services/espn.service.js';
+import { obtenerAuditoriaPuntos } from '../services/auditoriaPuntos.service.js';
 
 const router = Router();
 
@@ -118,6 +119,26 @@ router.post('/espn/sync-linked', async (req, res, next) => {
     res.json({
       ok: true,
       resumen
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/auditoria-puntos', async (req, res, next) => {
+  try {
+    const resultado = await obtenerAuditoriaPuntos({
+      tipo: req.query.tipo,
+      partidoId: req.query.partidoId,
+      participanteId: req.query.participanteId,
+      codigo: req.query.codigo,
+      busqueda: req.query.busqueda,
+      pollaId: req.query.pollaId
+    });
+
+    res.json({
+      ok: true,
+      ...resultado
     });
   } catch (error) {
     next(error);

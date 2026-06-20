@@ -2454,7 +2454,7 @@ function obtenerOpcionesPollasAdmin(pollasSeleccionadas = []) {
 }
 
 function normalizarSubseccionAdmin(seccion) {
-  return ["resultados", "usuarios", "pollas", "espn"].includes(seccion) ? seccion : "resultados";
+  return ["resultados", "usuarios", "pollas", "espn", "auditoria"].includes(seccion) ? seccion : "resultados";
 }
 
 function obtenerConfigSubseccionesAdmin() {
@@ -2474,6 +2474,10 @@ function obtenerConfigSubseccionesAdmin() {
     espn: {
       boton: document.getElementById("adminSubtabEspn"),
       panel: document.getElementById("adminPanelEspn")
+    },
+    auditoria: {
+      boton: document.getElementById("adminSubtabAuditoria"),
+      panel: document.getElementById("adminPanelAuditoria")
     }
   };
 }
@@ -2525,6 +2529,11 @@ async function cambiarSubseccionAdmin(seccion) {
 
     if (subtab === "espn") {
       renderizarAdminEspn();
+      return;
+    }
+
+    if (subtab === "auditoria") {
+      await cargarAdminAuditoria();
     }
   } catch (error) {
     if (idCarga === adminCargaSubtabActual) {
@@ -2844,6 +2853,122 @@ async function sincronizarAdminEspnVinculados() {
   } catch (error) {
     console.error(error);
     mostrarFeedbackAdmin("Error al sincronizar ESPN.", "error");
+  }
+}
+
+function obtenerFiltrosAdminAuditoria() {
+  const idPolla = obtenerPollaGlobalSeleccionada()?.id || "";
+
+  return {
+    tipo: document.getElementById("adminAuditoriaTipo")?.value || "todos",
+    partidoId: document.getElementById("adminAuditoriaPartido")?.value || "",
+    busqueda: document.getElementById("adminAuditoriaBusqueda")?.value || "",
+    pollaId: idPolla
+  };
+}
+
+function renderizarDesgloseAuditoria(desglose = {}) {
+  const items = [
+    ["Exacto", desglose.exacto],
+    ["Ganador/empate", desglose.ganador],
+    ["Gol local", desglose.golLocal],
+    ["Gol visita", desglose.golVisita],
+    ["Diferencia abs.", desglose.diferencia]
+  ];
+
+  if (desglose.clasificado) {
+    items.push(["Clasificado", desglose.clasificado]);
+  }
+
+  return items.map(([label, item]) => `
+    <span class="admin-audit-chip ${item?.acierto ? "hit" : "miss"}">
+      ${escapeHTML(label)}: ${item?.acierto ? "Sí" : "No"} (${escapeHTML(item?.puntos || 0)})
+    </span>
+  `).join("");
+}
+
+function renderizarAdminAuditoria(respuesta) {
+  const resumen = document.getElementById("adminAuditoriaResumen");
+  const lista = document.getElementById("adminAuditoriaLista");
+
+  if (!resumen || !lista) return;
+
+  const datosResumen = respuesta?.resumen || {};
+  const items = respuesta?.items || [];
+
+  resumen.innerHTML = `
+    <div class="admin-audit-summary-grid">
+      <span><strong>${escapeHTML(datosResumen.totalPronosticosAuditados || 0)}</strong> pronósticos auditados</span>
+      <span><strong>${escapeHTML(datosResumen.totalPuntos || 0)}</strong> puntos calculados</span>
+      <span><strong>${escapeHTML(datosResumen.totalPartidosFinalizados || 0)}</strong> partidos finalizados</span>
+      <span><strong>${escapeHTML(datosResumen.totalPartidosOmitidosNoFinalizados || 0)}</strong> partidos no finalizados</span>
+    </div>
+  `;
+
+  if (!items.length) {
+    lista.innerHTML = `<div class="admin-empty">No hay pronósticos para auditar con estos filtros.</div>`;
+    return;
+  }
+
+  lista.innerHTML = items.map((item) => {
+    const pronostico = item.pronostico
+      ? `${escapeHTML(item.pronostico.golesLocal)} - ${escapeHTML(item.pronostico.golesVisita)}`
+      : "Sin pronóstico";
+    const resultado = `${escapeHTML(item.resultadoReal?.golesLocal ?? "-")} - ${escapeHTML(item.resultadoReal?.golesVisita ?? "-")}`;
+    const clasificado = item.tipo === "eliminacion"
+      ? `<span>Clasifica pronóstico: ${escapeHTML(item.pronostico?.clasificadoLado || "-")} · Real: ${escapeHTML(item.resultadoReal?.clasificadoLado || "-")}</span>`
+      : "";
+    const alertas = (item.alertas || []).length
+      ? `<div class="admin-audit-alerts">${item.alertas.map((alerta) => `<span>${escapeHTML(alerta)}</span>`).join("")}</div>`
+      : "";
+
+    return `
+      <article class="admin-audit-card ${item.puntos === 0 ? "zero" : ""}">
+        <div class="admin-audit-card-head">
+          <div>
+            <strong>${escapeHTML(item.participante?.nombre || "")}</strong>
+            <span>${escapeHTML(item.participante?.codigo || "")} · ${escapeHTML(item.tipo)} · ${escapeHTML(item.partidoId)} · ${escapeHTML(item.grupoORonda || "")}</span>
+          </div>
+          <strong class="admin-audit-points">${escapeHTML(item.puntos)} pts</strong>
+        </div>
+        <div class="admin-audit-match">
+          <span>${escapeHTML(item.local)} ${resultado} ${escapeHTML(item.visita)}</span>
+          <span>Pronóstico: ${pronostico}</span>
+          ${clasificado}
+          <span>Estado: ${escapeHTML(item.estado)} · ${escapeHTML(item.observacion)}</span>
+        </div>
+        <div class="admin-audit-breakdown">
+          ${renderizarDesgloseAuditoria(item.desglose)}
+        </div>
+        ${alertas}
+      </article>
+    `;
+  }).join("");
+}
+
+async function cargarAdminAuditoria() {
+  if (!usuarioAdminActual) {
+    mostrarFeedbackAdmin("No autorizado.", "error");
+    return;
+  }
+
+  mostrarFeedbackAdmin("Calculando auditoría...", "info");
+
+  try {
+    const respuesta = await window.PollaApiClient.apiAdminObtenerAuditoriaPuntos(obtenerFiltrosAdminAuditoria());
+
+    if (!respuesta.ok) {
+      if (!manejarErrorAdmin(respuesta)) {
+        mostrarFeedbackAdmin(respuesta.error || "No se pudo calcular la auditoría.", "error");
+      }
+      return;
+    }
+
+    renderizarAdminAuditoria(respuesta);
+    mostrarFeedbackAdmin("Auditoría calculada.", "success");
+  } catch (error) {
+    console.error(error);
+    mostrarFeedbackAdmin("Error al calcular auditoría.", "error");
   }
 }
 
