@@ -415,11 +415,38 @@ body {
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
 }
 
+.group-standings-card.provisional {
+  border-color: #fed7aa;
+  background: #fffaf4;
+}
+
 .group-standings-card h2,
 .bracket-round-card h2 {
   margin: 0 0 8px;
   color: #0f2f70;
   font-size: 15px;
+}
+
+.standings-live-note {
+  margin-bottom: 10px;
+  padding: 9px 11px;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.standings-provisional-badge {
+  display: inline-flex;
+  margin: -2px 0 8px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .standings-table-wrap {

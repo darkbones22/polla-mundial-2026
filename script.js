@@ -625,6 +625,22 @@ function resultadoGrupoFinalizadoValido(partidoId) {
   );
 }
 
+function resultadoGrupoCalculableParaTabla(partidoId) {
+  const resultado = resultadosGrupos[partidoId];
+  const estado = String(resultado?.estado || "").trim().toLowerCase();
+
+  return Boolean(
+    resultado &&
+    ["finalizado", "en vivo"].includes(estado) &&
+    resultado.golesLocalReal !== "" &&
+    resultado.golesLocalReal !== null &&
+    resultado.golesLocalReal !== undefined &&
+    resultado.golesVisitaReal !== "" &&
+    resultado.golesVisitaReal !== null &&
+    resultado.golesVisitaReal !== undefined
+  );
+}
+
 function resultadoEliminacionFinalizadoValido(partidoId) {
   const resultado = resultadosEliminacion[partidoId];
 
@@ -1231,6 +1247,7 @@ function actualizarFilaTablaEquipo(fila, golesFavor, golesContra) {
 
 function calcularTablaGrupos() {
   const tablas = new Map();
+  const gruposConEnVivo = new Set();
 
   (Array.isArray(partidos) ? partidos : []).forEach((partido) => {
     const grupo = String(partido.grupo || "").trim();
@@ -1247,11 +1264,16 @@ function calcularTablaGrupos() {
     if (!tablaGrupo.has(local)) tablaGrupo.set(local, crearFilaTablaEquipo(local, grupo));
     if (!tablaGrupo.has(visita)) tablaGrupo.set(visita, crearFilaTablaEquipo(visita, grupo));
 
-    if (!resultadoGrupoFinalizadoValido(partido.id)) return;
+    if (!resultadoGrupoCalculableParaTabla(partido.id)) return;
 
     const resultado = resultadosGrupos[partido.id];
     const golesLocal = Number(resultado.golesLocalReal);
     const golesVisita = Number(resultado.golesVisitaReal);
+    const estado = String(resultado.estado || "").trim().toLowerCase();
+
+    if (estado === "en vivo") {
+      gruposConEnVivo.add(grupo);
+    }
 
     actualizarFilaTablaEquipo(tablaGrupo.get(local), golesLocal, golesVisita);
     actualizarFilaTablaEquipo(tablaGrupo.get(visita), golesVisita, golesLocal);
@@ -1261,6 +1283,7 @@ function calcularTablaGrupos() {
     .sort(([grupoA], [grupoB]) => grupoA.localeCompare(grupoB, "es", { numeric: true }))
     .map(([grupo, equiposGrupo]) => ({
       grupo,
+      provisional: gruposConEnVivo.has(grupo),
       equipos: [...equiposGrupo.values()].sort((a, b) => {
         if (b.pts !== a.pts) return b.pts - a.pts;
         if (b.dg !== a.dg) return b.dg - a.dg;
@@ -1284,11 +1307,19 @@ function renderizarTablaGruposResultados() {
     return;
   }
 
+  const tienePartidosEnVivo = tablas.some((tabla) => tabla.provisional);
+
   contenedorResultados.innerHTML = `
+    ${tienePartidosEnVivo ? `
+      <div class="standings-live-note">
+        Tabla incluye partidos en vivo de forma provisional.
+      </div>
+    ` : ""}
     <section class="group-standings-grid">
-      ${tablas.map(({ grupo, equipos }) => `
-        <article class="group-standings-card">
+      ${tablas.map(({ grupo, equipos, provisional }) => `
+        <article class="group-standings-card ${provisional ? "provisional" : ""}">
           <h2>Grupo ${escapeHTML(grupo)}</h2>
+          ${provisional ? `<span class="standings-provisional-badge">Provisional en vivo</span>` : ""}
           <div class="standings-table-wrap">
             <table class="standings-table">
               <thead>
