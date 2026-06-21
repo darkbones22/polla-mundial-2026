@@ -1786,6 +1786,9 @@ let adminAuditoriaParticipantesActuales = [];
 let adminAuditoriaRespuestaActual = null;
 let adminAuditoriaFiltroVisual = "todos";
 let adminEspnEventosActuales = [];
+let adminEspnResumenVinculos = null;
+let adminEspnUltimaConsulta = "";
+let adminEspnUltimaSincronizacion = "";
 let adminSubtabsInicializadas = false;
 let adminCargaSubtabActual = 0;
 let adminResultadoAbiertoId = "";
@@ -2626,6 +2629,46 @@ function obtenerTarjetaEquipoEspn(titulo, equipo, datos) {
   `;
 }
 
+function formatearFechaHoraAdminEspn(valor) {
+  if (!valor) return "Sin registro";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return String(valor);
+
+  return fecha.toLocaleString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function renderizarEstadoSincronizacionEspn(totalConsulta = null, altas = null, medias = null, bajas = null) {
+  const resumen = adminEspnResumenVinculos || {};
+  const grupos = resumen.grupos || {};
+  const eliminacion = resumen.eliminacion || {};
+  const consultaTexto = totalConsulta === null
+    ? "Consulta ESPN pendiente"
+    : `${escapeHTML(totalConsulta)} partidos ESPN · Alta: ${escapeHTML(altas)} · Media: ${escapeHTML(medias)} · Baja: ${escapeHTML(bajas)}`;
+
+  return `
+    <div class="admin-espn-status">
+      <div class="admin-espn-status-head">
+        <span class="admin-espn-mode-badge">Auto-sync para vinculados</span>
+        <strong>Estado de sincronización</strong>
+      </div>
+      <div class="admin-espn-status-grid">
+        <span><b>${escapeHTML(grupos.vinculados ?? "-")} / ${escapeHTML(grupos.total ?? "-")}</b><small>Grupos vinculados</small></span>
+        <span><b>${escapeHTML(eliminacion.vinculados ?? "-")} / ${escapeHTML(eliminacion.total ?? "-")}</b><small>Eliminación vinculados</small></span>
+        <span><b>${escapeHTML(formatearFechaHoraAdminEspn(adminEspnUltimaConsulta))}</b><smallUltima consulta</small></span>
+        <span><b>${escapeHTML(formatearFechaHoraAdminEspn(adminEspnUltimaSincronizacion))}</b><small>Última sincronización</small></span>
+      </div>
+      <p>Cuando un partido tiene ESPN ID, el sistema puede actualizar marcador y estado automaticamente desde ESPN. La vinculación inicial sigue siendo manual/asistida.</p>
+      <p>${consultaTexto}</p>
+    </div>
+  `;
+}
+
 function renderizarAdminEspn() {
   const resumen = document.getElementById("adminEspnResumen");
   const lista = document.getElementById("adminEspnLista");
@@ -2639,12 +2682,8 @@ function renderizarAdminEspn() {
   }
 
   if (!adminEspnEventosActuales.length) {
-    resumen.innerHTML = `
-      <div class="admin-espn-note">
-        ESPN no actualiza nada solo. Primero consulta, revisa la confianza y aplica manualmente cada resultado.
-      </div>
-    `;
-    lista.innerHTML = `<div class="admin-empty">Todavía no hay consulta ESPN cargada.</div>`;
+    resumen.innerHTML = renderizarEstadoSincronizacionEspn();
+    lista.innerHTML = `<div class="admin-empty">Todavia no hay consulta ESPN cargada.</div>`;
     return;
   }
 
@@ -2653,11 +2692,7 @@ function renderizarAdminEspn() {
   const medias = adminEspnEventosActuales.filter((evento) => evento.match?.confianza === "Media").length;
   const bajas = adminEspnEventosActuales.filter((evento) => evento.match?.confianza === "Baja").length;
 
-  resumen.innerHTML = `
-    <div class="admin-espn-note">
-      ${escapeHTML(total)} partidos ESPN · Alta: ${escapeHTML(altas)} · Media: ${escapeHTML(medias)} · Baja: ${escapeHTML(bajas)}
-    </div>
-  `;
+  resumen.innerHTML = renderizarEstadoSincronizacionEspn(total, altas, medias, bajas);
 
   lista.innerHTML = adminEspnEventosActuales.map((evento) => {
     const confianza = evento.match?.confianza || "Baja";
@@ -2864,6 +2899,8 @@ async function sincronizarAdminEspnVinculados() {
     }
 
     const resumen = respuesta.resumen || {};
+    adminEspnResumenVinculos = resumen.resumenVinculos || adminEspnResumenVinculos;
+    adminEspnUltimaSincronizacion = resumen.sincronizadoEn || new Date().toISOString();
     await refrescarDatosDespuesDeAdmin("grupos");
     await refrescarDatosDespuesDeAdmin("eliminacion");
     mostrarPanelAdmin("espn");
@@ -3526,6 +3563,8 @@ async function consultarAdminEspn() {
     }
 
     adminEspnEventosActuales = respuesta.eventos || [];
+    adminEspnResumenVinculos = respuesta.resumenVinculos || adminEspnResumenVinculos;
+    adminEspnUltimaConsulta = respuesta.consultadoEn || new Date().toISOString();
     renderizarAdminEspn();
     mostrarFeedbackAdmin("Consulta ESPN cargada. Revisa antes de aplicar.", "success");
   } catch (error) {

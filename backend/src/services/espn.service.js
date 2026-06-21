@@ -324,6 +324,25 @@ async function obtenerPartidosLocalesParaMatch() {
   ];
 }
 
+function obtenerResumenVinculosEspnDesdePartidos(partidosLocales = []) {
+  const crearResumenTipo = (tipo) => {
+    const partidosTipo = partidosLocales.filter((partido) => partido.tipo === tipo);
+    const vinculados = partidosTipo.filter((partido) => partido.espnEventId).length;
+
+    return {
+      vinculados,
+      total: partidosTipo.length,
+      pendientes: Math.max(partidosTipo.length - vinculados, 0)
+    };
+  };
+
+  return {
+    modo: 'Auto-sync para vinculados',
+    grupos: crearResumenTipo('grupos'),
+    eliminacion: crearResumenTipo('eliminacion')
+  };
+}
+
 async function consultarScoreboardEspnPorFecha(fechaEspn = '') {
   const respuesta = await fetch(crearUrlScoreboardEspn(fechaEspn), {
     headers: {
@@ -380,11 +399,13 @@ async function consultarEventosEspn(fechas = []) {
 export async function consultarScoreboardEspn(opciones = {}) {
   const { liga, eventos, fechas } = await consultarEventosEspn(opciones.dates || opciones.fechas || []);
   const partidosLocales = await obtenerPartidosLocalesParaMatch();
+  const resumenVinculos = obtenerResumenVinculosEspnDesdePartidos(partidosLocales);
 
   return {
     liga,
     fechas,
     consultadoEn: new Date().toISOString(),
+    resumenVinculos,
     eventos: eventos.map((evento) => ({
       ...evento,
       match: matchearEventoConPartidos(evento, partidosLocales)
@@ -663,6 +684,7 @@ export async function sincronizarPartidosVinculadosEspn() {
     consultarPartidosVinculados('partidos_grupos', 'grupos'),
     consultarPartidosVinculados('partidos_eliminacion', 'eliminacion')
   ]);
+  const resumenVinculos = obtenerResumenVinculosEspnDesdePartidos(await obtenerPartidosLocalesParaMatch());
   const candidatos = [...grupos, ...eliminacion].filter((partido) => partido.espnEventId && estaEnVentanaSync(partido));
   const fechas = obtenerFechasEspnUnicas(candidatos.map((partido) => obtenerFechaEspnDesdeFechaHora(partido.fechaHora)));
   const { eventos } = fechas.length ? await consultarEventosEspn(fechas) : { eventos: [] };
@@ -672,6 +694,8 @@ export async function sincronizarPartidosVinculadosEspn() {
     actualizados: 0,
     omitidos: 0,
     errores: 0,
+    sincronizadoEn: new Date().toISOString(),
+    resumenVinculos,
     detalles: []
   };
 

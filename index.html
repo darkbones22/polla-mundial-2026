@@ -294,12 +294,21 @@
           <div class="admin-espn-header">
             <div>
               <h3>ESPN Sync</h3>
-              <p>Consulta ESPN, revisa coincidencias y aplica resultados uno por uno.</p>
+              <p>Los partidos con ESPN ID se sincronizan automáticamente. Los partidos sin ESPN ID deben vincularse primero.</p>
             </div>
             <div class="admin-espn-header-actions">
               <button class="admin-save-button compact" type="button" onclick="consultarAdminEspn()">
                 Consultar ESPN
               </button>
+            </div>
+          </div>
+
+          <div class="admin-espn-block">
+            <div>
+              <h4>Vincular partidos</h4>
+              <p>Esto solo asigna ESPN ID a partidos confiables. No cambia resultados.</p>
+            </div>
+            <div class="admin-espn-header-actions">
               <button class="admin-secondary-button compact" type="button" onclick="vincularAdminEspnFechaConsultada()">
                 Vincular fecha consultada
               </button>
@@ -309,6 +318,15 @@
               <button class="admin-secondary-button compact" type="button" onclick="vincularAdminEspnTodosSinId()">
                 Vincular todos sin ESPN ID
               </button>
+            </div>
+          </div>
+
+          <div class="admin-espn-block">
+            <div>
+              <h4>Sincronizar vinculados</h4>
+              <p>Actualiza marcador y estado solo de partidos que ya tienen ESPN ID.</p>
+            </div>
+            <div class="admin-espn-header-actions">
               <button class="admin-secondary-button compact" type="button" onclick="sincronizarAdminEspnVinculados()">
                 Sincronizar vinculados ahora
               </button>
