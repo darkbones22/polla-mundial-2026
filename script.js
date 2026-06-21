@@ -3011,13 +3011,13 @@ function renderizarAdminAuditoria(respuesta) {
       <section class="admin-audit-summary-card counts">
         <span>Auditoría</span>
         <div class="admin-audit-counts">
-          <b>${escapeHTML(datosResumenNuevo.partidosTotales || 0)}</b><small>totales</small>
-          <b>${escapeHTML(datosResumenNuevo.partidosConPronostico || 0)}</b><small>con pronóstico</small>
-          <b>${escapeHTML(datosResumenNuevo.partidosSinPronostico || 0)}</b><small>sin pronóstico</small>
-          <b>${escapeHTML(datosResumenNuevo.partidosCalculables || 0)}</b><small>calculables</small>
-          <b>${escapeHTML(datosResumenNuevo.partidosDefinitivos || 0)}</b><small>definitivos</small>
-          <b>${escapeHTML(datosResumenNuevo.partidosProvisorios || 0)}</b><small>en vivo</small>
-          <b>${escapeHTML(datosResumenNuevo.partidosNoCalculables || 0)}</b><small>no calculables</small>
+          <span><b>${escapeHTML(datosResumenNuevo.partidosTotales || 0)}</b><small>Total partidos</small></span>
+          <span><b>${escapeHTML(datosResumenNuevo.partidosConPronostico || 0)}</b><small>Con pronóstico</small></span>
+          <span><b>${escapeHTML(datosResumenNuevo.partidosSinPronostico || 0)}</b><small>Sin pronóstico</small></span>
+          <span><b>${escapeHTML(datosResumenNuevo.partidosCalculables || 0)}</b><small>Calculables</small></span>
+          <span><b>${escapeHTML(datosResumenNuevo.partidosDefinitivos || 0)}</b><small>Definitivos</small></span>
+          <span><b>${escapeHTML(datosResumenNuevo.partidosProvisorios || 0)}</b><small>En vivo</small></span>
+          <span><b>${escapeHTML(datosResumenNuevo.partidosNoCalculables || 0)}</b><small>No calculables</small></span>
         </div>
       </section>
     </div>
