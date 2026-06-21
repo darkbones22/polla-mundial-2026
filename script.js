@@ -1426,14 +1426,6 @@ function obtenerClasificadoLlave(partido, local, visita) {
   return partido.clasificadoReal || partido.clasificado || partido.clasifica || "";
 }
 
-function obtenerMarcadorEquipoLlave(partido, lado) {
-  const valor = lado === "local" ? partido.golesLocalReal : partido.golesVisitaReal;
-
-  if (valor === "" || valor === null || valor === undefined) return "";
-
-  return escapeHTML(valor);
-}
-
 function renderizarSelectorVistaLlaves() {
   return `
     <div class="bracket-view-switch" role="group" aria-label="Vista de llaves">
@@ -1479,16 +1471,14 @@ function renderizarTarjetaBracketLlave(partido) {
   const local = obtenerNombreLlaveEquipo(partidoResultado, "local");
   const visita = obtenerNombreLlaveEquipo(partidoResultado, "visita");
   const clasificado = obtenerClasificadoLlave(partidoResultado, local, visita);
-  const localClasificado = clasificado && normalizarNombreBandera(clasificado) === normalizarNombreBandera(local);
-  const visitaClasificado = clasificado && normalizarNombreBandera(clasificado) === normalizarNombreBandera(visita);
   const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
   const horaSegura = escapeHTML(partido.hora || "");
   const idSeguro = escapeHTML(partido.id);
-  const rondaSegura = escapeHTML(partido.ronda || "Eliminaci\u00f3n");
-  const marcadorLocal = obtenerMarcadorEquipoLlave(partidoResultado, "local");
-  const marcadorVisita = obtenerMarcadorEquipoLlave(partidoResultado, "visita");
   const claveDetalle = obtenerClaveDetalleResultado(partido.id, "eliminacion");
   const detalleAbierto = detalleResultadoAbierto === claveDetalle;
+  const marcadorSeguro = marcador
+    ? `<span class="bracket-compact-score">${escapeHTML(marcador)}</span>`
+    : "";
 
   return `
     <div class="bracket-node-wrap">
@@ -1498,31 +1488,26 @@ function renderizarTarjetaBracketLlave(partido) {
       >
         <div class="bracket-node-head">
           <strong>${idSeguro}</strong>
-          <span>${rondaSegura}</span>
-        </div>
-        <div class="bracket-node-time">${fechaSegura}${horaSegura ? ` &middot; ${horaSegura} hrs` : ""}</div>
-
-        <div class="bracket-node-team ${localClasificado ? "qualified" : ""}">
-          <span>${renderizarEquipoConBandera(local, "local")}</span>
-          <strong>${marcadorLocal}</strong>
-        </div>
-        <div class="bracket-node-team ${visitaClasificado ? "qualified" : ""}">
-          <span>${renderizarEquipoConBandera(visita, "visita")}</span>
-          <strong>${marcadorVisita}</strong>
+          <span>${fechaSegura}${horaSegura ? ` &middot; ${horaSegura} hrs` : ""}</span>
         </div>
 
+        <div class="bracket-compact-match">
+          <span class="bracket-compact-team">${renderizarEquipoConBandera(local, "local")}</span>
+          ${marcadorSeguro || `<span class="bracket-compact-vs">vs</span>`}
+          <span class="bracket-compact-team">${renderizarEquipoConBandera(visita, "visita")}</span>
+        </div>
+        
         <div class="bracket-node-foot">
           <span class="bracket-state bracket-state--${claseEstado}">${escapeHTML(estadoResultado.texto)}</span>
           ${clasificado ? `<span class="bracket-qualified">Clasifica ${escapeHTML(clasificado)}</span>` : ""}
+          <button
+            class="bracket-detail-button"
+            type="button"
+            onclick="manejarDetalleLlaveBracket('${idSeguro}')"
+          >
+            Detalle
+          </button>
         </div>
-
-        <button
-          class="bracket-detail-button"
-          type="button"
-          onclick="manejarDetalleLlaveBracket('${idSeguro}')"
-        >
-          Detalle
-        </button>
       </article>
       <section
         class="result-detail-panel bracket-detail-panel hidden"
@@ -1583,7 +1568,7 @@ function renderizarListaLlavesEliminacion(llaves) {
 }
 
 function renderizarBracketLlavesEliminacion(llaves) {
-  const columnas = [
+  const rondas = [
     "16avos",
     "Octavos",
     "Cuartos",
@@ -1594,25 +1579,20 @@ function renderizarBracketLlavesEliminacion(llaves) {
 
   return `
     <section class="bracket-stage">
-      <div class="bracket-scroll-hint">Desliza horizontalmente para ver toda la llave.</div>
-      <div class="bracket-board-wrap">
-        <div class="bracket-board">
-          ${columnas.map((ronda) => {
-            const partidosRonda = llaves.filter((partido) => (partido.ronda || "Eliminaci\u00f3n") === ronda);
+      ${rondas.map((ronda) => {
+        const partidosRonda = llaves.filter((partido) => (partido.ronda || "Eliminaci\u00f3n") === ronda);
 
-            return `
-              <section class="bracket-column bracket-column--${escapeHTML(ronda.toLowerCase().replace(/\s+/g, "-"))}">
-                <h2>${escapeHTML(ronda)}</h2>
-                <div class="bracket-column-list">
-                  ${partidosRonda.length
-                    ? partidosRonda.map((partido) => renderizarTarjetaBracketLlave(partido)).join("")
-                    : `<div class="bracket-empty-round">Sin partidos</div>`}
-                </div>
-              </section>
-            `;
-          }).join("")}
-        </div>
-      </div>
+        return `
+          <section class="bracket-round-section">
+            <h2>${escapeHTML(ronda)}</h2>
+            <div class="bracket-round-grid">
+              ${partidosRonda.length
+                ? partidosRonda.map((partido) => renderizarTarjetaBracketLlave(partido)).join("")
+                : `<div class="bracket-empty-round">Sin partidos</div>`}
+            </div>
+          </section>
+        `;
+      }).join("")}
     </section>
   `;
 }

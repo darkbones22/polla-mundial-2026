@@ -566,41 +566,17 @@ body {
 
 .bracket-stage {
   display: grid;
-  gap: 8px;
-}
-
-.bracket-scroll-hint {
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.bracket-board-wrap {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding: 2px 2px 10px;
-  scrollbar-color: #bfdbfe transparent;
-}
-
-.bracket-board {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(210px, 1fr));
-  align-items: start;
   gap: 14px;
-  min-width: 1320px;
+  min-width: 0;
 }
 
-.bracket-column {
+.bracket-round-section {
   display: grid;
   gap: 8px;
   min-width: 0;
 }
 
-.bracket-column h2 {
-  position: sticky;
-  left: 0;
-  z-index: 1;
+.bracket-round-section h2 {
   margin: 0;
   padding: 8px 10px;
   border: 1px solid #bfdbfe;
@@ -611,9 +587,11 @@ body {
   font-weight: 900;
 }
 
-.bracket-column-list {
+.bracket-round-grid {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
 }
 
 .bracket-node-wrap {
@@ -624,22 +602,13 @@ body {
 .bracket-node {
   position: relative;
   display: grid;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
-  padding: 10px;
+  padding: 9px;
   border: 1px solid #dbeafe;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-}
-
-.bracket-column:not(:last-child) .bracket-node::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -15px;
-  width: 15px;
-  border-top: 2px solid #bfdbfe;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
 }
 
 .bracket-node--finalizado {
@@ -692,43 +661,51 @@ body {
   white-space: nowrap;
 }
 
-.bracket-node-team {
+.bracket-compact-match {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  padding: 6px 8px;
-  border: 1px solid #e0ecff;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.72);
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
 }
 
-.bracket-node-team.qualified {
-  border-color: #93c5fd;
-  background: #dbeafe;
-}
-
-.bracket-node-team > span {
+.bracket-compact-team {
   min-width: 0;
 }
 
-.bracket-node-team .team-with-flag,
-.bracket-node-team .team-name {
+.bracket-compact-team:last-child {
+  text-align: right;
+}
+
+.bracket-compact-team .team-with-flag,
+.bracket-compact-team .team-name {
   min-width: 0;
   max-width: 100%;
 }
 
-.bracket-node-team .team-name {
+.bracket-compact-team .team-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.bracket-node-team strong {
-  color: #0f172a;
-  font-size: 14px;
-  text-align: right;
+.bracket-compact-vs {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.bracket-compact-score {
+  padding: 5px 8px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #0f172a, #1d4ed8);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .bracket-state,
@@ -778,12 +755,14 @@ body {
 }
 
 .bracket-detail-button {
-  min-height: 30px;
+  min-height: 26px;
+  margin-left: auto;
+  padding: 4px 8px;
   border: 1px solid #bfdbfe;
-  border-radius: 10px;
+  border-radius: 9px;
   background: #eff6ff;
   color: #1d4ed8;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -1133,6 +1112,12 @@ body {
   margin-bottom: 8px;
 }
 
+@media (max-width: 980px) {
+  .bracket-round-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 600px) {
   .save-bar-content {
     flex-direction: column;
@@ -1377,32 +1362,17 @@ body {
     width: 100%;
   }
 
-  .bracket-scroll-hint {
-    display: none;
-  }
-
-  .bracket-board-wrap {
-    overflow: visible;
-    padding: 0;
-  }
-
-  .bracket-board {
-    grid-template-columns: 1fr;
-    min-width: 0;
+  .bracket-stage {
     gap: 10px;
   }
 
-  .bracket-column h2 {
-    position: static;
+  .bracket-round-section h2 {
     font-size: 12px;
   }
 
-  .bracket-column-list {
+  .bracket-round-grid {
+    grid-template-columns: 1fr;
     gap: 7px;
-  }
-
-  .bracket-column:not(:last-child) .bracket-node::after {
-    display: none;
   }
 
   .bracket-node {
@@ -1411,13 +1381,14 @@ body {
     border-radius: 12px;
   }
 
-  .bracket-node-team {
-    grid-template-columns: minmax(0, 1fr) 22px;
-    padding: 5px 7px;
+  .bracket-compact-match {
+    gap: 5px;
+    font-size: 11px;
   }
 
-  .bracket-node-team strong {
-    font-size: 13px;
+  .bracket-compact-score {
+    padding: 4px 7px;
+    font-size: 11px;
   }
 
   .bracket-state,
