@@ -16,7 +16,9 @@ import {
 } from '../services/admin.service.js';
 import {
   aplicarResultadoEspn,
+  buscarCandidatosEspnPartido,
   consultarScoreboardEspn,
+  obtenerPanelVinculosEspn,
   sincronizarPartidosVinculadosEspn,
   vincularEventosEspnBulk,
   vincularEventoEspn
@@ -64,6 +66,35 @@ router.get('/espn/scoreboard', async (req, res, next) => {
       .map((fecha) => fecha.trim())
       .filter(Boolean);
     const resultado = await consultarScoreboardEspn({ dates });
+
+    res.json({
+      ok: true,
+      ...resultado
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/espn/matches', async (req, res, next) => {
+  try {
+    const resultado = await obtenerPanelVinculosEspn();
+
+    res.json({
+      ok: true,
+      ...resultado
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/espn/candidates', async (req, res, next) => {
+  try {
+    const resultado = await buscarCandidatosEspnPartido({
+      tipo: req.query.tipo,
+      partidoId: req.query.partidoId
+    });
 
     res.json({
       ok: true,

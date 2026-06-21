@@ -250,6 +250,60 @@ function crearPartidoMatch(partido, invertido = false) {
   };
 }
 
+function tieneEquiposRealesEspn(partido) {
+  const local = obtenerNombrePartido(partido, 'local');
+  const visita = obtenerNombrePartido(partido, 'visita');
+
+  if (!local || !visita) return false;
+  if (partido.tipo !== 'eliminacion') return true;
+
+  return Boolean(partido.equipoLocal && partido.equipoVisita);
+}
+
+function mapearPartidoPanelEspn(partido) {
+  const tieneEquiposReales = tieneEquiposRealesEspn(partido);
+  const vinculado = Boolean(partido.espnEventId);
+  const grupoORonda = partido.tipo === 'grupos' ? partido.grupo : partido.ronda;
+  const estadoVinculo = vinculado
+    ? 'Vinculado'
+    : tieneEquiposReales
+      ? 'Pendiente'
+      : 'No disponible todavia';
+
+  return {
+    tipo: partido.tipo,
+    id: partido.id,
+    grupoORonda,
+    fechaHora: partido.fechaHora,
+    fecha: partido.fecha,
+    hora: partido.hora,
+    local: obtenerNombrePartido(partido, 'local'),
+    visita: obtenerNombrePartido(partido, 'visita'),
+    tieneEquiposReales,
+    estado: partido.estado,
+    espnEventId: partido.espnEventId || '',
+    vinculado,
+    disponibleParaVincular: !vinculado && tieneEquiposReales,
+    estadoVinculo,
+    ultimaSincronizacion: null
+  };
+}
+
+function resumirPanelVinculosEspn(partidos = []) {
+  const resumenVinculos = obtenerResumenVinculosEspnDesdePartidos(partidos);
+  const pendientes = partidos.filter((partido) => !partido.espnEventId).length;
+  const noDisponibles = partidos.filter((partido) => !partido.espnEventId && !tieneEquiposRealesEspn(partido)).length;
+
+  return {
+    total: partidos.length,
+    grupos: resumenVinculos.grupos,
+    eliminacion: resumenVinculos.eliminacion,
+    pendientes,
+    noDisponibles,
+    autoSync: true
+  };
+}
+
 function crearMatch(confianza, partido, diferenciaHoras, origen, invertido = false) {
   return {
     confianza,
@@ -410,6 +464,66 @@ export async function consultarScoreboardEspn(opciones = {}) {
       ...evento,
       match: matchearEventoConPartidos(evento, partidosLocales)
     }))
+  };
+}
+
+export async function obtenerPanelVinculosEspn() {
+  const partidosLocales = await obtenerPartidosLocalesParaMatch();
+  const resumen = resumirPanelVinculosEspn(partidosLocales);
+
+  return {
+    ...resumen,
+    consultadoEn: new Date().toISOString(),
+    partidos: partidosLocales
+      .map(mapearPartidoPanelEspn)
+      .sort((a, b) => new Date(a.fechaHora).getTime() - new Date(b.fechaHora).getTime())
+  };
+}
+
+export async function buscarCandidatosEspnPartido({ tipo, partidoId } = {}) {
+  const tipoNormalizado = String(tipo || '').trim().toLowerCase();
+  const idNormalizado = String(partidoId || '').trim();
+  const partidosLocales = await obtenerPartidosLocalesParaMatch();
+  const partido = partidosLocales.find((item) => item.tipo === tipoNormalizado && item.id === idNormalizado);
+
+  if (!partido) {
+    const error = new Error('Partido no encontrado');
+    error.status = 404;
+    throw error;
+  }
+
+  if (partido.espnEventId) {
+    const error = new Error('El partido ya tiene ESPN ID');
+    error.status = 400;
+    throw error;
+  }
+
+  if (!tieneEquiposRealesEspn(partido)) {
+    const error = new Error('El partido todavia no tiene equipos reales para buscar en ESPN');
+    error.status = 400;
+    throw error;
+  }
+
+  const fechaBase = normalizarFechaEspn(obtenerFechaEspnDesdeFechaHora(partido.fechaHora));
+  const { eventos } = await consultarEventosEspn(fechaBase ? [fechaBase] : []);
+  const candidatos = eventos
+    .map((evento) => ({
+      ...evento,
+      match: matchearEventoConPartidos(evento, [partido])
+    }))
+    .filter((evento) => evento.match?.partido)
+    .sort((a, b) => {
+      const ordenConfianza = { Alta: 0, Media: 1, Baja: 2 };
+      const confianzaA = ordenConfianza[a.match?.confianza] ?? 3;
+      const confianzaB = ordenConfianza[b.match?.confianza] ?? 3;
+
+      if (confianzaA !== confianzaB) return confianzaA - confianzaB;
+      return (a.match?.diferenciaHoras ?? 9999) - (b.match?.diferenciaHoras ?? 9999);
+    });
+
+  return {
+    partido: mapearPartidoPanelEspn(partido),
+    candidatos
   };
 }
 

@@ -376,6 +376,19 @@
     return llamarNodeApi("/api/admin/espn/scoreboard");
   }
 
+  async function apiAdminObtenerEspnMatches() {
+    return llamarNodeApi("/api/admin/espn/matches");
+  }
+
+  async function apiAdminBuscarCandidatosEspn(tipo, partidoId) {
+    const params = new URLSearchParams({
+      tipo: String(tipo || ""),
+      partidoId: String(partidoId || "")
+    });
+
+    return llamarNodeApi(`/api/admin/espn/candidates?${params.toString()}`);
+  }
+
   async function apiAdminAplicarResultadoEspn(datos) {
     return llamarNodeApi("/api/admin/espn/apply", {
       method: "POST",
@@ -517,6 +530,8 @@
     apiAdminObtenerPartidos,
     apiAdminActualizarPartido,
     apiAdminConsultarEspnScoreboard,
+    apiAdminObtenerEspnMatches,
+    apiAdminBuscarCandidatosEspn,
     apiAdminAplicarResultadoEspn,
     apiAdminVincularResultadoEspn,
     apiAdminVincularResultadosEspnBulk,

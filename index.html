@@ -294,63 +294,33 @@
           <div class="admin-espn-header">
             <div>
               <h3>ESPN Sync</h3>
-              <p>Los partidos con ESPN ID se sincronizan automaticamente. Los partidos sin ESPN ID deben vincularse primero.</p>
+              <p>Administra la vinculacion ESPN de los 104 partidos. Los vinculados se sincronizan automaticamente cada 10 minutos.</p>
             </div>
+            <button class="admin-save-button compact" type="button" onclick="cargarAdminEspnPanel()">
+              Actualizar estado ESPN
+            </button>
           </div>
 
           <div id="adminEspnResumen" class="admin-espn-summary"></div>
 
-          <div id="adminEspnVincularBloque" class="admin-espn-block admin-espn-flow-block">
-            <div class="admin-espn-block-copy">
-              <h4>Vincular partidos</h4>
-              <p>Asigna ESPN ID a partidos pendientes. No cambia marcadores ni estados.</p>
-              <div id="adminEspnVincularEstado" class="admin-espn-link-status"></div>
-            </div>
-            <div class="admin-espn-action-grid">
-              <div class="admin-espn-action-card">
-                <button class="admin-save-button compact" type="button" onclick="consultarAdminEspn()">
-                  Consultar ESPN
-                </button>
-                <small>Busca partidos en ESPN para revisar coincidencias.</small>
-              </div>
-              <div class="admin-espn-action-card admin-espn-link-only">
-                <button class="admin-secondary-button compact" type="button" onclick="vincularAdminEspnFechaConsultada()">
-                  Vincular fecha consultada
-                </button>
-                <small>Vincula coincidencias confiables de la ultima consulta.</small>
-              </div>
-              <div class="admin-espn-action-card admin-espn-link-only">
-                <button class="admin-secondary-button compact" type="button" onclick="vincularAdminEspnProximos7Dias()">
-                  Vincular proximos 7 dias
-                </button>
-                <small>Busca y vincula partidos confiables de los proximos 7 dias.</small>
-              </div>
-              <div class="admin-espn-action-card admin-espn-link-only">
-                <button class="admin-secondary-button compact" type="button" onclick="vincularAdminEspnTodosSinId()">
-                  Vincular todos sin ESPN ID
-                </button>
-                <small>Intenta vincular todos los partidos pendientes con coincidencia alta.</small>
-              </div>
-            </div>
-          </div>
-
           <div class="admin-espn-block admin-espn-flow-block">
             <div class="admin-espn-block-copy">
-              <h4>Sincronizar resultados</h4>
+              <h4>Sincronizar resultados vinculados</h4>
               <p>Actualiza marcador y estado solo de partidos que ya tienen ESPN ID.</p>
-              <small>Tambien se ejecuta automaticamente cada 10 minutos.</small>
+              <small>No crea vinculos nuevos ni toca partidos pendientes.</small>
             </div>
             <div class="admin-espn-action-grid single">
               <div class="admin-espn-action-card">
                 <button class="admin-secondary-button compact" type="button" onclick="sincronizarAdminEspnVinculados()">
-                  Sincronizar vinculados ahora
+                  Sincronizar todos los vinculados ahora
                 </button>
-                <small>No crea vinculos nuevos ni toca partidos sin ESPN ID.</small>
+                <small>Tambien se ejecuta automaticamente cada 10 minutos.</small>
               </div>
             </div>
           </div>
 
-          <h4 class="admin-espn-results-title">Ultima consulta ESPN</h4>
+          <div id="adminEspnFiltros" class="admin-espn-filterbar"></div>
+          <h4 class="admin-espn-results-title">Panel maestro de vinculacion ESPN</h4>
           <div id="adminEspnLista" class="admin-espn-list"></div>
         </section>
 
