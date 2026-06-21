@@ -397,6 +397,7 @@ let resultadosEliminacion = {};
 let detalleResultadoAbierto = "";
 let mostrarResultadosAnteriores = false;
 let vistaResultadosActual = "partidos";
+let vistaLlavesResultadosActual = "bracket";
 
 function obtenerFechaISO(valor) {
   const texto = String(valor || "").trim();
@@ -1374,6 +1375,25 @@ function obtenerRondasLlavesOrdenadas() {
     });
 }
 
+function cambiarVistaLlavesResultados(vista) {
+  vistaLlavesResultadosActual = vista === "lista" ? "lista" : "bracket";
+  detalleResultadoAbierto = "";
+  renderizarLlavesEliminacionResultados();
+}
+
+function obtenerNumeroLlave(partido) {
+  const coincidencia = String(partido?.id || "").match(/\d+/);
+  return coincidencia ? Number(coincidencia[0]) : 999;
+}
+
+function ordenarLlavesPorFixture(listaLlaves) {
+  return [...listaLlaves].sort((a, b) => {
+    const diferenciaId = obtenerNumeroLlave(a) - obtenerNumeroLlave(b);
+    if (diferenciaId !== 0) return diferenciaId;
+    return String(a.id || "").localeCompare(String(b.id || ""), "es", { numeric: true });
+  });
+}
+
 function obtenerNombreLlaveEquipo(partido, lado) {
   if (lado === "local") {
     return partido.equipoLocal || partido.equipo_local || partido.local || partido.localPlaceholder || partido.placeholderLocal || "Por definir";
@@ -1382,24 +1402,141 @@ function obtenerNombreLlaveEquipo(partido, lado) {
   return partido.equipoVisita || partido.equipo_visita || partido.visita || partido.visitaPlaceholder || partido.placeholderVisita || "Por definir";
 }
 
-function renderizarLlavesEliminacionResultados() {
-  if (!contenedorResultados) return;
+function obtenerClaseEstadoBracket(estadoResultado) {
+  const clave = estadoResultado?.clave || "pending";
 
-  const llaves = ordenarPartidosPorFechaHora(Array.isArray(llavesEliminacion) ? llavesEliminacion : []);
+  if (clave === "final") return "finalizado";
+  if (clave === "live") return "en-vivo";
+  if (clave === "available") return "abierto";
+  if (clave === "closed") return "cerrado";
+  return "pendiente";
+}
 
-  if (llaves.length === 0) {
-    contenedorResultados.innerHTML = `
-      <div class="empty-state">
-        Todav&iacute;a no hay llaves de eliminaci&oacute;n cargadas.
-      </div>
-    `;
-    return;
-  }
+function obtenerClasificadoLlave(partido, local, visita) {
+  const ladoClasificado = String(
+    partido.clasificadoRealLado ||
+    partido.clasificado_real_lado ||
+    partido.clasificadoLado ||
+    ""
+  ).trim().toLowerCase();
 
+  if (ladoClasificado === "local") return local;
+  if (ladoClasificado === "visita") return visita;
+
+  return partido.clasificadoReal || partido.clasificado || partido.clasifica || "";
+}
+
+function obtenerMarcadorEquipoLlave(partido, lado) {
+  const valor = lado === "local" ? partido.golesLocalReal : partido.golesVisitaReal;
+
+  if (valor === "" || valor === null || valor === undefined) return "";
+
+  return escapeHTML(valor);
+}
+
+function renderizarSelectorVistaLlaves() {
+  return `
+    <div class="bracket-view-switch" role="group" aria-label="Vista de llaves">
+      <button
+        class="bracket-view-button ${vistaLlavesResultadosActual === "bracket" ? "active" : ""}"
+        type="button"
+        onclick="cambiarVistaLlavesResultados('bracket')"
+      >
+        Bracket
+      </button>
+      <button
+        class="bracket-view-button ${vistaLlavesResultadosActual === "lista" ? "active" : ""}"
+        type="button"
+        onclick="cambiarVistaLlavesResultados('lista')"
+      >
+        Lista
+      </button>
+    </div>
+  `;
+}
+
+function manejarDetalleLlaveBracket(partidoId) {
+  const partido = (Array.isArray(llavesEliminacion) ? llavesEliminacion : [])
+    .find((item) => String(item.id) === String(partidoId));
+
+  if (!partido) return;
+
+  manejarClickDetalleResultado(partido, "eliminacion");
+}
+
+function renderizarTarjetaBracketLlave(partido) {
+  const resultadoEliminacion = resultadosEliminacion[partido.id];
+  const partidoResultado = {
+    ...partido,
+    ...(resultadoEliminacion || {})
+  };
+  const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
+  const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "eliminacion");
+  const claseEstado = obtenerClaseEstadoBracket(estadoResultado);
+  const marcador = resultadoFinalizado
+    ? `${escapeHTML(partidoResultado.golesLocalReal)} - ${escapeHTML(partidoResultado.golesVisitaReal)}`
+    : estadoResultado.marcador || "";
+  const local = obtenerNombreLlaveEquipo(partidoResultado, "local");
+  const visita = obtenerNombreLlaveEquipo(partidoResultado, "visita");
+  const clasificado = obtenerClasificadoLlave(partidoResultado, local, visita);
+  const localClasificado = clasificado && normalizarNombreBandera(clasificado) === normalizarNombreBandera(local);
+  const visitaClasificado = clasificado && normalizarNombreBandera(clasificado) === normalizarNombreBandera(visita);
+  const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
+  const horaSegura = escapeHTML(partido.hora || "");
+  const idSeguro = escapeHTML(partido.id);
+  const rondaSegura = escapeHTML(partido.ronda || "Eliminaci\u00f3n");
+  const marcadorLocal = obtenerMarcadorEquipoLlave(partidoResultado, "local");
+  const marcadorVisita = obtenerMarcadorEquipoLlave(partidoResultado, "visita");
+  const claveDetalle = obtenerClaveDetalleResultado(partido.id, "eliminacion");
+  const detalleAbierto = detalleResultadoAbierto === claveDetalle;
+
+  return `
+    <div class="bracket-node-wrap">
+      <article
+        class="bracket-node bracket-node--${claseEstado} result-card ${detalleAbierto ? "active" : ""}"
+        aria-expanded="${detalleAbierto ? "true" : "false"}"
+      >
+        <div class="bracket-node-head">
+          <strong>${idSeguro}</strong>
+          <span>${rondaSegura}</span>
+        </div>
+        <div class="bracket-node-time">${fechaSegura}${horaSegura ? ` &middot; ${horaSegura} hrs` : ""}</div>
+
+        <div class="bracket-node-team ${localClasificado ? "qualified" : ""}">
+          <span>${renderizarEquipoConBandera(local, "local")}</span>
+          <strong>${marcadorLocal}</strong>
+        </div>
+        <div class="bracket-node-team ${visitaClasificado ? "qualified" : ""}">
+          <span>${renderizarEquipoConBandera(visita, "visita")}</span>
+          <strong>${marcadorVisita}</strong>
+        </div>
+
+        <div class="bracket-node-foot">
+          <span class="bracket-state bracket-state--${claseEstado}">${escapeHTML(estadoResultado.texto)}</span>
+          ${clasificado ? `<span class="bracket-qualified">Clasifica ${escapeHTML(clasificado)}</span>` : ""}
+        </div>
+
+        <button
+          class="bracket-detail-button"
+          type="button"
+          onclick="manejarDetalleLlaveBracket('${idSeguro}')"
+        >
+          Detalle
+        </button>
+      </article>
+      <section
+        class="result-detail-panel bracket-detail-panel hidden"
+        id="${obtenerIdPanelDetalleResultado(partido.id, "eliminacion")}"
+      ></section>
+    </div>
+  `;
+}
+
+function renderizarListaLlavesEliminacion(llaves) {
   const rondas = obtenerRondasLlavesOrdenadas();
 
-  contenedorResultados.innerHTML = `
-    <section class="bracket-results">
+  return `
+    <section class="bracket-results bracket-results--list">
       ${rondas.map((ronda) => {
         const partidosRonda = llaves.filter((partido) => (partido.ronda || "Eliminaci\u00f3n") === ronda);
 
@@ -1424,7 +1561,7 @@ function renderizarLlavesEliminacionResultados() {
                 return `
                   <article class="bracket-match-card">
                     <div class="bracket-match-meta">
-                      ${escapeHTML(formatearFecha(partido.fecha))} &middot; ${escapeHTML(partido.hora)} hrs
+                      ${escapeHTML(partido.id)} &middot; ${escapeHTML(formatearFecha(partido.fecha))} &middot; ${escapeHTML(partido.hora)} hrs
                     </div>
                     <div class="bracket-match-row">
                       <div class="team local">${renderizarEquipoConBandera(local, "local")}</div>
@@ -1441,6 +1578,65 @@ function renderizarLlavesEliminacionResultados() {
           </article>
         `;
       }).join("")}
+    </section>
+  `;
+}
+
+function renderizarBracketLlavesEliminacion(llaves) {
+  const columnas = [
+    "16avos",
+    "Octavos",
+    "Cuartos",
+    "Semifinal",
+    "Final",
+    "Tercer lugar"
+  ];
+
+  return `
+    <section class="bracket-stage">
+      <div class="bracket-scroll-hint">Desliza horizontalmente para ver toda la llave.</div>
+      <div class="bracket-board-wrap">
+        <div class="bracket-board">
+          ${columnas.map((ronda) => {
+            const partidosRonda = llaves.filter((partido) => (partido.ronda || "Eliminaci\u00f3n") === ronda);
+
+            return `
+              <section class="bracket-column bracket-column--${escapeHTML(ronda.toLowerCase().replace(/\s+/g, "-"))}">
+                <h2>${escapeHTML(ronda)}</h2>
+                <div class="bracket-column-list">
+                  ${partidosRonda.length
+                    ? partidosRonda.map((partido) => renderizarTarjetaBracketLlave(partido)).join("")
+                    : `<div class="bracket-empty-round">Sin partidos</div>`}
+                </div>
+              </section>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderizarLlavesEliminacionResultados() {
+  if (!contenedorResultados) return;
+
+  const llaves = ordenarLlavesPorFixture(Array.isArray(llavesEliminacion) ? llavesEliminacion : []);
+
+  if (llaves.length === 0) {
+    contenedorResultados.innerHTML = `
+      <div class="empty-state">
+        Todav&iacute;a no hay llaves de eliminaci&oacute;n cargadas.
+      </div>
+    `;
+    return;
+  }
+
+  contenedorResultados.innerHTML = `
+    <section class="bracket-view">
+      ${renderizarSelectorVistaLlaves()}
+      ${vistaLlavesResultadosActual === "lista"
+        ? renderizarListaLlavesEliminacion(llaves)
+        : renderizarBracketLlavesEliminacion(llaves)}
     </section>
   `;
 }
