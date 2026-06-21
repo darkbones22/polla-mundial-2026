@@ -2652,6 +2652,8 @@ function renderizarEstadoSincronizacionEspn(totalConsulta = null, altas = null, 
   const eliminacion = resumen.eliminacion || {};
   const pendientes = resumen.pendientes ?? "-";
   const totalPartidos = resumen.total ?? "-";
+  const vinculadosTotal = resumen.vinculadosTotal ?? "-";
+  const noDisponibles = resumen.noDisponibles ?? "-";
   const consultaTexto = totalConsulta === null
     ? "Consulta ESPN pendiente"
     : `${escapeHTML(totalConsulta)} partidos ESPN · Alta: ${escapeHTML(altas)} · Media: ${escapeHTML(medias)} · Baja: ${escapeHTML(bajas)}`;
@@ -2664,9 +2666,12 @@ function renderizarEstadoSincronizacionEspn(totalConsulta = null, altas = null, 
       </div>
       <div class="admin-espn-status-grid">
         <span><b>${escapeHTML(totalPartidos)}</b><small>Total partidos</small></span>
+        <span><b>${escapeHTML(vinculadosTotal)}</b><small>Vinculados total</small></span>
         <span><b>${escapeHTML(grupos.vinculados ?? "-")} / ${escapeHTML(grupos.total ?? "-")}</b><small>Grupos vinculados</small></span>
         <span><b>${escapeHTML(eliminacion.vinculados ?? "-")} / ${escapeHTML(eliminacion.total ?? "-")}</b><small>Eliminacion vinculados</small></span>
         <span><b>${escapeHTML(pendientes)}</b><small>Pendientes por vincular</small></span>
+        <span><b>${escapeHTML(eliminacion.listos ?? "-")}</b><small>Eliminacion lista para buscar</small></span>
+        <span><b>${escapeHTML(noDisponibles)}</b><small>No disponibles todavia</small></span>
         <span><b>${escapeHTML(formatearFechaHoraAdminEspn(adminEspnUltimaConsulta))}</b><small>Ultima consulta</small></span>
         <span><b>${escapeHTML(formatearFechaHoraAdminEspn(adminEspnUltimaSincronizacion))}</b><small>Ultima sincronizacion</small></span>
       </div>
@@ -2738,7 +2743,8 @@ function filtrarPartidosAdminEspn(partidos) {
     if (adminEspnFiltroVisual === "grupos") return partido.tipo === "grupos";
     if (adminEspnFiltroVisual === "eliminacion") return partido.tipo === "eliminacion";
     if (adminEspnFiltroVisual === "vinculados") return Boolean(partido.vinculado);
-    if (adminEspnFiltroVisual === "pendientes") return !partido.vinculado && partido.disponibleParaVincular;
+    if (adminEspnFiltroVisual === "listos") return partido.estadoVinculo === "listo";
+    if (adminEspnFiltroVisual === "pendientes") return partido.estadoVinculo === "listo";
     if (adminEspnFiltroVisual === "no-disponibles") return !partido.vinculado && !partido.disponibleParaVincular;
     return true;
   });
@@ -2753,7 +2759,7 @@ function renderizarFiltrosAdminEspn() {
     ["grupos", "Grupos"],
     ["eliminacion", "Eliminacion"],
     ["vinculados", "Vinculados"],
-    ["pendientes", "Pendientes"],
+    ["listos", "Listos para buscar"],
     ["no-disponibles", "No disponibles todavia"]
   ];
 
@@ -2812,12 +2818,12 @@ function renderizarTarjetaPartidoEspn(partido) {
   const estadoClase = partido.vinculado
     ? "linked"
     : partido.disponibleParaVincular
-      ? "pending"
+      ? "ready"
       : "unavailable";
   const estadoTexto = partido.vinculado
     ? "Vinculado"
     : partido.disponibleParaVincular
-      ? "Pendiente"
+      ? "Listo para buscar ESPN"
       : "No disponible todavia";
   const tipo = partido.tipo === "grupos" ? "Grupos" : "Eliminacion";
   const espnTexto = partido.espnEventId || "Sin ESPN ID";
@@ -2841,7 +2847,7 @@ function renderizarTarjetaPartidoEspn(partido) {
             Buscar candidatos ESPN
           </button>
         ` : ""}
-        ${!partido.vinculado && !partido.disponibleParaVincular ? `<span class="admin-muted">Faltan equipos reales.</span>` : ""}
+        ${!partido.vinculado && !partido.disponibleParaVincular ? `<span class="admin-muted">${escapeHTML(partido.razonNoDisponible || "Faltan equipos reales")}</span>` : ""}
       </div>
       ${renderizarCandidatosEspnPartido(partido)}
     </article>
@@ -2941,6 +2947,7 @@ async function cargarAdminEspnPanel() {
     adminEspnResumenVinculos = {
       modo: "Auto-sync para vinculados",
       total: respuesta.total,
+      vinculadosTotal: respuesta.vinculadosTotal,
       pendientes: respuesta.pendientes,
       noDisponibles: respuesta.noDisponibles,
       grupos: respuesta.grupos || {},

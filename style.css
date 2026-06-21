@@ -3443,7 +3443,8 @@ body {
   background: #f7fef9;
 }
 
-.admin-espn-match-card.pending {
+.admin-espn-match-card.pending,
+.admin-espn-match-card.ready {
   border-color: #bfdbfe;
 }
 
@@ -3506,7 +3507,8 @@ body {
   color: #166534;
 }
 
-.admin-espn-link-badge.pending {
+.admin-espn-link-badge.pending,
+.admin-espn-link-badge.ready {
   background: #fef3c7;
   color: #92400e;
 }

@@ -250,25 +250,102 @@ function crearPartidoMatch(partido, invertido = false) {
   };
 }
 
-function tieneEquiposRealesEspn(partido) {
+function esPlaceholderEliminacionEspn(valor) {
+  const texto = String(valor || '').trim();
+  const normalizado = texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  if (!normalizado) return true;
+  if (/^(ganador|perdedor)\s+k\d+/.test(normalizado)) return true;
+  if (/^[123][a-l]+$/i.test(texto)) return true;
+  if (/^(1|2|3)[a-l]{1,6}$/i.test(texto)) return true;
+  if (normalizado.includes('clasificado')) return true;
+  if (normalizado.includes('mejor tercero')) return true;
+
+  return false;
+}
+
+function obtenerDisponibilidadEspn(partido) {
   const local = obtenerNombrePartido(partido, 'local');
   const visita = obtenerNombrePartido(partido, 'visita');
+  const vinculado = Boolean(partido.espnEventId);
 
-  if (!local || !visita) return false;
-  if (partido.tipo !== 'eliminacion') return true;
+  if (vinculado) {
+    return {
+      tieneEquiposReales: true,
+      disponibleParaVincular: false,
+      estadoVinculo: 'vinculado',
+      razonNoDisponible: ''
+    };
+  }
 
-  return Boolean(partido.equipoLocal && partido.equipoVisita);
+  if (!local && !visita) {
+    return {
+      tieneEquiposReales: false,
+      disponibleParaVincular: false,
+      estadoVinculo: 'no_disponible',
+      razonNoDisponible: 'Faltan equipos reales'
+    };
+  }
+
+  if (!local) {
+    return {
+      tieneEquiposReales: false,
+      disponibleParaVincular: false,
+      estadoVinculo: 'no_disponible',
+      razonNoDisponible: 'Local pendiente'
+    };
+  }
+
+  if (!visita) {
+    return {
+      tieneEquiposReales: false,
+      disponibleParaVincular: false,
+      estadoVinculo: 'no_disponible',
+      razonNoDisponible: 'Visita pendiente'
+    };
+  }
+
+  if (partido.tipo === 'eliminacion') {
+    const localPlaceholder = !partido.equipoLocal || esPlaceholderEliminacionEspn(local);
+    const visitaPlaceholder = !partido.equipoVisita || esPlaceholderEliminacionEspn(visita);
+
+    if (localPlaceholder || visitaPlaceholder) {
+      const dependeGanadorPerdedor = [local, visita].some((nombre) => /^(ganador|perdedor)\s+k\d+/i.test(String(nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
+
+      return {
+        tieneEquiposReales: false,
+        disponibleParaVincular: false,
+        estadoVinculo: 'no_disponible',
+        razonNoDisponible: dependeGanadorPerdedor
+          ? 'Depende de ganador/perdedor'
+          : localPlaceholder && !visitaPlaceholder
+            ? 'Local pendiente'
+            : !localPlaceholder && visitaPlaceholder
+              ? 'Visita pendiente'
+              : 'Depende de clasificados'
+      };
+    }
+  }
+
+  return {
+    tieneEquiposReales: true,
+    disponibleParaVincular: true,
+    estadoVinculo: 'listo',
+    razonNoDisponible: ''
+  };
+}
+
+function tieneEquiposRealesEspn(partido) {
+  return obtenerDisponibilidadEspn(partido).tieneEquiposReales;
 }
 
 function mapearPartidoPanelEspn(partido) {
-  const tieneEquiposReales = tieneEquiposRealesEspn(partido);
+  const disponibilidad = obtenerDisponibilidadEspn(partido);
   const vinculado = Boolean(partido.espnEventId);
   const grupoORonda = partido.tipo === 'grupos' ? partido.grupo : partido.ronda;
-  const estadoVinculo = vinculado
-    ? 'Vinculado'
-    : tieneEquiposReales
-      ? 'Pendiente'
-      : 'No disponible todavia';
 
   return {
     tipo: partido.tipo,
@@ -279,25 +356,34 @@ function mapearPartidoPanelEspn(partido) {
     hora: partido.hora,
     local: obtenerNombrePartido(partido, 'local'),
     visita: obtenerNombrePartido(partido, 'visita'),
-    tieneEquiposReales,
+    tieneEquiposReales: disponibilidad.tieneEquiposReales,
     estado: partido.estado,
     espnEventId: partido.espnEventId || '',
     vinculado,
-    disponibleParaVincular: !vinculado && tieneEquiposReales,
-    estadoVinculo,
+    disponibleParaVincular: disponibilidad.disponibleParaVincular,
+    estadoVinculo: disponibilidad.estadoVinculo,
+    razonNoDisponible: disponibilidad.razonNoDisponible,
     ultimaSincronizacion: null
   };
 }
 
 function resumirPanelVinculosEspn(partidos = []) {
   const resumenVinculos = obtenerResumenVinculosEspnDesdePartidos(partidos);
-  const pendientes = partidos.filter((partido) => !partido.espnEventId).length;
-  const noDisponibles = partidos.filter((partido) => !partido.espnEventId && !tieneEquiposRealesEspn(partido)).length;
+  const disponibilidades = partidos.map((partido) => obtenerDisponibilidadEspn(partido));
+  const pendientes = disponibilidades.filter((item) => item.estadoVinculo === 'listo').length;
+  const noDisponibles = disponibilidades.filter((item) => item.estadoVinculo === 'no_disponible').length;
+  const eliminacionListos = partidos.filter((partido, indice) => partido.tipo === 'eliminacion' && disponibilidades[indice].estadoVinculo === 'listo').length;
+  const eliminacionNoDisponibles = partidos.filter((partido, indice) => partido.tipo === 'eliminacion' && disponibilidades[indice].estadoVinculo === 'no_disponible').length;
 
   return {
     total: partidos.length,
+    vinculadosTotal: partidos.filter((partido) => partido.espnEventId).length,
     grupos: resumenVinculos.grupos,
-    eliminacion: resumenVinculos.eliminacion,
+    eliminacion: {
+      ...resumenVinculos.eliminacion,
+      listos: eliminacionListos,
+      noDisponibles: eliminacionNoDisponibles
+    },
     pendientes,
     noDisponibles,
     autoSync: true
