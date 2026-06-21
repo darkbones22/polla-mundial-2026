@@ -2669,6 +2669,54 @@ function renderizarEstadoSincronizacionEspn(totalConsulta = null, altas = null, 
   `;
 }
 
+function obtenerPendientesVinculosEspn() {
+  const resumen = adminEspnResumenVinculos || {};
+  const grupos = resumen.grupos || {};
+  const eliminacion = resumen.eliminacion || {};
+  const tieneTotales = Number.isFinite(Number(grupos.total)) && Number.isFinite(Number(eliminacion.total));
+
+  if (!tieneTotales) {
+    return {
+      conocido: false,
+      pendientes: null
+    };
+  }
+
+  const pendientesGrupos = Math.max(Number(grupos.total || 0) - Number(grupos.vinculados || 0), 0);
+  const pendientesEliminacion = Math.max(Number(eliminacion.total || 0) - Number(eliminacion.vinculados || 0), 0);
+
+  return {
+    conocido: true,
+    pendientes: pendientesGrupos + pendientesEliminacion
+  };
+}
+
+function actualizarBloqueVinculacionEspn() {
+  const estado = document.getElementById("adminEspnVincularEstado");
+  const accionesVincular = document.querySelectorAll(".admin-espn-link-only");
+  const { conocido, pendientes } = obtenerPendientesVinculosEspn();
+
+  if (!estado) return;
+
+  if (!conocido) {
+    estado.className = "admin-espn-link-status";
+    estado.textContent = "Consulta ESPN para actualizar el estado de vinculacion.";
+    accionesVincular.forEach((accion) => { accion.hidden = false; });
+    return;
+  }
+
+  if (pendientes <= 0) {
+    estado.className = "admin-espn-link-status success";
+    estado.textContent = "Todos los partidos ya estan vinculados.";
+    accionesVincular.forEach((accion) => { accion.hidden = true; });
+    return;
+  }
+
+  estado.className = "admin-espn-link-status warning";
+  estado.textContent = `Pendientes por vincular: ${pendientes}`;
+  accionesVincular.forEach((accion) => { accion.hidden = false; });
+}
+
 function renderizarAdminEspn() {
   const resumen = document.getElementById("adminEspnResumen");
   const lista = document.getElementById("adminEspnLista");
@@ -2683,6 +2731,7 @@ function renderizarAdminEspn() {
 
   if (!adminEspnEventosActuales.length) {
     resumen.innerHTML = renderizarEstadoSincronizacionEspn();
+    actualizarBloqueVinculacionEspn();
     lista.innerHTML = `<div class="admin-empty">Todavia no hay consulta ESPN cargada.</div>`;
     return;
   }
@@ -2693,15 +2742,16 @@ function renderizarAdminEspn() {
   const bajas = adminEspnEventosActuales.filter((evento) => evento.match?.confianza === "Baja").length;
 
   resumen.innerHTML = renderizarEstadoSincronizacionEspn(total, altas, medias, bajas);
+  actualizarBloqueVinculacionEspn();
 
   lista.innerHTML = adminEspnEventosActuales.map((evento) => {
     const confianza = evento.match?.confianza || "Baja";
     const claseConfianza = obtenerClaseConfianzaEspn(confianza);
-    const puedeAplicar = evento.match?.partido &&
+    const yaVinculado = Boolean(evento.match?.partido?.espnEventId);
+    const puedeAplicar = yaVinculado &&
       confianza !== "Baja" &&
       ["En vivo", "Finalizado"].includes(evento.estadoSugerido) &&
       tieneMarcadorEspn(evento);
-    const yaVinculado = Boolean(evento.match?.partido?.espnEventId);
     const puedeVincular = evento.match?.partido &&
       confianza === "Alta" &&
       !yaVinculado &&
@@ -2743,22 +2793,26 @@ function renderizarAdminEspn() {
         </div>
 
         <div class="admin-espn-actions">
-          <button
-            class="admin-secondary-button compact"
-            type="button"
-            ${puedeVincular ? "" : "disabled"}
-            onclick="vincularAdminEspn('${escapeHTML(evento.eventId)}')"
-          >
-            Vincular ESPN
-          </button>
-          <button
-            class="admin-save-button compact"
-            type="button"
-            ${puedeAplicar ? "" : "disabled"}
-            onclick="aplicarAdminEspn('${escapeHTML(evento.eventId)}')"
-          >
-            Aplicar resultado
-          </button>
+          ${yaVinculado ? `<span class="admin-espn-linked-badge">Vinculado</span>` : ""}
+          ${!yaVinculado && confianza === "Baja" ? `<span class="admin-espn-review-badge">Revisar manualmente</span>` : ""}
+          ${puedeVincular ? `
+            <button
+              class="admin-secondary-button compact"
+              type="button"
+              onclick="vincularAdminEspn('${escapeHTML(evento.eventId)}')"
+            >
+              Vincular ESPN
+            </button>
+          ` : ""}
+          ${puedeAplicar ? `
+            <button
+              class="admin-save-button compact"
+              type="button"
+              onclick="aplicarAdminEspn('${escapeHTML(evento.eventId)}')"
+            >
+              Aplicar resultado
+            </button>
+          ` : ""}
         </div>
       </article>
     `;
@@ -3581,10 +3635,21 @@ async function aplicarAdminEspn(eventId) {
     return;
   }
 
+  if (!evento.match.partido.espnEventId) {
+    mostrarFeedbackAdmin("Primero vincula el partido con ESPN ID.", "error");
+    return;
+  }
+
   if (evento.match.confianza === "Baja") {
     mostrarFeedbackAdmin("No se aplica coincidencia baja.", "error");
     return;
   }
+
+  const partidoInterno = `${evento.match.partido.tipo} ${evento.match.partido.id}`;
+  const marcador = tieneMarcadorEspn(evento) ? `${evento.golesLocal} - ${evento.golesVisita}` : "sin marcador";
+  const confirmado = window.confirm(`Vas a aplicar este marcador (${marcador}) y estado (${evento.estadoSugerido}) al partido interno ${partidoInterno}. ¿Confirmas?`);
+
+  if (!confirmado) return;
 
   mostrarFeedbackAdmin("Aplicando resultado ESPN...", "info");
 
