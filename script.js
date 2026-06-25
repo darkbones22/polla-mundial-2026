@@ -397,7 +397,6 @@ let resultadosEliminacion = {};
 let detalleResultadoAbierto = "";
 let mostrarResultadosAnteriores = false;
 let vistaResultadosActual = "partidos";
-let vistaLlavesResultadosActual = "bracket";
 
 function obtenerFechaISO(valor) {
   const texto = String(valor || "").trim();
@@ -1360,7 +1359,7 @@ function renderizarTablaGruposResultados() {
 }
 
 function obtenerRondasLlavesOrdenadas() {
-  const orden = ["16avos", "Octavos", "Cuartos", "Semifinal", "Tercer lugar", "Final"];
+  const orden = ["16avos", "Octavos", "Cuartos", "Semifinal", "Final", "Tercer lugar"];
 
   return [...new Set((Array.isArray(llavesEliminacion) ? llavesEliminacion : []).map((partido) => partido.ronda || "Eliminaci\u00f3n"))]
     .sort((a, b) => {
@@ -1373,12 +1372,6 @@ function obtenerRondasLlavesOrdenadas() {
 
       return a.localeCompare(b, "es", { numeric: true });
     });
-}
-
-function cambiarVistaLlavesResultados(vista) {
-  vistaLlavesResultadosActual = vista === "lista" ? "lista" : "bracket";
-  detalleResultadoAbierto = "";
-  renderizarLlavesEliminacionResultados();
 }
 
 function obtenerNumeroLlave(partido) {
@@ -1402,16 +1395,6 @@ function obtenerNombreLlaveEquipo(partido, lado) {
   return partido.equipoVisita || partido.equipo_visita || partido.visita || partido.visitaPlaceholder || partido.placeholderVisita || "Por definir";
 }
 
-function obtenerClaseEstadoBracket(estadoResultado) {
-  const clave = estadoResultado?.clave || "pending";
-
-  if (clave === "final") return "finalizado";
-  if (clave === "live") return "en-vivo";
-  if (clave === "available") return "abierto";
-  if (clave === "closed") return "cerrado";
-  return "pendiente";
-}
-
 function obtenerClasificadoLlave(partido, local, visita) {
   const ladoClasificado = String(
     partido.clasificadoRealLado ||
@@ -1426,37 +1409,17 @@ function obtenerClasificadoLlave(partido, local, visita) {
   return partido.clasificadoReal || partido.clasificado || partido.clasifica || "";
 }
 
-function renderizarSelectorVistaLlaves() {
-  return `
-    <div class="bracket-view-switch" role="group" aria-label="Vista de llaves">
-      <button
-        class="bracket-view-button ${vistaLlavesResultadosActual === "bracket" ? "active" : ""}"
-        type="button"
-        onclick="cambiarVistaLlavesResultados('bracket')"
-      >
-        Bracket
-      </button>
-      <button
-        class="bracket-view-button ${vistaLlavesResultadosActual === "lista" ? "active" : ""}"
-        type="button"
-        onclick="cambiarVistaLlavesResultados('lista')"
-      >
-        Lista
-      </button>
-    </div>
-  `;
+function obtenerClaseEstadoLlave(estadoResultado) {
+  const clave = estadoResultado?.clave || "pending";
+
+  if (clave === "final") return "finalizado";
+  if (clave === "live") return "en-vivo";
+  if (clave === "available") return "abierto";
+  if (clave === "closed") return "cerrado";
+  return "pendiente";
 }
 
-function manejarDetalleLlaveBracket(partidoId) {
-  const partido = (Array.isArray(llavesEliminacion) ? llavesEliminacion : [])
-    .find((item) => String(item.id) === String(partidoId));
-
-  if (!partido) return;
-
-  manejarClickDetalleResultado(partido, "eliminacion");
-}
-
-function renderizarTarjetaBracketLlave(partido, opciones = {}) {
+function renderizarTarjetaLlaveResultado(partido) {
   const resultadoEliminacion = resultadosEliminacion[partido.id];
   const partidoResultado = {
     ...partido,
@@ -1464,167 +1427,58 @@ function renderizarTarjetaBracketLlave(partido, opciones = {}) {
   };
   const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
   const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "eliminacion");
-  const claseEstado = obtenerClaseEstadoBracket(estadoResultado);
+  const claseEstado = obtenerClaseEstadoLlave(estadoResultado);
   const marcador = resultadoFinalizado
     ? `${escapeHTML(partidoResultado.golesLocalReal)} - ${escapeHTML(partidoResultado.golesVisitaReal)}`
     : estadoResultado.marcador || "";
   const local = obtenerNombreLlaveEquipo(partidoResultado, "local");
   const visita = obtenerNombreLlaveEquipo(partidoResultado, "visita");
-  const idSeguro = escapeHTML(partido.id);
-  const marcadorLocal = partidoResultado.golesLocalReal;
-  const marcadorVisita = partidoResultado.golesVisitaReal;
-  const tieneMarcador = marcador !== "" ||
-    (marcadorLocal !== "" && marcadorLocal !== null && marcadorLocal !== undefined &&
-    marcadorVisita !== "" && marcadorVisita !== null && marcadorVisita !== undefined);
-  const estadoDiscreto = estadoResultado.clave === "live"
-    ? `<span class="bracket-mini-state bracket-mini-state--live">En vivo</span>`
-    : estadoResultado.clave === "final"
-      ? `<span class="bracket-mini-state bracket-mini-state--final">Finalizado</span>`
-      : "";
+  const clasificado = obtenerClasificadoLlave(partidoResultado, local, visita);
+  const marcadorSeguro = marcador || estadoResultado.texto;
+  const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
+  const horaSegura = escapeHTML(partido.hora || "");
 
   return `
-    <div class="bracket-node-wrap">
-      <article
-        class="bracket-node bracket-node--${claseEstado} ${opciones.destacada ? "bracket-node--featured" : ""}"
-      >
-        <div class="bracket-node-head">
-          <strong>${idSeguro}</strong>
-          ${estadoDiscreto}
-        </div>
+    <article class="knockout-result-card knockout-result-card--${claseEstado}">
+      <div class="knockout-result-meta">
+        <strong>${escapeHTML(partido.id)}</strong>
+        <span>${fechaSegura}${horaSegura ? ` &middot; ${horaSegura} hrs` : ""}</span>
+      </div>
 
-        <div class="bracket-minimal-match">
-          <div class="bracket-minimal-team">
-            <span>${renderizarEquipoConBandera(local, "local")}</span>
-            ${tieneMarcador ? `<strong>${escapeHTML(marcadorLocal)}</strong>` : ""}
-          </div>
-          ${tieneMarcador ? "" : `<span class="bracket-minimal-vs">vs</span>`}
-          <div class="bracket-minimal-team">
-            <span>${renderizarEquipoConBandera(visita, "visita")}</span>
-            ${tieneMarcador ? `<strong>${escapeHTML(marcadorVisita)}</strong>` : ""}
-          </div>
-        </div>
-      </article>
-    </div>
+      <div class="knockout-result-row">
+        <div class="team local">${renderizarEquipoConBandera(local, "local")}</div>
+        <div
+          class="${obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)}"
+          title="${escapeHTML(estadoResultado.descripcion)}"
+        >${escapeHTML(marcadorSeguro)}</div>
+        <div class="team visitante">${renderizarEquipoConBandera(visita, "visita")}</div>
+      </div>
+
+      <div class="knockout-result-footer">
+        <span class="knockout-result-state knockout-result-state--${claseEstado}">${escapeHTML(estadoResultado.texto)}</span>
+        ${clasificado ? `<span class="knockout-result-qualified">Clasifica ${escapeHTML(clasificado)}</span>` : ""}
+      </div>
+    </article>
   `;
 }
 
-function crearMapaLlavesPorId(llaves) {
-  return new Map(llaves.map((partido) => [String(partido.id), partido]));
-}
-
-function renderizarSlotFaseFinal(mapaLlaves, id, clases = "") {
-  const partido = mapaLlaves.get(id);
-
-  if (!partido) return "";
-
-  return `
-    <div class="final-bracket-slot final-bracket-slot--${escapeHTML(id)} ${clases}">
-      ${renderizarTarjetaBracketLlave(partido, { destacada: id === "K104" })}
-    </div>
-  `;
-}
-
-function renderizarListaLlavesEliminacion(llaves) {
+function renderizarLlavesEliminacionLista(llaves) {
   const rondas = obtenerRondasLlavesOrdenadas();
 
   return `
-    <section class="bracket-results bracket-results--list">
+    <section class="knockout-results-list">
       ${rondas.map((ronda) => {
         const partidosRonda = llaves.filter((partido) => (partido.ronda || "Eliminaci\u00f3n") === ronda);
 
         return `
-          <article class="bracket-round-card">
+          <section class="knockout-round-card">
             <h2>${escapeHTML(ronda)}</h2>
-            <div class="bracket-match-list">
-              ${partidosRonda.map((partido) => {
-                const resultadoEliminacion = resultadosEliminacion[partido.id];
-                const partidoResultado = {
-                  ...partido,
-                  ...(resultadoEliminacion || {})
-                };
-                const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
-                const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "eliminacion");
-                const marcador = resultadoFinalizado
-                  ? `${escapeHTML(partidoResultado.golesLocalReal)} - ${escapeHTML(partidoResultado.golesVisitaReal)}`
-                  : estadoResultado.marcador || estadoResultado.texto;
-                const local = obtenerNombreLlaveEquipo(partidoResultado, "local");
-                const visita = obtenerNombreLlaveEquipo(partidoResultado, "visita");
-
-                return `
-                  <article class="bracket-match-card">
-                    <div class="bracket-match-meta">
-                      ${escapeHTML(partido.id)} &middot; ${escapeHTML(formatearFecha(partido.fecha))} &middot; ${escapeHTML(partido.hora)} hrs
-                    </div>
-                    <div class="bracket-match-row">
-                      <div class="team local">${renderizarEquipoConBandera(local, "local")}</div>
-                      <div
-                        class="${obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)}"
-                        title="${escapeHTML(estadoResultado.descripcion)}"
-                      >${escapeHTML(marcador)}</div>
-                      <div class="team visitante">${renderizarEquipoConBandera(visita, "visita")}</div>
-                    </div>
-                  </article>
-                `;
-              }).join("")}
+            <div class="knockout-match-list">
+              ${partidosRonda.map((partido) => renderizarTarjetaLlaveResultado(partido)).join("")}
             </div>
-          </article>
+          </section>
         `;
       }).join("")}
-    </section>
-  `;
-}
-
-function renderizarSeccionRondaBracket(titulo, partidosRonda, claseExtra = "") {
-  return `
-    <section class="bracket-round-section ${claseExtra}">
-      <h2>${escapeHTML(titulo)}</h2>
-      <div class="bracket-round-grid">
-        ${partidosRonda.length
-          ? partidosRonda.map((partido) => renderizarTarjetaBracketLlave(partido)).join("")
-          : `<div class="bracket-empty-round">Sin partidos</div>`}
-      </div>
-    </section>
-  `;
-}
-
-function renderizarFaseFinalDesktop(llavesFinales) {
-  const mapaLlaves = crearMapaLlavesPorId(llavesFinales);
-
-  return `
-    <section class="final-bracket-section">
-      <h2>Fase final</h2>
-      <div class="final-bracket-tree" aria-label="Llave visual desde octavos de final">
-        ${renderizarSlotFaseFinal(mapaLlaves, "K89", "connect-right")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K90", "connect-right")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K91", "connect-left")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K92", "connect-left")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K93", "connect-right")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K94", "connect-right")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K95", "connect-left")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K96", "connect-left")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K97", "connect-right")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K98", "connect-right")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K99", "connect-left")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K100", "connect-left")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K101", "connect-right")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K102", "connect-left")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K104", "final-center")}
-        ${renderizarSlotFaseFinal(mapaLlaves, "K103", "third-place")}
-      </div>
-    </section>
-  `;
-}
-
-function renderizarBracketLlavesEliminacion(llaves) {
-  const ids16avos = new Set(Array.from({ length: 16 }, (_, indice) => `K${73 + indice}`));
-  const idsFaseFinal = new Set(Array.from({ length: 16 }, (_, indice) => `K${89 + indice}`));
-  const llaves16avos = llaves.filter((partido) => ids16avos.has(String(partido.id)));
-  const llavesFinales = llaves.filter((partido) => idsFaseFinal.has(String(partido.id)));
-
-  return `
-    <section class="bracket-stage">
-      ${renderizarSeccionRondaBracket("16avos de final", llaves16avos, "bracket-round-section--sixteenths")}
-      ${renderizarFaseFinalDesktop(llavesFinales)}
     </section>
   `;
 }
@@ -1643,14 +1497,7 @@ function renderizarLlavesEliminacionResultados() {
     return;
   }
 
-  contenedorResultados.innerHTML = `
-    <section class="bracket-view">
-      ${renderizarSelectorVistaLlaves()}
-      ${vistaLlavesResultadosActual === "lista"
-        ? renderizarListaLlavesEliminacion(llaves)
-        : renderizarBracketLlavesEliminacion(llaves)}
-    </section>
-  `;
+  contenedorResultados.innerHTML = renderizarLlavesEliminacionLista(llaves);
 }
 
 function renderizarResultadosGrupos() {
