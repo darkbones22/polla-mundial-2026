@@ -566,19 +566,19 @@ body {
 
 .bracket-stage {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
 }
 
 .bracket-round-section {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .bracket-round-section h2 {
   margin: 0;
-  padding: 8px 10px;
+  padding: 7px 9px;
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   background: linear-gradient(135deg, #eff6ff, #ffffff);
@@ -590,16 +590,16 @@ body {
 .bracket-round-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 7px;
+  gap: 5px;
   min-width: 0;
 }
 
 .final-bracket-section {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 7px;
+  padding: 8px;
   border: 1px solid #bfdbfe;
-  border-radius: 16px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
 }
@@ -607,18 +607,20 @@ body {
 .final-bracket-section > h2 {
   margin: 0;
   color: #0f2f70;
-  font-size: 15px;
+  font-size: 14px;
   text-align: center;
 }
 
 .final-bracket-tree {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(96px, 1fr) minmax(96px, 1fr) minmax(96px, 1fr) minmax(132px, 1.2fr) minmax(96px, 1fr) minmax(96px, 1fr) minmax(96px, 1fr);
-  grid-template-rows: repeat(6, minmax(54px, auto));
+  grid-template-columns: minmax(82px, 1fr) minmax(82px, 1fr) minmax(86px, 1fr) minmax(108px, 1.08fr) minmax(86px, 1fr) minmax(82px, 1fr) minmax(82px, 1fr);
+  grid-template-rows: repeat(6, minmax(42px, auto));
   align-items: center;
-  gap: 8px 10px;
+  gap: 5px 7px;
   min-width: 0;
+  max-width: 920px;
+  margin: 0 auto;
 }
 
 .final-bracket-tree::before {
@@ -629,11 +631,11 @@ body {
   background:
     linear-gradient(#bfdbfe, #bfdbfe) 16.5% 24% / 9% 2px no-repeat,
     linear-gradient(#bfdbfe, #bfdbfe) 16.5% 68% / 9% 2px no-repeat,
-    linear-gradient(#bfdbfe, #bfdbfe) 36% 46% / 10% 2px no-repeat,
-    linear-gradient(#bfdbfe, #bfdbfe) 54% 46% / 10% 2px no-repeat,
+    linear-gradient(#bfdbfe, #bfdbfe) 36% 46% / 7% 2px no-repeat,
+    linear-gradient(#bfdbfe, #bfdbfe) 57% 46% / 7% 2px no-repeat,
     linear-gradient(#bfdbfe, #bfdbfe) 74.5% 24% / 9% 2px no-repeat,
     linear-gradient(#bfdbfe, #bfdbfe) 74.5% 68% / 9% 2px no-repeat;
-  opacity: 0.75;
+  opacity: 0.55;
 }
 
 .final-bracket-slot {
@@ -647,16 +649,16 @@ body {
   content: "";
   position: absolute;
   top: 50%;
-  width: 12px;
-  border-top: 2px solid #bfdbfe;
+  width: 7px;
+  border-top: 1px solid #bfdbfe;
 }
 
 .final-bracket-slot.connect-right::after {
-  right: -12px;
+  right: -7px;
 }
 
 .final-bracket-slot.connect-left::before {
-  left: -12px;
+  left: -7px;
 }
 
 .final-bracket-slot--K89 { grid-column: 1; grid-row: 1; }
@@ -679,9 +681,9 @@ body {
 .final-bracket-slot.final-center::before {
   content: "Final";
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   color: #1d4ed8;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   text-align: center;
   text-transform: uppercase;
@@ -690,9 +692,9 @@ body {
 .final-bracket-slot.third-place::before {
   content: "Tercer lugar";
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   text-align: center;
 }
@@ -705,13 +707,13 @@ body {
 .bracket-node {
   position: relative;
   display: grid;
-  gap: 5px;
+  gap: 3px;
   min-width: 0;
-  padding: 7px 8px;
+  padding: 5px 6px;
   border: 1px solid #dbeafe;
-  border-radius: 11px;
+  border-radius: 9px;
   background: #ffffff;
-  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
 }
 
 .bracket-node--finalizado {
@@ -742,7 +744,7 @@ body {
 .bracket-node--featured {
   border-color: #60a5fa;
   background: linear-gradient(135deg, #eff6ff, #ffffff);
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.16);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.14);
 }
 
 .bracket-node-head,
@@ -750,13 +752,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .bracket-node-head strong {
   color: #1d4ed8;
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1;
 }
 
@@ -773,10 +775,10 @@ body {
 
 .bracket-minimal-match {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
   color: #0f172a;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
 }
 
@@ -784,7 +786,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -802,12 +804,12 @@ body {
 
 .bracket-minimal-team strong {
   color: #0f172a;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .bracket-minimal-vs {
   color: #64748b;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 900;
   line-height: 1;
 }
@@ -815,9 +817,9 @@ body {
 .bracket-mini-state {
   display: inline-flex;
   align-items: center;
-  padding: 3px 5px;
+  padding: 2px 4px;
   border-radius: 999px;
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
@@ -1172,16 +1174,24 @@ body {
 
 @media (max-width: 980px) {
   .bracket-round-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .final-bracket-tree {
-    grid-template-columns: repeat(7, minmax(82px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(7, minmax(68px, 1fr));
+    gap: 4px 5px;
   }
 
   .final-bracket-section {
-    padding: 10px;
+    padding: 7px;
+  }
+
+  .bracket-node {
+    padding: 5px;
+  }
+
+  .bracket-minimal-match {
+    font-size: 9.5px;
   }
 }
 
@@ -1189,7 +1199,7 @@ body {
   .final-bracket-tree {
     grid-template-columns: 1fr;
     grid-template-rows: none;
-    gap: 8px;
+    gap: 6px;
   }
 
   .final-bracket-tree::before,
@@ -1207,7 +1217,7 @@ body {
   .final-bracket-slot--K97::before,
   .final-bracket-slot--K101::before {
     display: block;
-    margin: 5px 0;
+    margin: 5px 0 3px;
     color: #0f2f70;
     font-size: 12px;
     font-weight: 900;
@@ -1483,19 +1493,19 @@ body {
   }
 
   .bracket-round-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 7px;
   }
 
   .bracket-node {
-    gap: 6px;
-    padding: 8px;
-    border-radius: 12px;
+    gap: 4px;
+    padding: 6px;
+    border-radius: 10px;
   }
 
   .bracket-minimal-match {
-    gap: 5px;
-    font-size: 11px;
+    gap: 3px;
+    font-size: 10.5px;
   }
 
   .bracket-mini-state {
