@@ -507,15 +507,18 @@ body {
 
 .knockout-match-list {
   display: grid;
-  gap: 7px;
+  gap: 4px;
 }
 
 .knockout-result-card {
   display: grid;
-  gap: 7px;
-  padding: 8px 10px;
+  grid-template-columns: 38px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 6px 8px;
   border: 1px solid #dbeafe;
-  border-radius: 11px;
+  border-radius: 9px;
   background: #f8fbff;
 }
 
@@ -534,44 +537,61 @@ body {
   background: #fff7ed;
 }
 
-.knockout-result-meta,
-.knockout-result-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-}
-
-.knockout-result-meta strong {
+.knockout-result-id {
   color: #1d4ed8;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
-}
-
-.knockout-result-meta span {
-  color: #64748b;
-  font-size: 10px;
-  font-weight: 800;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .knockout-result-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.knockout-result-row .team {
+  min-width: 0;
+}
+
+.knockout-result-row .team.local {
+  text-align: right;
+}
+
+.knockout-result-row .team.visitante {
+  text-align: left;
+}
+
+.knockout-result-row .team-with-flag,
+.knockout-result-row .team-name {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.knockout-result-row .team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knockout-result-vs {
+  justify-self: center;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .knockout-result-state,
 .knockout-result-qualified {
   display: inline-flex;
   align-items: center;
-  padding: 4px 7px;
+  justify-content: center;
+  padding: 3px 6px;
   border-radius: 999px;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -604,6 +624,9 @@ body {
 .knockout-result-qualified {
   background: #dbeafe;
   color: #1d4ed8;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .result-detail-panel {
@@ -1174,17 +1197,26 @@ body {
   }
 
   .knockout-result-card {
-    padding: 7px;
-  }
-
-  .knockout-result-meta,
-  .knockout-result-footer {
-    flex-wrap: wrap;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 5px;
+    min-height: 42px;
+    padding: 6px;
   }
 
   .knockout-result-row {
-    grid-template-columns: minmax(0, 1fr);
-    text-align: center;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    font-size: 11px;
+  }
+
+  .knockout-result-qualified {
+    grid-column: 2 / -1;
+    justify-self: start;
+    max-width: 100%;
+    font-size: 8.5px;
+  }
+
+  .knockout-result-state {
+    font-size: 8.5px;
   }
 
   .result-detail-panel {

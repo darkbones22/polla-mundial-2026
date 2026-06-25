@@ -1434,30 +1434,24 @@ function renderizarTarjetaLlaveResultado(partido) {
   const local = obtenerNombreLlaveEquipo(partidoResultado, "local");
   const visita = obtenerNombreLlaveEquipo(partidoResultado, "visita");
   const clasificado = obtenerClasificadoLlave(partidoResultado, local, visita);
-  const marcadorSeguro = marcador || estadoResultado.texto;
-  const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
-  const horaSegura = escapeHTML(partido.hora || "");
+  const marcadorSeguro = marcador || "vs";
+  const claseMarcador = marcador
+    ? obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)
+    : "knockout-result-vs";
 
   return `
     <article class="knockout-result-card knockout-result-card--${claseEstado}">
-      <div class="knockout-result-meta">
-        <strong>${escapeHTML(partido.id)}</strong>
-        <span>${fechaSegura}${horaSegura ? ` &middot; ${horaSegura} hrs` : ""}</span>
-      </div>
-
+      <strong class="knockout-result-id">${escapeHTML(partido.id)}</strong>
       <div class="knockout-result-row">
         <div class="team local">${renderizarEquipoConBandera(local, "local")}</div>
         <div
-          class="${obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)}"
+          class="${claseMarcador}"
           title="${escapeHTML(estadoResultado.descripcion)}"
         >${escapeHTML(marcadorSeguro)}</div>
         <div class="team visitante">${renderizarEquipoConBandera(visita, "visita")}</div>
       </div>
-
-      <div class="knockout-result-footer">
-        <span class="knockout-result-state knockout-result-state--${claseEstado}">${escapeHTML(estadoResultado.texto)}</span>
-        ${clasificado ? `<span class="knockout-result-qualified">Clasifica ${escapeHTML(clasificado)}</span>` : ""}
-      </div>
+      <span class="knockout-result-state knockout-result-state--${claseEstado}">${escapeHTML(estadoResultado.texto)}</span>
+      ${clasificado ? `<span class="knockout-result-qualified">Clasifica ${escapeHTML(clasificado)}</span>` : ""}
     </article>
   `;
 }
