@@ -1456,7 +1456,7 @@ function manejarDetalleLlaveBracket(partidoId) {
   manejarClickDetalleResultado(partido, "eliminacion");
 }
 
-function renderizarTarjetaBracketLlave(partido) {
+function renderizarTarjetaBracketLlave(partido, opciones = {}) {
   const resultadoEliminacion = resultadosEliminacion[partido.id];
   const partidoResultado = {
     ...partido,
@@ -1483,7 +1483,7 @@ function renderizarTarjetaBracketLlave(partido) {
   return `
     <div class="bracket-node-wrap">
       <article
-        class="bracket-node bracket-node--${claseEstado} result-card ${detalleAbierto ? "active" : ""}"
+        class="bracket-node bracket-node--${claseEstado} ${opciones.destacada ? "bracket-node--featured" : ""} result-card ${detalleAbierto ? "active" : ""}"
         aria-expanded="${detalleAbierto ? "true" : "false"}"
       >
         <div class="bracket-node-head">
@@ -1513,6 +1513,22 @@ function renderizarTarjetaBracketLlave(partido) {
         class="result-detail-panel bracket-detail-panel hidden"
         id="${obtenerIdPanelDetalleResultado(partido.id, "eliminacion")}"
       ></section>
+    </div>
+  `;
+}
+
+function crearMapaLlavesPorId(llaves) {
+  return new Map(llaves.map((partido) => [String(partido.id), partido]));
+}
+
+function renderizarSlotFaseFinal(mapaLlaves, id, clases = "") {
+  const partido = mapaLlaves.get(id);
+
+  if (!partido) return "";
+
+  return `
+    <div class="final-bracket-slot final-bracket-slot--${escapeHTML(id)} ${clases}">
+      ${renderizarTarjetaBracketLlave(partido, { destacada: id === "K104" })}
     </div>
   `;
 }
@@ -1567,32 +1583,57 @@ function renderizarListaLlavesEliminacion(llaves) {
   `;
 }
 
+function renderizarSeccionRondaBracket(titulo, partidosRonda, claseExtra = "") {
+  return `
+    <section class="bracket-round-section ${claseExtra}">
+      <h2>${escapeHTML(titulo)}</h2>
+      <div class="bracket-round-grid">
+        ${partidosRonda.length
+          ? partidosRonda.map((partido) => renderizarTarjetaBracketLlave(partido)).join("")
+          : `<div class="bracket-empty-round">Sin partidos</div>`}
+      </div>
+    </section>
+  `;
+}
+
+function renderizarFaseFinalDesktop(llavesFinales) {
+  const mapaLlaves = crearMapaLlavesPorId(llavesFinales);
+
+  return `
+    <section class="final-bracket-section">
+      <h2>Fase final</h2>
+      <div class="final-bracket-tree" aria-label="Llave visual desde octavos de final">
+        ${renderizarSlotFaseFinal(mapaLlaves, "K89", "connect-right")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K90", "connect-right")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K91", "connect-left")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K92", "connect-left")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K93", "connect-right")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K94", "connect-right")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K95", "connect-left")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K96", "connect-left")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K97", "connect-right")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K98", "connect-right")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K99", "connect-left")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K100", "connect-left")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K101", "connect-right")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K102", "connect-left")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K104", "final-center")}
+        ${renderizarSlotFaseFinal(mapaLlaves, "K103", "third-place")}
+      </div>
+    </section>
+  `;
+}
+
 function renderizarBracketLlavesEliminacion(llaves) {
-  const rondas = [
-    "16avos",
-    "Octavos",
-    "Cuartos",
-    "Semifinal",
-    "Final",
-    "Tercer lugar"
-  ];
+  const ids16avos = new Set(Array.from({ length: 16 }, (_, indice) => `K${73 + indice}`));
+  const idsFaseFinal = new Set(Array.from({ length: 16 }, (_, indice) => `K${89 + indice}`));
+  const llaves16avos = llaves.filter((partido) => ids16avos.has(String(partido.id)));
+  const llavesFinales = llaves.filter((partido) => idsFaseFinal.has(String(partido.id)));
 
   return `
     <section class="bracket-stage">
-      ${rondas.map((ronda) => {
-        const partidosRonda = llaves.filter((partido) => (partido.ronda || "Eliminaci\u00f3n") === ronda);
-
-        return `
-          <section class="bracket-round-section">
-            <h2>${escapeHTML(ronda)}</h2>
-            <div class="bracket-round-grid">
-              ${partidosRonda.length
-                ? partidosRonda.map((partido) => renderizarTarjetaBracketLlave(partido)).join("")
-                : `<div class="bracket-empty-round">Sin partidos</div>`}
-            </div>
-          </section>
-        `;
-      }).join("")}
+      ${renderizarSeccionRondaBracket("16avos de final", llaves16avos, "bracket-round-section--sixteenths")}
+      ${renderizarFaseFinalDesktop(llavesFinales)}
     </section>
   `;
 }
