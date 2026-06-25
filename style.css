@@ -368,7 +368,7 @@ body {
 
 .results-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
   padding: 5px;
   margin-bottom: 10px;
@@ -396,8 +396,7 @@ body {
   box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
 }
 
-.group-standings-grid,
-.knockout-results-list {
+.group-standings-grid {
   display: grid;
   gap: 10px;
 }
@@ -406,8 +405,7 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.group-standings-card,
-.knockout-round-card {
+.group-standings-card {
   padding: 10px;
   border: 1px solid #bfdbfe;
   border-radius: 13px;
@@ -420,8 +418,7 @@ body {
   background: #fffaf4;
 }
 
-.group-standings-card h2,
-.knockout-round-card h2 {
+.group-standings-card h2 {
   margin: 0 0 8px;
   color: #0f2f70;
   font-size: 15px;
@@ -503,130 +500,6 @@ body {
 
 .standings-table tbody tr:last-child td {
   border-bottom: none;
-}
-
-.knockout-match-list {
-  display: grid;
-  gap: 4px;
-}
-
-.knockout-result-card {
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 6px 8px;
-  border: 1px solid #dbeafe;
-  border-radius: 9px;
-  background: #f8fbff;
-}
-
-.knockout-result-card--finalizado {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-}
-
-.knockout-result-card--en-vivo {
-  border-color: #fecdd3;
-  background: #fff1f2;
-}
-
-.knockout-result-card--cerrado {
-  border-color: #fed7aa;
-  background: #fff7ed;
-}
-
-.knockout-result-id {
-  color: #1d4ed8;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.knockout-result-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: 12px;
-}
-
-.knockout-result-row .team {
-  min-width: 0;
-}
-
-.knockout-result-row .team.local {
-  text-align: right;
-}
-
-.knockout-result-row .team.visitante {
-  text-align: left;
-}
-
-.knockout-result-row .team-with-flag,
-.knockout-result-row .team-name {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.knockout-result-row .team-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.knockout-result-vs {
-  justify-self: center;
-  color: #64748b;
-  font-size: 10px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.knockout-result-state,
-.knockout-result-qualified {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 6px;
-  border-radius: 999px;
-  font-size: 9px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.knockout-result-state--finalizado {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.knockout-result-state--en-vivo {
-  background: #ffe4e6;
-  color: #be123c;
-}
-
-.knockout-result-state--cerrado {
-  background: #ffedd5;
-  color: #c2410c;
-}
-
-.knockout-result-state--abierto {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.knockout-result-state--pendiente {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-.knockout-result-qualified {
-  background: #dbeafe;
-  color: #1d4ed8;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .result-detail-panel {
@@ -1164,8 +1037,7 @@ body {
     gap: 8px;
   }
 
-  .group-standings-card,
-  .knockout-round-card {
+  .group-standings-card {
     padding: 8px;
   }
 
@@ -1190,33 +1062,6 @@ body {
   .standings-table .team-flag {
     width: 13px;
     height: 9px;
-  }
-
-  .knockout-result-row {
-    gap: 5px;
-  }
-
-  .knockout-result-card {
-    grid-template-columns: 34px minmax(0, 1fr) auto;
-    gap: 5px;
-    min-height: 42px;
-    padding: 6px;
-  }
-
-  .knockout-result-row {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    font-size: 11px;
-  }
-
-  .knockout-result-qualified {
-    grid-column: 2 / -1;
-    justify-self: start;
-    max-width: 100%;
-    font-size: 8.5px;
-  }
-
-  .knockout-result-state {
-    font-size: 8.5px;
   }
 
   .result-detail-panel {

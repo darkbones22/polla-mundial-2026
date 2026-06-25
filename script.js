@@ -1193,8 +1193,7 @@ function renderizarResultadosAnteriores(itemsAnteriores) {
 function actualizarTabsResultados() {
   const botones = {
     partidos: document.getElementById("resultadosPartidosBtn"),
-    grupos: document.getElementById("resultadosGruposBtn"),
-    llaves: document.getElementById("resultadosLlavesBtn")
+    grupos: document.getElementById("resultadosGruposBtn")
   };
 
   Object.entries(botones).forEach(([vista, boton]) => {
@@ -1203,7 +1202,7 @@ function actualizarTabsResultados() {
 }
 
 function cambiarVistaResultados(vista) {
-  vistaResultadosActual = ["partidos", "grupos", "llaves"].includes(vista) ? vista : "partidos";
+  vistaResultadosActual = ["partidos", "grupos"].includes(vista) ? vista : "partidos";
   detalleResultadoAbierto = "";
   actualizarTabsResultados();
   renderizarResultadosGrupos();
@@ -1358,142 +1357,6 @@ function renderizarTablaGruposResultados() {
   `;
 }
 
-function obtenerRondasLlavesOrdenadas() {
-  const orden = ["16avos", "Octavos", "Cuartos", "Semifinal", "Final", "Tercer lugar"];
-
-  return [...new Set((Array.isArray(llavesEliminacion) ? llavesEliminacion : []).map((partido) => partido.ronda || "Eliminaci\u00f3n"))]
-    .sort((a, b) => {
-      const indiceA = orden.indexOf(a);
-      const indiceB = orden.indexOf(b);
-
-      if (indiceA !== -1 || indiceB !== -1) {
-        return (indiceA === -1 ? 999 : indiceA) - (indiceB === -1 ? 999 : indiceB);
-      }
-
-      return a.localeCompare(b, "es", { numeric: true });
-    });
-}
-
-function obtenerNumeroLlave(partido) {
-  const coincidencia = String(partido?.id || "").match(/\d+/);
-  return coincidencia ? Number(coincidencia[0]) : 999;
-}
-
-function ordenarLlavesPorFixture(listaLlaves) {
-  return [...listaLlaves].sort((a, b) => {
-    const diferenciaId = obtenerNumeroLlave(a) - obtenerNumeroLlave(b);
-    if (diferenciaId !== 0) return diferenciaId;
-    return String(a.id || "").localeCompare(String(b.id || ""), "es", { numeric: true });
-  });
-}
-
-function obtenerNombreLlaveEquipo(partido, lado) {
-  if (lado === "local") {
-    return partido.equipoLocal || partido.equipo_local || partido.local || partido.localPlaceholder || partido.placeholderLocal || "Por definir";
-  }
-
-  return partido.equipoVisita || partido.equipo_visita || partido.visita || partido.visitaPlaceholder || partido.placeholderVisita || "Por definir";
-}
-
-function obtenerClasificadoLlave(partido, local, visita) {
-  const ladoClasificado = String(
-    partido.clasificadoRealLado ||
-    partido.clasificado_real_lado ||
-    partido.clasificadoLado ||
-    ""
-  ).trim().toLowerCase();
-
-  if (ladoClasificado === "local") return local;
-  if (ladoClasificado === "visita") return visita;
-
-  return partido.clasificadoReal || partido.clasificado || partido.clasifica || "";
-}
-
-function obtenerClaseEstadoLlave(estadoResultado) {
-  const clave = estadoResultado?.clave || "pending";
-
-  if (clave === "final") return "finalizado";
-  if (clave === "live") return "en-vivo";
-  if (clave === "available") return "abierto";
-  if (clave === "closed") return "cerrado";
-  return "pendiente";
-}
-
-function renderizarTarjetaLlaveResultado(partido) {
-  const resultadoEliminacion = resultadosEliminacion[partido.id];
-  const partidoResultado = {
-    ...partido,
-    ...(resultadoEliminacion || {})
-  };
-  const resultadoFinalizado = resultadoEliminacionFinalizadoValido(partido.id);
-  const estadoResultado = obtenerEstadoResultadoPartido(partidoResultado, "eliminacion");
-  const claseEstado = obtenerClaseEstadoLlave(estadoResultado);
-  const marcador = resultadoFinalizado
-    ? `${escapeHTML(partidoResultado.golesLocalReal)} - ${escapeHTML(partidoResultado.golesVisitaReal)}`
-    : estadoResultado.marcador || "";
-  const local = obtenerNombreLlaveEquipo(partidoResultado, "local");
-  const visita = obtenerNombreLlaveEquipo(partidoResultado, "visita");
-  const clasificado = obtenerClasificadoLlave(partidoResultado, local, visita);
-  const marcadorSeguro = marcador || "vs";
-  const claseMarcador = marcador
-    ? obtenerClaseMarcadorResultado(resultadoFinalizado, estadoResultado)
-    : "knockout-result-vs";
-
-  return `
-    <article class="knockout-result-card knockout-result-card--${claseEstado}">
-      <strong class="knockout-result-id">${escapeHTML(partido.id)}</strong>
-      <div class="knockout-result-row">
-        <div class="team local">${renderizarEquipoConBandera(local, "local")}</div>
-        <div
-          class="${claseMarcador}"
-          title="${escapeHTML(estadoResultado.descripcion)}"
-        >${escapeHTML(marcadorSeguro)}</div>
-        <div class="team visitante">${renderizarEquipoConBandera(visita, "visita")}</div>
-      </div>
-      <span class="knockout-result-state knockout-result-state--${claseEstado}">${escapeHTML(estadoResultado.texto)}</span>
-      ${clasificado ? `<span class="knockout-result-qualified">Clasifica ${escapeHTML(clasificado)}</span>` : ""}
-    </article>
-  `;
-}
-
-function renderizarLlavesEliminacionLista(llaves) {
-  const rondas = obtenerRondasLlavesOrdenadas();
-
-  return `
-    <section class="knockout-results-list">
-      ${rondas.map((ronda) => {
-        const partidosRonda = llaves.filter((partido) => (partido.ronda || "Eliminaci\u00f3n") === ronda);
-
-        return `
-          <section class="knockout-round-card">
-            <h2>${escapeHTML(ronda)}</h2>
-            <div class="knockout-match-list">
-              ${partidosRonda.map((partido) => renderizarTarjetaLlaveResultado(partido)).join("")}
-            </div>
-          </section>
-        `;
-      }).join("")}
-    </section>
-  `;
-}
-
-function renderizarLlavesEliminacionResultados() {
-  if (!contenedorResultados) return;
-
-  const llaves = ordenarLlavesPorFixture(Array.isArray(llavesEliminacion) ? llavesEliminacion : []);
-
-  if (llaves.length === 0) {
-    contenedorResultados.innerHTML = `
-      <div class="empty-state">
-        Todav&iacute;a no hay llaves de eliminaci&oacute;n cargadas.
-      </div>
-    `;
-    return;
-  }
-
-  contenedorResultados.innerHTML = renderizarLlavesEliminacionLista(llaves);
-}
-
 function renderizarResultadosGrupos() {
   if (!contenedorResultados) return;
 
@@ -1503,11 +1366,6 @@ function renderizarResultadosGrupos() {
 
     if (vistaResultadosActual === "grupos") {
       renderizarTablaGruposResultados();
-      return;
-    }
-
-    if (vistaResultadosActual === "llaves") {
-      renderizarLlavesEliminacionResultados();
       return;
     }
 
