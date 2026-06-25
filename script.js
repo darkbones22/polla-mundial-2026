@@ -1357,6 +1357,165 @@ function renderizarTablaGruposResultados() {
   `;
 }
 
+function calcularFairPlayEquipo() {
+  return null;
+}
+
+function obtenerRankingFifaEquipo() {
+  return null;
+}
+
+function grupoEstaDefinitivo(grupo) {
+  const partidosGrupo = (Array.isArray(partidos) ? partidos : [])
+    .filter((partido) => String(partido.grupo || "").trim() === String(grupo || "").trim());
+
+  return partidosGrupo.length > 0 && partidosGrupo.every((partido) => resultadoGrupoFinalizadoValido(partido.id));
+}
+
+function obtenerMejoresTerceros() {
+  const tablas = calcularTablaGrupos();
+  const terceros = tablas
+    .map((tabla) => {
+      const tercero = tabla.equipos?.[2];
+      if (!tercero) return null;
+
+      const fairPlay = calcularFairPlayEquipo(tercero.equipo);
+      const rankingFifa = obtenerRankingFifaEquipo(tercero.equipo);
+      const definitivo = grupoEstaDefinitivo(tabla.grupo);
+
+      return {
+        ...tercero,
+        grupo: tabla.grupo,
+        fairPlay,
+        rankingFifa,
+        definitivo,
+        estado: definitivo ? "Definitivo" : "Provisional"
+      };
+    })
+    .filter(Boolean);
+
+  const fairPlayCompleto = terceros.length > 0 && terceros.every((item) => Number.isFinite(item.fairPlay));
+  const rankingFifaCompleto = terceros.length > 0 && terceros.every((item) => Number.isFinite(item.rankingFifa));
+
+  return terceros
+    .sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.dg !== a.dg) return b.dg - a.dg;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      if (fairPlayCompleto && b.fairPlay !== a.fairPlay) return b.fairPlay - a.fairPlay;
+      if (rankingFifaCompleto && a.rankingFifa !== b.rankingFifa) return a.rankingFifa - b.rankingFifa;
+      return String(a.grupo || "").localeCompare(String(b.grupo || ""), "es", { numeric: true });
+    })
+    .map((item, index) => ({
+      ...item,
+      ranking: index + 1,
+      clasificacion: index < 8 ? "Clasifica" : "Fuera por ahora"
+    }));
+}
+
+function renderizarValorPendiente(valor) {
+  return Number.isFinite(valor) ? escapeHTML(valor) : "Pendiente";
+}
+
+function renderizarAdminMejoresTerceros() {
+  const contenedor = document.getElementById("adminMejoresTercerosContenido");
+  if (!contenedor) return;
+
+  const terceros = obtenerMejoresTerceros();
+
+  if (terceros.length === 0) {
+    contenedor.innerHTML = `
+      <div class="admin-empty">
+        Todavia no hay datos suficientes para calcular terceros lugares.
+      </div>
+    `;
+    return;
+  }
+
+  const definitivos = terceros.filter((item) => item.definitivo).length;
+  const provisionales = terceros.length - definitivos;
+  const clasifican = Math.min(8, terceros.length);
+  const fuera = Math.max(0, terceros.length - 8);
+
+  contenedor.innerHTML = `
+    <div class="admin-third-note">
+      Orden FIFA parcial. Fair play y ranking FIFA se aplicaran cuando existan datos completos. No usar como confirmacion oficial hasta cerrar todos los grupos.
+    </div>
+
+    <section class="admin-third-summary">
+      <article>
+        <strong>${escapeHTML(terceros.length)}</strong>
+        <span>terceros</span>
+      </article>
+      <article>
+        <strong>${escapeHTML(clasifican)}</strong>
+        <span>clasifican</span>
+      </article>
+      <article>
+        <strong>${escapeHTML(fuera)}</strong>
+        <span>fuera por ahora</span>
+      </article>
+      <article>
+        <strong>${escapeHTML(definitivos)}</strong>
+        <span>definitivos</span>
+      </article>
+      <article>
+        <strong>${escapeHTML(provisionales)}</strong>
+        <span>provisionales</span>
+      </article>
+    </section>
+
+    <div class="admin-third-table-wrap">
+      <table class="admin-third-table">
+        <thead>
+          <tr>
+            <th>Ranking</th>
+            <th>Grupo</th>
+            <th>Equipo</th>
+            <th>PJ</th>
+            <th>PG</th>
+            <th>PE</th>
+            <th>PP</th>
+            <th>GF</th>
+            <th>GC</th>
+            <th>DG</th>
+            <th>Pts</th>
+            <th>Fair play</th>
+            <th>Ranking FIFA</th>
+            <th>Estado</th>
+            <th>Nota</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${terceros.map((item) => `
+            <tr class="${item.ranking <= 8 ? "is-qualified" : "is-out"}">
+              <td data-label="Ranking">${escapeHTML(item.ranking)}</td>
+              <td data-label="Grupo">${escapeHTML(item.grupo)}</td>
+              <td data-label="Equipo">${renderizarEquipoConBandera(item.equipo, "local")}</td>
+              <td data-label="PJ">${escapeHTML(item.pj)}</td>
+              <td data-label="PG">${escapeHTML(item.pg)}</td>
+              <td data-label="PE">${escapeHTML(item.pe)}</td>
+              <td data-label="PP">${escapeHTML(item.pp)}</td>
+              <td data-label="GF">${escapeHTML(item.gf)}</td>
+              <td data-label="GC">${escapeHTML(item.gc)}</td>
+              <td data-label="DG">${escapeHTML(item.dg)}</td>
+              <td data-label="Pts"><strong>${escapeHTML(item.pts)}</strong></td>
+              <td data-label="Fair play">${renderizarValorPendiente(item.fairPlay)}</td>
+              <td data-label="Ranking FIFA">${renderizarValorPendiente(item.rankingFifa)}</td>
+              <td data-label="Estado">
+                <span class="admin-third-status ${item.definitivo ? "is-final" : "is-provisional"}">${escapeHTML(item.estado)}</span>
+              </td>
+              <td data-label="Nota">
+                <span class="admin-third-classification ${item.ranking <= 8 ? "is-qualified" : "is-out"}">${escapeHTML(item.clasificacion)}</span>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function renderizarResultadosGrupos() {
   if (!contenedorResultados) return;
 
@@ -2417,7 +2576,7 @@ function obtenerOpcionesPollasAdmin(pollasSeleccionadas = []) {
 }
 
 function normalizarSubseccionAdmin(seccion) {
-  return ["resultados", "usuarios", "pollas", "espn", "auditoria"].includes(seccion) ? seccion : "resultados";
+  return ["resultados", "usuarios", "pollas", "espn", "auditoria", "mejores-terceros"].includes(seccion) ? seccion : "resultados";
 }
 
 function obtenerConfigSubseccionesAdmin() {
@@ -2441,6 +2600,10 @@ function obtenerConfigSubseccionesAdmin() {
     auditoria: {
       boton: document.getElementById("adminSubtabAuditoria"),
       panel: document.getElementById("adminPanelAuditoria")
+    },
+    "mejores-terceros": {
+      boton: document.getElementById("adminSubtabMejoresTerceros"),
+      panel: document.getElementById("adminPanelMejoresTerceros")
     }
   };
 }
@@ -2497,6 +2660,11 @@ async function cambiarSubseccionAdmin(seccion) {
 
     if (subtab === "auditoria") {
       await cargarParticipantesAdminAuditoria();
+      return;
+    }
+
+    if (subtab === "mejores-terceros") {
+      renderizarAdminMejoresTerceros();
     }
   } catch (error) {
     if (idCarga === adminCargaSubtabActual) {

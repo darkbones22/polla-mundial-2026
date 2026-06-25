@@ -246,6 +246,9 @@
           <button id="adminSubtabAuditoria" class="admin-subtab" type="button" data-admin-subtab="auditoria">
             Auditoría
           </button>
+          <button id="adminSubtabMejoresTerceros" class="admin-subtab" type="button" data-admin-subtab="mejores-terceros">
+            Mejores terceros
+          </button>
         </div>
 
         <div id="adminFeedback" class="admin-feedback hidden"></div>
@@ -342,6 +345,20 @@
 
           <div id="adminAuditoriaResumen" class="admin-audit-summary"></div>
           <div id="adminAuditoriaLista" class="admin-audit-list"></div>
+        </section>
+
+        <section id="adminPanelMejoresTerceros" class="admin-panel hidden">
+          <div class="admin-third-header">
+            <div>
+              <h3>Mejores terceros</h3>
+              <p>Tabla de terceros lugares por grupo. Orden FIFA parcial segun datos disponibles.</p>
+            </div>
+            <button class="admin-save-button compact" type="button" onclick="renderizarAdminMejoresTerceros()">
+              Actualizar tabla
+            </button>
+          </div>
+
+          <div id="adminMejoresTercerosContenido" class="admin-third-content"></div>
         </section>
       </section>
     </section>

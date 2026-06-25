@@ -1032,6 +1032,95 @@ body {
     font-size: 11px;
   }
 
+  .admin-third-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-third-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-third-summary article {
+    padding: 9px;
+  }
+
+  .admin-third-summary strong {
+    font-size: 19px;
+  }
+
+  .admin-third-table-wrap {
+    overflow-x: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .admin-third-table,
+  .admin-third-table thead,
+  .admin-third-table tbody,
+  .admin-third-table tr,
+  .admin-third-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-third-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .admin-third-table thead {
+    display: none;
+  }
+
+  .admin-third-table tr {
+    margin-bottom: 8px;
+    padding: 9px;
+    border: 1px solid #dbeafe;
+    border-radius: 13px;
+    background: #ffffff;
+  }
+
+  .admin-third-table tr.is-qualified {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+  }
+
+  .admin-third-table tr.is-out {
+    background: #f8fafc;
+  }
+
+  .admin-third-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    border: 0;
+    white-space: normal;
+    text-align: right;
+    font-size: 11px;
+  }
+
+  .admin-third-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-align: left;
+  }
+
+  .admin-third-table td[data-label="Equipo"] {
+    align-items: flex-start;
+  }
+
+  .admin-third-table td[data-label="Equipo"] .team-with-flag {
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
   .group-standings-grid {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -3227,6 +3316,146 @@ body {
   border: 1px solid #dbeafe;
   border-radius: 14px;
   background: #f8fbff;
+}
+
+.admin-third-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-third-header h3 {
+  margin: 0 0 3px;
+  color: #0f172a;
+}
+
+.admin-third-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admin-third-note {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid #fed7aa;
+  border-radius: 13px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-third-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-third-summary article {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 13px;
+  background: #eff6ff;
+}
+
+.admin-third-summary strong {
+  display: block;
+  color: #1d4ed8;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.admin-third-summary span {
+  display: block;
+  margin-top: 5px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.admin-third-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.admin-third-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.admin-third-table th,
+.admin-third-table td {
+  padding: 8px 7px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.admin-third-table th {
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-third-table td:nth-child(3),
+.admin-third-table th:nth-child(3) {
+  min-width: 160px;
+  text-align: left;
+}
+
+.admin-third-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-third-table tr.is-qualified {
+  background: #f0fdf4;
+}
+
+.admin-third-table tr.is-out {
+  background: #f8fafc;
+}
+
+.admin-third-table .team-with-flag {
+  justify-content: flex-start;
+}
+
+.admin-third-status,
+.admin-third-classification {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.admin-third-status.is-final,
+.admin-third-classification.is-qualified {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-third-status.is-provisional {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-third-classification.is-out {
+  background: #e2e8f0;
+  color: #475569;
 }
 
 .admin-espn-flow-block {
@@ -6290,6 +6519,97 @@ body {
 
   .admin-audit-points-large {
     justify-self: start;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-third-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-third-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-third-summary article {
+    padding: 9px;
+  }
+
+  .admin-third-summary strong {
+    font-size: 19px;
+  }
+
+  .admin-third-table-wrap {
+    overflow-x: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .admin-third-table,
+  .admin-third-table thead,
+  .admin-third-table tbody,
+  .admin-third-table tr,
+  .admin-third-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-third-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .admin-third-table thead {
+    display: none;
+  }
+
+  .admin-third-table tr {
+    margin-bottom: 8px;
+    padding: 9px;
+    border: 1px solid #dbeafe;
+    border-radius: 13px;
+    background: #ffffff;
+  }
+
+  .admin-third-table tr.is-qualified {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+  }
+
+  .admin-third-table tr.is-out {
+    background: #f8fafc;
+  }
+
+  .admin-third-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    border: 0;
+    white-space: normal;
+    text-align: right;
+    font-size: 11px;
+  }
+
+  .admin-third-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-align: left;
+  }
+
+  .admin-third-table td[data-label="Equipo"] {
+    align-items: flex-start;
+  }
+
+  .admin-third-table td[data-label="Equipo"] .team-with-flag {
+    justify-content: flex-end;
+    min-width: 0;
   }
 }
 
