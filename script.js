@@ -1470,49 +1470,40 @@ function renderizarTarjetaBracketLlave(partido, opciones = {}) {
     : estadoResultado.marcador || "";
   const local = obtenerNombreLlaveEquipo(partidoResultado, "local");
   const visita = obtenerNombreLlaveEquipo(partidoResultado, "visita");
-  const clasificado = obtenerClasificadoLlave(partidoResultado, local, visita);
-  const fechaSegura = escapeHTML(formatearFecha(partido.fecha));
-  const horaSegura = escapeHTML(partido.hora || "");
   const idSeguro = escapeHTML(partido.id);
-  const claveDetalle = obtenerClaveDetalleResultado(partido.id, "eliminacion");
-  const detalleAbierto = detalleResultadoAbierto === claveDetalle;
-  const marcadorSeguro = marcador
-    ? `<span class="bracket-compact-score">${escapeHTML(marcador)}</span>`
-    : "";
+  const marcadorLocal = partidoResultado.golesLocalReal;
+  const marcadorVisita = partidoResultado.golesVisitaReal;
+  const tieneMarcador = marcador !== "" ||
+    (marcadorLocal !== "" && marcadorLocal !== null && marcadorLocal !== undefined &&
+    marcadorVisita !== "" && marcadorVisita !== null && marcadorVisita !== undefined);
+  const estadoDiscreto = estadoResultado.clave === "live"
+    ? `<span class="bracket-mini-state bracket-mini-state--live">En vivo</span>`
+    : estadoResultado.clave === "final"
+      ? `<span class="bracket-mini-state bracket-mini-state--final">Finalizado</span>`
+      : "";
 
   return `
     <div class="bracket-node-wrap">
       <article
-        class="bracket-node bracket-node--${claseEstado} ${opciones.destacada ? "bracket-node--featured" : ""} result-card ${detalleAbierto ? "active" : ""}"
-        aria-expanded="${detalleAbierto ? "true" : "false"}"
+        class="bracket-node bracket-node--${claseEstado} ${opciones.destacada ? "bracket-node--featured" : ""}"
       >
         <div class="bracket-node-head">
           <strong>${idSeguro}</strong>
-          <span>${fechaSegura}${horaSegura ? ` &middot; ${horaSegura} hrs` : ""}</span>
+          ${estadoDiscreto}
         </div>
 
-        <div class="bracket-compact-match">
-          <span class="bracket-compact-team">${renderizarEquipoConBandera(local, "local")}</span>
-          ${marcadorSeguro || `<span class="bracket-compact-vs">vs</span>`}
-          <span class="bracket-compact-team">${renderizarEquipoConBandera(visita, "visita")}</span>
-        </div>
-        
-        <div class="bracket-node-foot">
-          <span class="bracket-state bracket-state--${claseEstado}">${escapeHTML(estadoResultado.texto)}</span>
-          ${clasificado ? `<span class="bracket-qualified">Clasifica ${escapeHTML(clasificado)}</span>` : ""}
-          <button
-            class="bracket-detail-button"
-            type="button"
-            onclick="manejarDetalleLlaveBracket('${idSeguro}')"
-          >
-            Detalle
-          </button>
+        <div class="bracket-minimal-match">
+          <div class="bracket-minimal-team">
+            <span>${renderizarEquipoConBandera(local, "local")}</span>
+            ${tieneMarcador ? `<strong>${escapeHTML(marcadorLocal)}</strong>` : ""}
+          </div>
+          ${tieneMarcador ? "" : `<span class="bracket-minimal-vs">vs</span>`}
+          <div class="bracket-minimal-team">
+            <span>${renderizarEquipoConBandera(visita, "visita")}</span>
+            ${tieneMarcador ? `<strong>${escapeHTML(marcadorVisita)}</strong>` : ""}
+          </div>
         </div>
       </article>
-      <section
-        class="result-detail-panel bracket-detail-panel hidden"
-        id="${obtenerIdPanelDetalleResultado(partido.id, "eliminacion")}"
-      ></section>
     </div>
   `;
 }

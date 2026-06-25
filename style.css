@@ -589,8 +589,8 @@ body {
 
 .bracket-round-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
   min-width: 0;
 }
 
@@ -614,10 +614,10 @@ body {
 .final-bracket-tree {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(112px, 1fr) minmax(112px, 1fr) minmax(112px, 1fr) minmax(150px, 1.25fr) minmax(112px, 1fr) minmax(112px, 1fr) minmax(112px, 1fr);
-  grid-template-rows: repeat(6, minmax(66px, auto));
+  grid-template-columns: minmax(96px, 1fr) minmax(96px, 1fr) minmax(96px, 1fr) minmax(132px, 1.2fr) minmax(96px, 1fr) minmax(96px, 1fr) minmax(96px, 1fr);
+  grid-template-rows: repeat(6, minmax(54px, auto));
   align-items: center;
-  gap: 9px 12px;
+  gap: 8px 10px;
   min-width: 0;
 }
 
@@ -705,13 +705,13 @@ body {
 .bracket-node {
   position: relative;
   display: grid;
-  gap: 8px;
+  gap: 5px;
   min-width: 0;
-  padding: 9px;
+  padding: 7px 8px;
   border: 1px solid #dbeafe;
-  border-radius: 12px;
+  border-radius: 11px;
   background: #ffffff;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.04);
 }
 
 .bracket-node--finalizado {
@@ -750,13 +750,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .bracket-node-head strong {
   color: #1d4ed8;
-  font-size: 12px;
+  font-size: 10px;
+  line-height: 1;
 }
 
 .bracket-node-head span,
@@ -770,118 +771,66 @@ body {
   white-space: nowrap;
 }
 
-.bracket-compact-match {
+.bracket-minimal-match {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
+  gap: 3px;
   min-width: 0;
   color: #0f172a;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
 }
 
-.bracket-compact-team {
+.bracket-minimal-team {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
   min-width: 0;
 }
 
-.bracket-compact-team:last-child {
-  text-align: right;
-}
-
-.bracket-compact-team .team-with-flag,
-.bracket-compact-team .team-name {
+.bracket-minimal-team .team-with-flag,
+.bracket-minimal-team .team-name {
   min-width: 0;
   max-width: 100%;
 }
 
-.bracket-compact-team .team-name {
+.bracket-minimal-team .team-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.bracket-compact-vs {
+.bracket-minimal-team strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.bracket-minimal-vs {
   color: #64748b;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.bracket-compact-score {
-  padding: 5px 8px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #0f172a, #1d4ed8);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.bracket-state,
-.bracket-qualified {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  max-width: 100%;
-  padding: 4px 7px;
-  border-radius: 999px;
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 900;
   line-height: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.bracket-mini-state {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 5px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.bracket-state--finalizado {
+.bracket-mini-state--final {
   background: #dcfce7;
   color: #166534;
 }
 
-.bracket-state--en-vivo {
+.bracket-mini-state--live {
   background: #ffe4e6;
   color: #be123c;
-}
-
-.bracket-state--cerrado {
-  background: #ffedd5;
-  color: #c2410c;
-}
-
-.bracket-state--abierto {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.bracket-state--pendiente {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-.bracket-qualified {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.bracket-detail-button {
-  min-height: 26px;
-  margin-left: auto;
-  padding: 4px 8px;
-  border: 1px solid #bfdbfe;
-  border-radius: 9px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 10px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.bracket-detail-button:hover {
-  background: #dbeafe;
-}
-
-.bracket-detail-panel {
-  margin-top: 6px;
 }
 
 .bracket-empty-round {
@@ -1223,7 +1172,7 @@ body {
 
 @media (max-width: 980px) {
   .bracket-round-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .final-bracket-tree {
@@ -1278,6 +1227,10 @@ body {
 }
 
 @media (max-width: 600px) {
+  .bracket-round-grid {
+    grid-template-columns: 1fr;
+  }
+
   .save-bar-content {
     flex-direction: column;
     align-items: stretch;
@@ -1530,7 +1483,7 @@ body {
   }
 
   .bracket-round-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 7px;
   }
 
@@ -1540,20 +1493,14 @@ body {
     border-radius: 12px;
   }
 
-  .bracket-compact-match {
+  .bracket-minimal-match {
     gap: 5px;
     font-size: 11px;
   }
 
-  .bracket-compact-score {
-    padding: 4px 7px;
-    font-size: 11px;
-  }
-
-  .bracket-state,
-  .bracket-qualified {
-    padding: 4px 6px;
-    font-size: 9px;
+  .bracket-mini-state {
+    padding: 3px 5px;
+    font-size: 8px;
   }
 
   .result-detail-panel {
