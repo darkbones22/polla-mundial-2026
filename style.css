@@ -3287,29 +3287,41 @@ body {
   padding: 4px 3px;
 }
 
-.admin-third-cell-group {
+.admin-third-table th.admin-third-cell-group,
+.admin-third-table td.admin-third-cell-group {
   width: 34px;
+  text-align: center;
+  overflow: visible;
 }
 
-.admin-third-cell-pj,
-.admin-third-cell-pg,
-.admin-third-cell-pe,
-.admin-third-cell-pp,
-.admin-third-cell-gf,
-.admin-third-cell-gc,
-.admin-third-cell-dg,
-.admin-third-cell-pts {
+.admin-third-table th.admin-third-cell-pj,
+.admin-third-table td.admin-third-cell-pj,
+.admin-third-table th.admin-third-cell-pg,
+.admin-third-table td.admin-third-cell-pg,
+.admin-third-table th.admin-third-cell-pe,
+.admin-third-table td.admin-third-cell-pe,
+.admin-third-table th.admin-third-cell-pp,
+.admin-third-table td.admin-third-cell-pp,
+.admin-third-table th.admin-third-cell-gf,
+.admin-third-table td.admin-third-cell-gf,
+.admin-third-table th.admin-third-cell-gc,
+.admin-third-table td.admin-third-cell-gc,
+.admin-third-table th.admin-third-cell-dg,
+.admin-third-table td.admin-third-cell-dg,
+.admin-third-table th.admin-third-cell-pts,
+.admin-third-table td.admin-third-cell-pts {
   width: 30px;
 }
 
-.admin-third-cell-team {
+.admin-third-table th.admin-third-cell-team,
+.admin-third-table td.admin-third-cell-team {
   width: auto;
   text-align: left;
   overflow: hidden;
 }
 
-.admin-third-table th:nth-last-child(2),
-.admin-third-table td:nth-last-child(2) {
+.admin-third-table th:has(+ .admin-third-cell-state),
+.admin-third-table td:has(+ .admin-third-cell-state) {
   width: 78px;
 }
 
@@ -6474,8 +6486,21 @@ body {
     padding: 4px 1px;
   }
 
+  .admin-third-table thead tr,
+  .admin-third-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(112px, 1fr) 18px 22px 22px 24px 46px;
+    align-items: center;
+  }
+
+  .admin-third-table th,
+  .admin-third-table td {
+    min-width: 0;
+    width: auto;
+  }
+
   .admin-third-table th.admin-third-cell-group,
-  .admin-third-table th:nth-last-child(2) {
+  .admin-third-table th:has(+ .admin-third-cell-state) {
     font-size: 0;
   }
 
@@ -6484,7 +6509,7 @@ body {
     font-size: 8.8px;
   }
 
-  .admin-third-table th:nth-last-child(2)::after {
+  .admin-third-table th:has(+ .admin-third-cell-state)::after {
     content: "Clasif.";
     font-size: 8.8px;
   }
@@ -6498,24 +6523,29 @@ body {
     display: none;
   }
 
-  .admin-third-cell-gf,
-  .admin-third-cell-dg,
-  .admin-third-cell-pts {
-    width: 22px;
+  .admin-third-cell-team {
+    order: 1;
   }
 
   .admin-third-cell-group {
-    width: 18px;
+    order: 2;
   }
 
-  .admin-third-cell-team {
-    width: auto;
-    min-width: 92px;
+  .admin-third-cell-gf {
+    order: 3;
   }
 
-  .admin-third-table th:nth-last-child(2),
-  .admin-third-table td:nth-last-child(2) {
-    width: 44px;
+  .admin-third-cell-dg {
+    order: 4;
+  }
+
+  .admin-third-cell-pts {
+    order: 5;
+  }
+
+  .admin-third-table th:has(+ .admin-third-cell-state),
+  .admin-third-table td:has(+ .admin-third-cell-state) {
+    order: 6;
   }
 
   .admin-third-table .team-flag {
