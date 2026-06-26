@@ -1513,6 +1513,32 @@ function renderizarAdminMejoresTerceros() {
         </tbody>
       </table>
     </div>
+
+    <section class="admin-third-mobile-list">
+      ${terceros.map((item) => `
+        <article class="admin-third-mobile-card ${item.ranking <= 8 ? "is-qualified" : "is-out"}">
+          <div class="admin-third-mobile-main">
+            <div class="admin-third-mobile-team">
+              <strong>#${escapeHTML(item.ranking)} ${renderizarEquipoConBandera(item.equipo, "local")}</strong>
+              <span>Grupo ${escapeHTML(item.grupo)}</span>
+            </div>
+            <strong class="admin-third-mobile-points">${escapeHTML(item.pts)} pts</strong>
+          </div>
+
+          <div class="admin-third-mobile-stats">
+            <span>DG ${escapeHTML(item.dg > 0 ? `+${item.dg}` : item.dg)}</span>
+            <span>GF ${escapeHTML(item.gf)}</span>
+            <span>PJ ${escapeHTML(item.pj)}</span>
+            <span>FP ${renderizarValorPendiente(item.fairPlay)}</span>
+          </div>
+
+          <div class="admin-third-mobile-badges">
+            <span class="admin-third-classification ${item.ranking <= 8 ? "is-qualified" : "is-out"}">${escapeHTML(item.clasificacion)}</span>
+            <span class="admin-third-status ${item.definitivo ? "is-final" : "is-provisional"}">${escapeHTML(item.estado)}</span>
+          </div>
+        </article>
+      `).join("")}
+    </section>
   `;
 }
 
