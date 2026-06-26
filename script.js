@@ -1438,7 +1438,6 @@ function renderizarAdminMejoresTerceros() {
       <table class="standings-table admin-third-table">
         <thead>
           <tr>
-            <th class="admin-third-cell-rank">#</th>
             <th class="admin-third-cell-group">Grupo</th>
             <th class="admin-third-cell-team">Equipo</th>
             <th class="admin-third-cell-pj">PJ</th>
@@ -1456,7 +1455,6 @@ function renderizarAdminMejoresTerceros() {
         <tbody>
           ${terceros.map((item) => `
             <tr class="${item.ranking <= 8 ? "is-qualified" : "is-out"}">
-              <td class="admin-third-cell-rank" data-label="Ranking">${escapeHTML(item.ranking)}</td>
               <td class="admin-third-cell-group" data-label="Grupo">${escapeHTML(item.grupo)}</td>
               <td class="admin-third-cell-team" data-label="Equipo">${renderizarEquipoConBandera(item.equipo, "local")}</td>
               <td class="admin-third-cell-pj" data-label="PJ">${escapeHTML(item.pj)}</td>

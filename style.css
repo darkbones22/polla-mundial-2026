@@ -3287,7 +3287,6 @@ body {
   padding: 4px 3px;
 }
 
-.admin-third-cell-rank,
 .admin-third-cell-group {
   width: 34px;
 }
@@ -3309,13 +3308,13 @@ body {
   overflow: hidden;
 }
 
-.admin-third-table th:nth-child(12),
-.admin-third-table td:nth-child(12) {
+.admin-third-table th:nth-last-child(2),
+.admin-third-table td:nth-last-child(2) {
   width: 78px;
 }
 
-.admin-third-table th:nth-child(13),
-.admin-third-table td:nth-child(13) {
+.admin-third-table th:nth-last-child(1),
+.admin-third-table td:nth-last-child(1) {
   width: 68px;
 }
 
@@ -6476,7 +6475,7 @@ body {
   }
 
   .admin-third-table th.admin-third-cell-group,
-  .admin-third-table th:nth-child(12) {
+  .admin-third-table th:nth-last-child(2) {
     font-size: 0;
   }
 
@@ -6485,7 +6484,7 @@ body {
     font-size: 8.8px;
   }
 
-  .admin-third-table th:nth-child(12)::after {
+  .admin-third-table th:nth-last-child(2)::after {
     content: "Clasif.";
     font-size: 8.8px;
   }
@@ -6499,7 +6498,6 @@ body {
     display: none;
   }
 
-  .admin-third-cell-rank,
   .admin-third-cell-gf,
   .admin-third-cell-dg,
   .admin-third-cell-pts {
@@ -6515,8 +6513,8 @@ body {
     min-width: 92px;
   }
 
-  .admin-third-table th:nth-child(12),
-  .admin-third-table td:nth-child(12) {
+  .admin-third-table th:nth-last-child(2),
+  .admin-third-table td:nth-last-child(2) {
     width: 44px;
   }
 
