@@ -1438,39 +1438,39 @@ function renderizarAdminMejoresTerceros() {
       <table class="standings-table admin-third-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Grupo</th>
-            <th>Equipo</th>
-            <th>PJ</th>
-            <th>PG</th>
-            <th>PE</th>
-            <th>PP</th>
-            <th>GF</th>
-            <th>GC</th>
-            <th>DG</th>
-            <th>Pts</th>
+            <th class="admin-third-cell-rank">#</th>
+            <th class="admin-third-cell-group">Grupo</th>
+            <th class="admin-third-cell-team">Equipo</th>
+            <th class="admin-third-cell-pj">PJ</th>
+            <th class="admin-third-cell-pg">PG</th>
+            <th class="admin-third-cell-pe">PE</th>
+            <th class="admin-third-cell-pp">PP</th>
+            <th class="admin-third-cell-gf">GF</th>
+            <th class="admin-third-cell-gc">GC</th>
+            <th class="admin-third-cell-dg">DG</th>
+            <th class="admin-third-cell-pts">Pts</th>
             <th>Clasificación</th>
-            <th>Estado</th>
+            <th class="admin-third-cell-state">Estado</th>
           </tr>
         </thead>
         <tbody>
           ${terceros.map((item) => `
             <tr class="${item.ranking <= 8 ? "is-qualified" : "is-out"}">
-              <td data-label="Ranking">${escapeHTML(item.ranking)}</td>
-              <td data-label="Grupo">${escapeHTML(item.grupo)}</td>
-              <td data-label="Equipo">${renderizarEquipoConBandera(item.equipo, "local")}</td>
-              <td data-label="PJ">${escapeHTML(item.pj)}</td>
-              <td data-label="PG">${escapeHTML(item.pg)}</td>
-              <td data-label="PE">${escapeHTML(item.pe)}</td>
-              <td data-label="PP">${escapeHTML(item.pp)}</td>
-              <td data-label="GF">${escapeHTML(item.gf)}</td>
-              <td data-label="GC">${escapeHTML(item.gc)}</td>
-              <td data-label="DG">${escapeHTML(item.dg)}</td>
-              <td data-label="Pts"><strong>${escapeHTML(item.pts)}</strong></td>
+              <td class="admin-third-cell-rank" data-label="Ranking">${escapeHTML(item.ranking)}</td>
+              <td class="admin-third-cell-group" data-label="Grupo">${escapeHTML(item.grupo)}</td>
+              <td class="admin-third-cell-team" data-label="Equipo">${renderizarEquipoConBandera(item.equipo, "local")}</td>
+              <td class="admin-third-cell-pj" data-label="PJ">${escapeHTML(item.pj)}</td>
+              <td class="admin-third-cell-pg" data-label="PG">${escapeHTML(item.pg)}</td>
+              <td class="admin-third-cell-pe" data-label="PE">${escapeHTML(item.pe)}</td>
+              <td class="admin-third-cell-pp" data-label="PP">${escapeHTML(item.pp)}</td>
+              <td class="admin-third-cell-gf" data-label="GF">${escapeHTML(item.gf)}</td>
+              <td class="admin-third-cell-gc" data-label="GC">${escapeHTML(item.gc)}</td>
+              <td class="admin-third-cell-dg" data-label="DG">${escapeHTML(item.dg)}</td>
+              <td class="admin-third-cell-pts" data-label="Pts"><strong>${escapeHTML(item.pts)}</strong></td>
               <td data-label="Clasificación">
                 <span class="admin-third-classification ${item.ranking <= 8 ? "is-qualified" : "is-out"}" title="${escapeHTML(item.clasificacion)}">${escapeHTML(item.ranking <= 8 ? "Clasifica" : "Fuera")}</span>
               </td>
-              <td data-label="Estado">
+              <td class="admin-third-cell-state" data-label="Estado">
                 <span class="admin-third-status ${item.definitivo ? "is-final" : "is-provisional"}">${escapeHTML(item.estado)}</span>
               </td>
             </tr>

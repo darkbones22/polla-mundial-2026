@@ -3287,37 +3287,26 @@ body {
   padding: 4px 3px;
 }
 
-.admin-third-table td:nth-child(3),
-.admin-third-table th:nth-child(3) {
-  width: 230px;
-  text-align: left;
-  overflow: hidden;
-}
-
-.admin-third-table th:nth-child(1),
-.admin-third-table td:nth-child(1),
-.admin-third-table th:nth-child(2),
-.admin-third-table td:nth-child(2) {
+.admin-third-cell-rank,
+.admin-third-cell-group {
   width: 34px;
 }
 
-.admin-third-table th:nth-child(4),
-.admin-third-table td:nth-child(4),
-.admin-third-table th:nth-child(5),
-.admin-third-table td:nth-child(5),
-.admin-third-table th:nth-child(6),
-.admin-third-table td:nth-child(6),
-.admin-third-table th:nth-child(7),
-.admin-third-table td:nth-child(7),
-.admin-third-table th:nth-child(8),
-.admin-third-table td:nth-child(8),
-.admin-third-table th:nth-child(9),
-.admin-third-table td:nth-child(9),
-.admin-third-table th:nth-child(10),
-.admin-third-table td:nth-child(10),
-.admin-third-table th:nth-child(11),
-.admin-third-table td:nth-child(11) {
+.admin-third-cell-pj,
+.admin-third-cell-pg,
+.admin-third-cell-pe,
+.admin-third-cell-pp,
+.admin-third-cell-gf,
+.admin-third-cell-gc,
+.admin-third-cell-dg,
+.admin-third-cell-pts {
   width: 30px;
+}
+
+.admin-third-cell-team {
+  width: auto;
+  text-align: left;
+  overflow: hidden;
 }
 
 .admin-third-table th:nth-child(12),
@@ -6486,12 +6475,12 @@ body {
     padding: 4px 1px;
   }
 
-  .admin-third-table th:nth-child(2),
+  .admin-third-table th.admin-third-cell-group,
   .admin-third-table th:nth-child(12) {
     font-size: 0;
   }
 
-  .admin-third-table th:nth-child(2)::after {
+  .admin-third-table th.admin-third-cell-group::after {
     content: "G";
     font-size: 8.8px;
   }
@@ -6501,39 +6490,27 @@ body {
     font-size: 8.8px;
   }
 
-  .admin-third-table th:nth-child(4),
-  .admin-third-table td:nth-child(4),
-  .admin-third-table th:nth-child(5),
-  .admin-third-table td:nth-child(5),
-  .admin-third-table th:nth-child(6),
-  .admin-third-table td:nth-child(6),
-  .admin-third-table th:nth-child(7),
-  .admin-third-table td:nth-child(7),
-  .admin-third-table th:nth-child(9),
-  .admin-third-table td:nth-child(9),
-  .admin-third-table th:nth-child(13),
-  .admin-third-table td:nth-child(13) {
+  .admin-third-cell-pj,
+  .admin-third-cell-pg,
+  .admin-third-cell-pe,
+  .admin-third-cell-pp,
+  .admin-third-cell-gc,
+  .admin-third-cell-state {
     display: none;
   }
 
-  .admin-third-table th:nth-child(1),
-  .admin-third-table td:nth-child(1),
-  .admin-third-table th:nth-child(8),
-  .admin-third-table td:nth-child(8),
-  .admin-third-table th:nth-child(10),
-  .admin-third-table td:nth-child(10),
-  .admin-third-table th:nth-child(11),
-  .admin-third-table td:nth-child(11) {
+  .admin-third-cell-rank,
+  .admin-third-cell-gf,
+  .admin-third-cell-dg,
+  .admin-third-cell-pts {
     width: 22px;
   }
 
-  .admin-third-table th:nth-child(2),
-  .admin-third-table td:nth-child(2) {
+  .admin-third-cell-group {
     width: 18px;
   }
 
-  .admin-third-table th:nth-child(3),
-  .admin-third-table td:nth-child(3) {
+  .admin-third-cell-team {
     width: auto;
     min-width: 92px;
   }
