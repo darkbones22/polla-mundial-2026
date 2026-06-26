@@ -1413,10 +1413,6 @@ function obtenerMejoresTerceros() {
     }));
 }
 
-function renderizarValorPendiente(valor) {
-  return Number.isFinite(valor) ? escapeHTML(valor) : "Pendiente";
-}
-
 function renderizarAdminMejoresTerceros() {
   const contenedor = document.getElementById("adminMejoresTercerosContenido");
   if (!contenedor) return;
@@ -1439,7 +1435,7 @@ function renderizarAdminMejoresTerceros() {
 
   contenedor.innerHTML = `
     <div class="admin-third-note">
-      Orden FIFA parcial. Fair play y ranking FIFA se aplicaran cuando existan datos completos. No usar como confirmacion oficial hasta cerrar todos los grupos.
+      Orden FIFA parcial: puntos, diferencia de gol y goles a favor. Fair play y Ranking FIFA se agregaran cuando existan datos completos.
     </div>
 
     <section class="admin-third-summary">
@@ -1465,11 +1461,11 @@ function renderizarAdminMejoresTerceros() {
       </article>
     </section>
 
-    <div class="admin-third-table-wrap">
-      <table class="admin-third-table">
+    <div class="standings-table-wrap admin-third-table-wrap">
+      <table class="standings-table admin-third-table">
         <thead>
           <tr>
-            <th>Ranking</th>
+            <th>#</th>
             <th>Grupo</th>
             <th>Equipo</th>
             <th>PJ</th>
@@ -1480,10 +1476,8 @@ function renderizarAdminMejoresTerceros() {
             <th>GC</th>
             <th>DG</th>
             <th>Pts</th>
-            <th>Fair play</th>
-            <th>Ranking FIFA</th>
+            <th>Clasificación</th>
             <th>Estado</th>
-            <th>Nota</th>
           </tr>
         </thead>
         <tbody>
@@ -1500,45 +1494,17 @@ function renderizarAdminMejoresTerceros() {
               <td data-label="GC">${escapeHTML(item.gc)}</td>
               <td data-label="DG">${escapeHTML(item.dg)}</td>
               <td data-label="Pts"><strong>${escapeHTML(item.pts)}</strong></td>
-              <td data-label="Fair play">${renderizarValorPendiente(item.fairPlay)}</td>
-              <td data-label="Ranking FIFA">${renderizarValorPendiente(item.rankingFifa)}</td>
+              <td data-label="Clasificación">
+                <span class="admin-third-classification ${item.ranking <= 8 ? "is-qualified" : "is-out"}">${escapeHTML(item.clasificacion)}</span>
+              </td>
               <td data-label="Estado">
                 <span class="admin-third-status ${item.definitivo ? "is-final" : "is-provisional"}">${escapeHTML(item.estado)}</span>
-              </td>
-              <td data-label="Nota">
-                <span class="admin-third-classification ${item.ranking <= 8 ? "is-qualified" : "is-out"}">${escapeHTML(item.clasificacion)}</span>
               </td>
             </tr>
           `).join("")}
         </tbody>
       </table>
     </div>
-
-    <section class="admin-third-mobile-list">
-      ${terceros.map((item) => `
-        <article class="admin-third-mobile-card ${item.ranking <= 8 ? "is-qualified" : "is-out"}">
-          <div class="admin-third-mobile-main">
-            <div class="admin-third-mobile-team">
-              <strong>#${escapeHTML(item.ranking)} ${renderizarEquipoConBandera(item.equipo, "local")}</strong>
-              <span>Grupo ${escapeHTML(item.grupo)}</span>
-            </div>
-            <strong class="admin-third-mobile-points">${escapeHTML(item.pts)} pts</strong>
-          </div>
-
-          <div class="admin-third-mobile-stats">
-            <span>DG ${escapeHTML(item.dg > 0 ? `+${item.dg}` : item.dg)}</span>
-            <span>GF ${escapeHTML(item.gf)}</span>
-            <span>PJ ${escapeHTML(item.pj)}</span>
-            <span>FP ${renderizarValorPendiente(item.fairPlay)}</span>
-          </div>
-
-          <div class="admin-third-mobile-badges">
-            <span class="admin-third-classification ${item.ranking <= 8 ? "is-qualified" : "is-out"}">${escapeHTML(item.clasificacion)}</span>
-            <span class="admin-third-status ${item.definitivo ? "is-final" : "is-provisional"}">${escapeHTML(item.estado)}</span>
-          </div>
-        </article>
-      `).join("")}
-    </section>
   `;
 }
 

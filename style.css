@@ -1049,78 +1049,6 @@ body {
     font-size: 19px;
   }
 
-  .admin-third-table-wrap {
-    overflow-x: visible;
-    border: 0;
-    background: transparent;
-  }
-
-  .admin-third-table,
-  .admin-third-table thead,
-  .admin-third-table tbody,
-  .admin-third-table tr,
-  .admin-third-table td {
-    display: block;
-    width: 100%;
-    min-width: 0;
-  }
-
-  .admin-third-table {
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-
-  .admin-third-table thead {
-    display: none;
-  }
-
-  .admin-third-table tr {
-    margin-bottom: 8px;
-    padding: 9px;
-    border: 1px solid #dbeafe;
-    border-radius: 13px;
-    background: #ffffff;
-  }
-
-  .admin-third-table tr.is-qualified {
-    border-color: #bbf7d0;
-    background: #f0fdf4;
-  }
-
-  .admin-third-table tr.is-out {
-    background: #f8fafc;
-  }
-
-  .admin-third-table td {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 5px 0;
-    border: 0;
-    white-space: normal;
-    text-align: right;
-    font-size: 11px;
-  }
-
-  .admin-third-table td::before {
-    content: attr(data-label);
-    flex: 0 0 auto;
-    color: #64748b;
-    font-size: 10px;
-    font-weight: 900;
-    text-align: left;
-  }
-
-  .admin-third-table td[data-label="Equipo"] {
-    align-items: flex-start;
-  }
-
-  .admin-third-table td[data-label="Equipo"] .team-with-flag {
-    justify-content: flex-end;
-    min-width: 0;
-  }
-
   .group-standings-grid {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -3379,56 +3307,74 @@ body {
 }
 
 .admin-third-table-wrap {
-  overflow-x: auto;
   border: 1px solid #dbeafe;
   border-radius: 14px;
   background: #ffffff;
+  overflow: hidden;
 }
 
 .admin-third-table {
   width: 100%;
-  min-width: 920px;
-  border-collapse: collapse;
+  table-layout: fixed;
   font-size: 11px;
 }
 
 .admin-third-table th,
 .admin-third-table td {
-  padding: 8px 7px;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: center;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-.admin-third-table th {
-  background: #eff6ff;
-  color: #1e3a8a;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
+  padding: 5px 2px;
 }
 
 .admin-third-table td:nth-child(3),
 .admin-third-table th:nth-child(3) {
-  min-width: 160px;
+  width: auto;
   text-align: left;
+  overflow: hidden;
 }
 
-.admin-third-table tbody tr:last-child td {
-  border-bottom: none;
+.admin-third-table th:nth-child(1),
+.admin-third-table td:nth-child(1),
+.admin-third-table th:nth-child(2),
+.admin-third-table td:nth-child(2) {
+  width: 26px;
 }
 
-.admin-third-table tr.is-qualified {
-  background: #f0fdf4;
+.admin-third-table th:nth-child(4),
+.admin-third-table td:nth-child(4),
+.admin-third-table th:nth-child(5),
+.admin-third-table td:nth-child(5),
+.admin-third-table th:nth-child(6),
+.admin-third-table td:nth-child(6),
+.admin-third-table th:nth-child(7),
+.admin-third-table td:nth-child(7),
+.admin-third-table th:nth-child(8),
+.admin-third-table td:nth-child(8),
+.admin-third-table th:nth-child(9),
+.admin-third-table td:nth-child(9),
+.admin-third-table th:nth-child(10),
+.admin-third-table td:nth-child(10),
+.admin-third-table th:nth-child(11),
+.admin-third-table td:nth-child(11) {
+  width: 28px;
 }
 
-.admin-third-table tr.is-out {
-  background: #f8fafc;
+.admin-third-table th:nth-child(12),
+.admin-third-table td:nth-child(12) {
+  width: 82px;
+}
+
+.admin-third-table th:nth-child(13),
+.admin-third-table td:nth-child(13) {
+  width: 72px;
 }
 
 .admin-third-table .team-with-flag {
   justify-content: flex-start;
+}
+
+.admin-third-table .team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-third-status,
@@ -3456,10 +3402,6 @@ body {
 .admin-third-classification.is-out {
   background: #e2e8f0;
   color: #475569;
-}
-
-.admin-third-mobile-list {
-  display: none;
 }
 
 .admin-espn-flow-block {
@@ -6571,112 +6513,60 @@ body {
     font-size: 9.5px;
   }
 
-  .admin-third-table-wrap {
+  .admin-third-table {
+    font-size: 9px;
+  }
+
+  .admin-third-table th,
+  .admin-third-table td {
+    padding: 4px 1px;
+  }
+
+  .admin-third-table th:nth-child(5),
+  .admin-third-table td:nth-child(5),
+  .admin-third-table th:nth-child(6),
+  .admin-third-table td:nth-child(6),
+  .admin-third-table th:nth-child(7),
+  .admin-third-table td:nth-child(7),
+  .admin-third-table th:nth-child(9),
+  .admin-third-table td:nth-child(9) {
     display: none;
   }
 
-  .admin-third-mobile-list {
-    display: grid;
-    gap: 6px;
+  .admin-third-table th:nth-child(1),
+  .admin-third-table td:nth-child(1),
+  .admin-third-table th:nth-child(2),
+  .admin-third-table td:nth-child(2),
+  .admin-third-table th:nth-child(4),
+  .admin-third-table td:nth-child(4),
+  .admin-third-table th:nth-child(8),
+  .admin-third-table td:nth-child(8),
+  .admin-third-table th:nth-child(10),
+  .admin-third-table td:nth-child(10),
+  .admin-third-table th:nth-child(11),
+  .admin-third-table td:nth-child(11) {
+    width: 23px;
   }
 
-  .admin-third-mobile-card {
-    padding: 7px 8px;
-    border: 1px solid #dbeafe;
-    border-radius: 11px;
-    background: #ffffff;
+  .admin-third-table th:nth-child(12),
+  .admin-third-table td:nth-child(12) {
+    width: 58px;
   }
 
-  .admin-third-mobile-card.is-qualified {
-    border-color: #bbf7d0;
-    background: #f0fdf4;
+  .admin-third-table th:nth-child(13),
+  .admin-third-table td:nth-child(13) {
+    width: 52px;
   }
 
-  .admin-third-mobile-card.is-out {
-    background: #f8fafc;
-  }
-
-  .admin-third-mobile-main {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .admin-third-mobile-team {
-    min-width: 0;
-  }
-
-  .admin-third-mobile-team strong {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-width: 0;
-    color: #0f172a;
-    font-size: 12px;
-    font-weight: 900;
-  }
-
-  .admin-third-mobile-team .team-with-flag {
-    min-width: 0;
-  }
-
-  .admin-third-mobile-team .team-flag {
-    width: 14px;
-    height: 10px;
-  }
-
-  .admin-third-mobile-team .team-name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .admin-third-mobile-team span {
-    display: block;
-    margin-top: 1px;
-    color: #64748b;
-    font-size: 10px;
-    font-weight: 800;
-  }
-
-  .admin-third-mobile-points {
-    flex: 0 0 auto;
-    color: #1d4ed8;
-    font-size: 16px;
-    white-space: nowrap;
-  }
-
-  .admin-third-mobile-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 5px;
-  }
-
-  .admin-third-mobile-stats span {
-    padding: 2px 5px;
-    border-radius: 999px;
-    background: #e0f2fe;
-    color: #075985;
-    font-size: 9px;
-    font-weight: 900;
-    line-height: 1.3;
-  }
-
-  .admin-third-mobile-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 5px;
+  .admin-third-table .team-flag {
+    width: 13px;
+    height: 9px;
   }
 
   .admin-third-status,
   .admin-third-classification {
-    padding: 3px 6px;
-    font-size: 9px;
+    padding: 2px 4px;
+    font-size: 8px;
   }
 }
 
