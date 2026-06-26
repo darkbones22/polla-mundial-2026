@@ -3276,6 +3276,11 @@ body {
   font-weight: 900;
 }
 
+.admin-third-note-mobile,
+.admin-third-label-mobile {
+  display: none;
+}
+
 .admin-third-summary {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -6472,49 +6477,65 @@ body {
   .admin-third-header {
     align-items: stretch;
     flex-direction: column;
-    gap: 7px;
-    margin-bottom: 8px;
+    gap: 5px;
+    margin-bottom: 6px;
   }
 
   .admin-third-header h3 {
-    font-size: 17px;
+    font-size: 16px;
+    line-height: 1.1;
   }
 
   .admin-third-header p {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .admin-third-header .admin-save-button {
+    min-height: 32px;
+    padding: 7px 10px;
     font-size: 11px;
-    line-height: 1.25;
   }
 
   .admin-third-note {
-    margin-bottom: 7px;
-    padding: 7px 8px;
-    border-radius: 10px;
-    font-size: 10px;
-    line-height: 1.25;
+    margin-bottom: 6px;
+    padding: 6px 7px;
+    border-radius: 9px;
+    font-size: 9.5px;
+    line-height: 1.2;
+  }
+
+  .admin-third-note-full {
+    display: none;
+  }
+
+  .admin-third-note-mobile {
+    display: inline;
   }
 
   .admin-third-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 5px;
-    margin-bottom: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 6px;
   }
 
   .admin-third-summary article {
-    padding: 7px 8px;
-    border-radius: 10px;
+    padding: 5px 6px;
+    border-radius: 9px;
   }
 
   .admin-third-summary strong {
-    font-size: 17px;
+    font-size: 15px;
   }
 
   .admin-third-summary span {
-    margin-top: 3px;
-    font-size: 9.5px;
+    margin-top: 2px;
+    font-size: 8.5px;
+    line-height: 1.05;
   }
 
   .admin-third-table {
-    font-size: 9px;
+    font-size: 8.8px;
   }
 
   .admin-third-table th,
@@ -6522,6 +6543,23 @@ body {
     padding: 4px 1px;
   }
 
+  .admin-third-table th:nth-child(2),
+  .admin-third-table th:nth-child(12) {
+    font-size: 0;
+  }
+
+  .admin-third-table th:nth-child(2)::after {
+    content: "G";
+    font-size: 8.8px;
+  }
+
+  .admin-third-table th:nth-child(12)::after {
+    content: "Clasif.";
+    font-size: 8.8px;
+  }
+
+  .admin-third-table th:nth-child(4),
+  .admin-third-table td:nth-child(4),
   .admin-third-table th:nth-child(5),
   .admin-third-table td:nth-child(5),
   .admin-third-table th:nth-child(6),
@@ -6529,7 +6567,9 @@ body {
   .admin-third-table th:nth-child(7),
   .admin-third-table td:nth-child(7),
   .admin-third-table th:nth-child(9),
-  .admin-third-table td:nth-child(9) {
+  .admin-third-table td:nth-child(9),
+  .admin-third-table th:nth-child(13),
+  .admin-third-table td:nth-child(13) {
     display: none;
   }
 
@@ -6537,36 +6577,33 @@ body {
   .admin-third-table td:nth-child(1),
   .admin-third-table th:nth-child(2),
   .admin-third-table td:nth-child(2),
-  .admin-third-table th:nth-child(4),
-  .admin-third-table td:nth-child(4),
   .admin-third-table th:nth-child(8),
   .admin-third-table td:nth-child(8),
   .admin-third-table th:nth-child(10),
   .admin-third-table td:nth-child(10),
   .admin-third-table th:nth-child(11),
   .admin-third-table td:nth-child(11) {
-    width: 23px;
+    width: 22px;
   }
 
   .admin-third-table th:nth-child(12),
   .admin-third-table td:nth-child(12) {
-    width: 58px;
-  }
-
-  .admin-third-table th:nth-child(13),
-  .admin-third-table td:nth-child(13) {
-    width: 52px;
+    width: 48px;
   }
 
   .admin-third-table .team-flag {
-    width: 13px;
-    height: 9px;
+    width: 12px;
+    height: 8px;
+  }
+
+  .admin-third-table .team-with-flag {
+    gap: 3px;
   }
 
   .admin-third-status,
   .admin-third-classification {
-    padding: 2px 4px;
-    font-size: 8px;
+    padding: 2px 3px;
+    font-size: 7.8px;
   }
 }
 

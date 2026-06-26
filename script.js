@@ -1435,7 +1435,8 @@ function renderizarAdminMejoresTerceros() {
 
   contenedor.innerHTML = `
     <div class="admin-third-note">
-      Orden FIFA parcial: puntos, diferencia de gol y goles a favor. Fair play y Ranking FIFA se agregaran cuando existan datos completos.
+      <span class="admin-third-note-full">Orden FIFA parcial: puntos, diferencia de gol y goles a favor. Fair play y Ranking FIFA se agregaran cuando existan datos completos.</span>
+      <span class="admin-third-note-mobile">Orden FIFA parcial: Pts, DG y GF. Fair play y Ranking FIFA pendientes.</span>
     </div>
 
     <section class="admin-third-summary">
@@ -1495,7 +1496,7 @@ function renderizarAdminMejoresTerceros() {
               <td data-label="DG">${escapeHTML(item.dg)}</td>
               <td data-label="Pts"><strong>${escapeHTML(item.pts)}</strong></td>
               <td data-label="Clasificación">
-                <span class="admin-third-classification ${item.ranking <= 8 ? "is-qualified" : "is-out"}">${escapeHTML(item.clasificacion)}</span>
+                <span class="admin-third-classification ${item.ranking <= 8 ? "is-qualified" : "is-out"}" title="${escapeHTML(item.clasificacion)}">${escapeHTML(item.ranking <= 8 ? "Clasifica" : "Fuera")}</span>
               </td>
               <td data-label="Estado">
                 <span class="admin-third-status ${item.definitivo ? "is-final" : "is-provisional"}">${escapeHTML(item.estado)}</span>
