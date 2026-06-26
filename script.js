@@ -1428,39 +1428,11 @@ function renderizarAdminMejoresTerceros() {
     return;
   }
 
-  const definitivos = terceros.filter((item) => item.definitivo).length;
-  const provisionales = terceros.length - definitivos;
-  const clasifican = Math.min(8, terceros.length);
-  const fuera = Math.max(0, terceros.length - 8);
-
   contenedor.innerHTML = `
     <div class="admin-third-note">
       <span class="admin-third-note-full">Orden FIFA parcial: puntos, diferencia de gol y goles a favor. Fair play y Ranking FIFA se agregaran cuando existan datos completos.</span>
       <span class="admin-third-note-mobile">Orden FIFA parcial: Pts, DG y GF. Fair play y Ranking FIFA pendientes.</span>
     </div>
-
-    <section class="admin-third-summary">
-      <article>
-        <strong>${escapeHTML(terceros.length)}</strong>
-        <span>terceros</span>
-      </article>
-      <article>
-        <strong>${escapeHTML(clasifican)}</strong>
-        <span>clasifican</span>
-      </article>
-      <article>
-        <strong>${escapeHTML(fuera)}</strong>
-        <span>fuera por ahora</span>
-      </article>
-      <article>
-        <strong>${escapeHTML(definitivos)}</strong>
-        <span>definitivos</span>
-      </article>
-      <article>
-        <strong>${escapeHTML(provisionales)}</strong>
-        <span>provisionales</span>
-      </article>
-    </section>
 
     <div class="standings-table-wrap admin-third-table-wrap">
       <table class="standings-table admin-third-table">

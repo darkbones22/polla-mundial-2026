@@ -1037,18 +1037,6 @@ body {
     flex-direction: column;
   }
 
-  .admin-third-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .admin-third-summary article {
-    padding: 9px;
-  }
-
-  .admin-third-summary strong {
-    font-size: 19px;
-  }
-
   .group-standings-grid {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -3281,36 +3269,6 @@ body {
   display: none;
 }
 
-.admin-third-summary {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.admin-third-summary article {
-  min-width: 0;
-  padding: 10px;
-  border: 1px solid #dbeafe;
-  border-radius: 13px;
-  background: #eff6ff;
-}
-
-.admin-third-summary strong {
-  display: block;
-  color: #1d4ed8;
-  font-size: 22px;
-  line-height: 1;
-}
-
-.admin-third-summary span {
-  display: block;
-  margin-top: 5px;
-  color: #334155;
-  font-size: 11px;
-  font-weight: 900;
-}
-
 .admin-third-table-wrap {
   border: 1px solid #dbeafe;
   border-radius: 14px;
@@ -3321,12 +3279,12 @@ body {
 .admin-third-table {
   width: 100%;
   table-layout: fixed;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .admin-third-table th,
 .admin-third-table td {
-  padding: 5px 2px;
+  padding: 4px 1px;
 }
 
 .admin-third-table td:nth-child(3),
@@ -3340,7 +3298,7 @@ body {
 .admin-third-table td:nth-child(1),
 .admin-third-table th:nth-child(2),
 .admin-third-table td:nth-child(2) {
-  width: 26px;
+  width: 24px;
 }
 
 .admin-third-table th:nth-child(4),
@@ -3359,17 +3317,17 @@ body {
 .admin-third-table td:nth-child(10),
 .admin-third-table th:nth-child(11),
 .admin-third-table td:nth-child(11) {
-  width: 28px;
+  width: 24px;
 }
 
 .admin-third-table th:nth-child(12),
 .admin-third-table td:nth-child(12) {
-  width: 82px;
+  width: 66px;
 }
 
 .admin-third-table th:nth-child(13),
 .admin-third-table td:nth-child(13) {
-  width: 72px;
+  width: 62px;
 }
 
 .admin-third-table .team-with-flag {
@@ -3387,9 +3345,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 7px;
+  padding: 3px 6px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
 }
 
@@ -6511,27 +6469,6 @@ body {
 
   .admin-third-note-mobile {
     display: inline;
-  }
-
-  .admin-third-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
-    margin-bottom: 6px;
-  }
-
-  .admin-third-summary article {
-    padding: 5px 6px;
-    border-radius: 9px;
-  }
-
-  .admin-third-summary strong {
-    font-size: 15px;
-  }
-
-  .admin-third-summary span {
-    margin-top: 2px;
-    font-size: 8.5px;
-    line-height: 1.05;
   }
 
   .admin-third-table {
