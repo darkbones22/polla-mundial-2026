@@ -6479,9 +6479,18 @@ body {
 
   .admin-third-table {
     font-size: 8.5px;
-    width: 100%;
+    display: block;
+    width: fit-content;
     max-width: 100%;
+    margin: 0 auto;
     table-layout: auto;
+  }
+
+  .admin-third-table thead,
+  .admin-third-table tbody {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
   }
 
   .admin-third-table th,
@@ -6493,9 +6502,9 @@ body {
   .admin-third-table thead tr,
   .admin-third-table tbody tr {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 18px 20px 22px 24px 36px;
+    grid-template-columns: 126px 18px 22px 24px 24px 36px;
     align-items: center;
-    width: 100%;
+    width: 250px;
     max-width: 100%;
   }
 
@@ -6533,6 +6542,7 @@ body {
     order: 1;
     text-align: left;
     overflow: hidden;
+    max-width: 126px;
   }
 
   .admin-third-cell-group {
@@ -6567,6 +6577,13 @@ body {
     max-width: 100%;
     min-width: 0;
     overflow: hidden;
+  }
+
+  .admin-third-table .team-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .admin-third-classification {
