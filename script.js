@@ -6153,6 +6153,56 @@ function obtenerClasificaGuardadoEliminacion(partido) {
     obtenerEquipoClasificadoPorLadoEliminacion(partido, lado);
 }
 
+function obtenerClasificadoLadoGuardadoEliminacion(partido) {
+  const lado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasificadoLado")) || "";
+  const ladoNormalizado = String(lado).trim().toLowerCase();
+
+  if (ladoNormalizado === "local" || ladoNormalizado === "visita") {
+    return ladoNormalizado;
+  }
+
+  const clasifica = localStorage.getItem(crearClaveEliminacion(partido.id, "clasific")) || "";
+  return obtenerLadoClasificadoPorNombreEliminacion(partido, clasifica);
+}
+
+function marcarClasificadoEliminacionGuardado(partido, tarjeta) {
+  const ladoGuardado = obtenerClasificadoLadoGuardadoEliminacion(partido);
+  const radiosClasifica = Array.from(tarjeta.querySelectorAll('input[type="radio"]'));
+
+  radiosClasifica.forEach((radio) => {
+    radio.checked = Boolean(ladoGuardado) && radio.dataset.lado === ladoGuardado;
+  });
+}
+
+function aplicarPronosticoEliminacionGuardado(partido, tarjeta) {
+  const inputsMarcador = tarjeta.querySelectorAll(".score-input");
+  const inputLocal = inputsMarcador[0];
+  const inputVisita = inputsMarcador[1];
+
+  if (inputLocal) {
+    inputLocal.value = localStorage.getItem(crearClaveEliminacion(partido.id, "local")) || "";
+  }
+
+  if (inputVisita) {
+    inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
+  }
+
+  marcarClasificadoEliminacionGuardado(partido, tarjeta);
+  actualizarClasificaEliminacion(partido, tarjeta);
+
+  const golesLocal = Number(inputLocal?.value);
+  const golesVisita = Number(inputVisita?.value);
+  const esEmpateGuardado = inputLocal?.value !== "" &&
+    inputVisita?.value !== "" &&
+    Number.isFinite(golesLocal) &&
+    Number.isFinite(golesVisita) &&
+    golesLocal === golesVisita;
+
+  if (esEmpateGuardado) {
+    marcarClasificadoEliminacionGuardado(partido, tarjeta);
+  }
+}
+
 function actualizarClasificaEliminacion(partido, tarjeta) {
   const inputsMarcador = tarjeta.querySelectorAll(".score-input");
   const inputLocal = inputsMarcador[0];
@@ -6380,18 +6430,7 @@ function renderizarEliminacion() {
     const inputVisita = inputsMarcador[1];
     const radiosClasifica = tarjeta.querySelectorAll('input[type="radio"]');
 
-    inputLocal.value = localStorage.getItem(crearClaveEliminacion(partido.id, "local")) || "";
-    inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
-
-    const clasificaGuardado = obtenerClasificaGuardadoEliminacion(partido);
-
-    radiosClasifica.forEach((radio) => {
-      if (radio.value === clasificaGuardado) {
-        radio.checked = true;
-      }
-    });
-
-    actualizarClasificaEliminacion(partido, tarjeta);
+    aplicarPronosticoEliminacionGuardado(partido, tarjeta);
 
     if (!bloqueado) {
       inputLocal.addEventListener("input", () => {
@@ -6761,27 +6800,12 @@ function recargarPronosticosEliminacionDesdeLocalStorage() {
   llavesEliminacion.forEach((partido) => {
     const inputLocal = obtenerInputPorId(`${partido.id}_elim_local`);
     const inputVisita = obtenerInputPorId(`${partido.id}_elim_visita`);
-    const radiosClasifica = obtenerRadiosClasifica(partido.id);
-
-    if (inputLocal) {
-      inputLocal.value = localStorage.getItem(crearClaveEliminacion(partido.id, "local")) || "";
-    }
-
-    if (inputVisita) {
-      inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
-    }
-
-    const clasificaGuardado = obtenerClasificaGuardadoEliminacion(partido);
-
-    radiosClasifica.forEach((radio) => {
-      radio.checked = radio.value === clasificaGuardado;
-    });
 
     const tarjeta = inputLocal?.closest(".knockout-prediction-card") ||
       inputVisita?.closest(".knockout-prediction-card");
 
     if (tarjeta) {
-      actualizarClasificaEliminacion(partido, tarjeta);
+      aplicarPronosticoEliminacionGuardado(partido, tarjeta);
     }
   });
 

@@ -207,6 +207,18 @@ body {
   justify-content: flex-start;
 }
 
+.knockout-prediction-card .team-with-flag,
+.knockout-prediction-card .classify-option .team-with-flag {
+  max-width: none;
+}
+
+.knockout-prediction-card .team-name,
+.knockout-prediction-card .classify-option .team-name {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
 .score-input {
   max-width: 100%;
   width: 56px;
@@ -939,18 +951,29 @@ body {
   }
 
   .knockout-prediction-card .match-row {
-    grid-template-columns: minmax(72px, 1fr) 48px 10px 48px minmax(72px, 1fr);
+    grid-template-columns: minmax(110px, 1fr) 48px 10px 48px minmax(110px, 1fr);
     align-items: center;
   }
 
   .knockout-prediction-card .team {
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
     overflow-wrap: normal;
     word-break: normal;
     hyphens: none;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .knockout-prediction-card .team-name,
+  .knockout-prediction-card .classify-option .team-name {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .knockout-prediction-card .team-with-flag {
+    max-width: none;
   }
 
   .group-prediction-card .match-status,
@@ -970,6 +993,15 @@ body {
   .knockout-prediction-card .classify-box {
     grid-column: 1 / -1;
     grid-row: 3;
+  }
+
+  .knockout-prediction-card .classify-options {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+
+  .knockout-prediction-card .classify-option {
+    min-width: 0;
+    justify-content: flex-start;
   }
 
   .result-card {
@@ -2555,8 +2587,8 @@ body {
   }
 
   .knockout-prediction-card .match-row {
-    grid-template-columns: minmax(78px, 1fr) 44px 8px 44px minmax(78px, 1fr);
-    gap: 4px;
+    grid-template-columns: minmax(0, 1fr) 44px 8px 44px minmax(0, 1fr);
+    gap: 5px;
   }
 
   .result-row {
@@ -2578,12 +2610,24 @@ body {
   }
 
   .knockout-prediction-card .team {
-    overflow: hidden;
+    overflow: visible;
     overflow-wrap: normal;
     word-break: normal;
     hyphens: none;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .knockout-prediction-card .team-name,
+  .knockout-prediction-card .classify-option .team-name {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .knockout-prediction-card .team-with-flag,
+  .knockout-prediction-card .classify-option .team-with-flag {
+    max-width: none;
   }
 
   .result-card .team {
@@ -2617,6 +2661,10 @@ body {
   .classify-option {
     padding: 6px 7px;
     font-size: 11px;
+  }
+
+  .knockout-prediction-card .classify-options {
+    grid-template-columns: 1fr;
   }
 
   .ranking-card {
