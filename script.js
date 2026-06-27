@@ -1934,13 +1934,9 @@ async function cargarPronosticosUsuarioConServidor() {
       })),
       eliminacion: (eliminacion.pronosticos || []).map((pronostico) => {
         const partido = llavesEliminacion.find((item) => item.id === pronostico.partidoId);
-        const clasifica = pronostico.clasifica || (
-          pronostico.clasificadoLado === "local"
-            ? partido?.local || partido?.localPlaceholder || ""
-            : pronostico.clasificadoLado === "visita"
-              ? partido?.visita || partido?.visitaPlaceholder || ""
-              : ""
-        );
+        const clasifica = partido
+          ? obtenerClasificaDesdePronosticoEliminacion(pronostico, partido)
+          : pronostico.clasifica || "";
 
         return {
           ...pronostico,
@@ -6103,6 +6099,60 @@ function obtenerClasificadoAutomaticoEliminacion(partido, golesLocal, golesVisit
     : partido.visita || partido.visitaPlaceholder;
 }
 
+function obtenerEquipoClasificadoPorLadoEliminacion(partido, lado) {
+  const ladoNormalizado = String(lado || "").trim().toLowerCase();
+
+  if (ladoNormalizado === "local") {
+    return partido.local || partido.localPlaceholder || "";
+  }
+
+  if (ladoNormalizado === "visita") {
+    return partido.visita || partido.visitaPlaceholder || "";
+  }
+
+  return "";
+}
+
+function obtenerLadoClasificadoPorNombreEliminacion(partido, nombre) {
+  const valor = String(nombre || "").trim();
+
+  if (!valor) return "";
+  if (valor === partido.local || valor === partido.localPlaceholder) return "local";
+  if (valor === partido.visita || valor === partido.visitaPlaceholder) return "visita";
+
+  return "";
+}
+
+function normalizarClasificaGuardadoEliminacion(partido, valor) {
+  const valorNormalizado = String(valor || "").trim();
+
+  if (!valorNormalizado) return "";
+
+  const porLado = obtenerEquipoClasificadoPorLadoEliminacion(partido, valorNormalizado);
+  if (porLado) return porLado;
+
+  const lado = obtenerLadoClasificadoPorNombreEliminacion(partido, valorNormalizado);
+  if (lado) return obtenerEquipoClasificadoPorLadoEliminacion(partido, lado);
+
+  return "";
+}
+
+function obtenerClasificaDesdePronosticoEliminacion(pronostico, partido) {
+  const clasificaPorNombre = normalizarClasificaGuardadoEliminacion(partido, pronostico?.clasifica);
+
+  if (clasificaPorNombre) return clasificaPorNombre;
+
+  return obtenerEquipoClasificadoPorLadoEliminacion(partido, pronostico?.clasificadoLado);
+}
+
+function obtenerClasificaGuardadoEliminacion(partido) {
+  const clasifica = localStorage.getItem(crearClaveEliminacion(partido.id, "clasific")) || "";
+  const lado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasificadoLado")) || "";
+
+  return normalizarClasificaGuardadoEliminacion(partido, clasifica) ||
+    obtenerEquipoClasificadoPorLadoEliminacion(partido, lado);
+}
+
 function actualizarClasificaEliminacion(partido, tarjeta) {
   const inputsMarcador = tarjeta.querySelectorAll(".score-input");
   const inputLocal = inputsMarcador[0];
@@ -6129,6 +6179,10 @@ function actualizarClasificaEliminacion(partido, tarjeta) {
       crearClaveEliminacion(partido.id, "clasific"),
       clasificadoAutomatico
     );
+    localStorage.setItem(
+      crearClaveEliminacion(partido.id, "clasificadoLado"),
+      obtenerLadoClasificadoPorNombreEliminacion(partido, clasificadoAutomatico)
+    );
 
     return;
   }
@@ -6145,8 +6199,13 @@ function actualizarClasificaEliminacion(partido, tarjeta) {
         crearClaveEliminacion(partido.id, "clasific"),
         clasificaManual.value
       );
+      localStorage.setItem(
+        crearClaveEliminacion(partido.id, "clasificadoLado"),
+        obtenerLadoClasificadoPorNombreEliminacion(partido, clasificaManual.value)
+      );
     } else {
       localStorage.removeItem(crearClaveEliminacion(partido.id, "clasific"));
+      localStorage.removeItem(crearClaveEliminacion(partido.id, "clasificadoLado"));
     }
   }
 
@@ -6156,6 +6215,7 @@ function actualizarClasificaEliminacion(partido, tarjeta) {
     });
 
     localStorage.removeItem(crearClaveEliminacion(partido.id, "clasific"));
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "clasificadoLado"));
   }
 }
 
@@ -6291,6 +6351,7 @@ function renderizarEliminacion() {
               type="radio" 
               name="${partidoIdSeguro}_clasifica" 
               value="${localSeguro}"
+              data-lado="local"
               ${bloqueado ? "disabled" : ""}
             />
             ${localConBandera}
@@ -6301,6 +6362,7 @@ function renderizarEliminacion() {
               type="radio" 
               name="${partidoIdSeguro}_clasifica" 
               value="${visitaSeguro}"
+              data-lado="visita"
               ${bloqueado ? "disabled" : ""}
             />
             ${visitaConBandera}
@@ -6321,7 +6383,7 @@ function renderizarEliminacion() {
     inputLocal.value = localStorage.getItem(crearClaveEliminacion(partido.id, "local")) || "";
     inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
 
-    const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasific"));
+    const clasificaGuardado = obtenerClasificaGuardadoEliminacion(partido);
 
     radiosClasifica.forEach((radio) => {
       if (radio.value === clasificaGuardado) {
@@ -6347,6 +6409,7 @@ function renderizarEliminacion() {
       radiosClasifica.forEach((radio) => {
         radio.addEventListener("change", () => {
           localStorage.setItem(crearClaveEliminacion(partido.id, "clasific"), radio.value);
+          localStorage.setItem(crearClaveEliminacion(partido.id, "clasificadoLado"), radio.dataset.lado || "");
           actualizarContadorEliminacion();
         });
       });
@@ -6651,6 +6714,13 @@ function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsu
   eliminacion.forEach((pronostico) => {
     if (!pronostico.id) return;
 
+    const partido = llavesEliminacion.find((item) => item.id === pronostico.id);
+    const clasifica = partido
+      ? obtenerClasificaDesdePronosticoEliminacion(pronostico, partido)
+      : pronostico.clasifica || "";
+    const clasificadoLado = pronostico.clasificadoLado ||
+      (partido ? obtenerLadoClasificadoPorNombreEliminacion(partido, clasifica) : "");
+
     localStorage.setItem(
       `eliminacion_${codigo}_${pronostico.id}_local`,
       String(pronostico.golesLocal ?? "")
@@ -6661,7 +6731,11 @@ function aplicarPronosticosServidorEnLocalStorage(pronosticosServidor, codigoUsu
     );
     localStorage.setItem(
       `eliminacion_${codigo}_${pronostico.id}_clasifica`,
-      String(pronostico.clasifica ?? "")
+      String(clasifica ?? "")
+    );
+    localStorage.setItem(
+      `eliminacion_${codigo}_${pronostico.id}_clasificadoLado`,
+      String(clasificadoLado ?? "")
     );
   });
 }
@@ -6697,7 +6771,7 @@ function recargarPronosticosEliminacionDesdeLocalStorage() {
       inputVisita.value = localStorage.getItem(crearClaveEliminacion(partido.id, "visita")) || "";
     }
 
-    const clasificaGuardado = localStorage.getItem(crearClaveEliminacion(partido.id, "clasific")) || "";
+    const clasificaGuardado = obtenerClasificaGuardadoEliminacion(partido);
 
     radiosClasifica.forEach((radio) => {
       radio.checked = radio.value === clasificaGuardado;
@@ -6756,6 +6830,7 @@ function limpiarFormulario() {
     localStorage.removeItem(crearClaveEliminacion(partido.id, "local"));
     localStorage.removeItem(crearClaveEliminacion(partido.id, "visita"));
     localStorage.removeItem(crearClaveEliminacion(partido.id, "clasific"));
+    localStorage.removeItem(crearClaveEliminacion(partido.id, "clasificadoLado"));
   });
 
   actualizarContadorPronosticos();
@@ -6834,6 +6909,8 @@ async function enviarEliminacion() {
     );
     const clasificaSeleccionado = obtenerClasificaSeleccionado(partido.id);
     const clasifica = clasificaAutomatico || clasificaSeleccionado?.value || "";
+    const clasificadoLado = clasificaSeleccionado?.dataset.lado ||
+      obtenerLadoClasificadoPorNombreEliminacion(partido, clasifica);
 
     const localVacio = golesLocal === "";
     const visitaVacia = golesVisita === "";
@@ -6865,7 +6942,8 @@ async function enviarEliminacion() {
       golesLocal: Number(golesLocal),
       golesVisita: Number(golesVisita),
       visita: visitaMostrada,
-      clasifica
+      clasifica,
+      clasificadoLado
     });
   }
 
