@@ -107,8 +107,8 @@ body {
 
 .knockout-prediction-card {
   display: grid;
-  grid-template-columns: minmax(98px, 0.45fr) minmax(0, 1fr) minmax(92px, auto);
-  gap: 6px 10px;
+  grid-template-columns: 118px minmax(0, 1fr) max-content;
+  gap: 6px 8px;
   align-items: center;
 }
 
@@ -132,11 +132,12 @@ body {
 .knockout-prediction-card .match-row {
   grid-column: 2;
   grid-row: 1;
-  grid-template-columns: minmax(130px, 1fr) 52px 12px 52px minmax(130px, 1fr);
+  grid-template-columns: minmax(0, 1fr) 48px 10px 48px minmax(0, 1fr);
+  gap: 5px;
 }
 
 .knockout-prediction-card .classify-box {
-  grid-column: 2 / 4;
+  grid-column: 2 / -1;
   grid-row: 2;
 }
 
@@ -144,6 +145,11 @@ body {
   grid-column: 3;
   grid-row: 1;
   justify-self: end;
+  width: max-content;
+  min-width: 0;
+  padding: 3px 8px;
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 .match-card.partido-bloqueado {
@@ -1011,6 +1017,13 @@ body {
     min-width: 78px;
     padding: 2px 6px;
     font-size: 9px;
+  }
+
+  .knockout-prediction-card .match-status {
+    width: max-content;
+    min-width: 0;
+    max-width: none;
+    padding: 2px 6px;
   }
 
   .knockout-prediction-card .classify-box {
