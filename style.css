@@ -6479,18 +6479,24 @@ body {
 
   .admin-third-table {
     font-size: 8.5px;
+    width: 100%;
+    max-width: 100%;
+    table-layout: auto;
   }
 
   .admin-third-table th,
   .admin-third-table td {
     padding: 4px 1px;
+    box-sizing: border-box;
   }
 
   .admin-third-table thead tr,
   .admin-third-table tbody tr {
     display: grid;
-    grid-template-columns: minmax(112px, 1fr) 18px 22px 22px 24px 46px;
+    grid-template-columns: minmax(0, 1fr) 18px 20px 22px 24px 36px;
     align-items: center;
+    width: 100%;
+    max-width: 100%;
   }
 
   .admin-third-table th,
@@ -6511,7 +6517,7 @@ body {
 
   .admin-third-table th:has(+ .admin-third-cell-state)::after {
     content: "Clasif.";
-    font-size: 8.8px;
+    font-size: 7px;
   }
 
   .admin-third-cell-pj,
@@ -6525,6 +6531,8 @@ body {
 
   .admin-third-cell-team {
     order: 1;
+    text-align: left;
+    overflow: hidden;
   }
 
   .admin-third-cell-group {
@@ -6551,18 +6559,32 @@ body {
   .admin-third-table .team-flag {
     width: 12px;
     height: 8px;
+    flex: 0 0 12px;
   }
 
   .admin-third-table .team-with-flag {
     gap: 3px;
     max-width: 100%;
     min-width: 0;
+    overflow: hidden;
   }
 
-  .admin-third-status,
   .admin-third-classification {
-    padding: 2px 3px;
-    font-size: 7.8px;
+    min-width: 22px;
+    padding: 2px 2px;
+    font-size: 0;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .admin-third-classification.is-qualified::after {
+    content: "S\00ed";
+    font-size: 7.4px;
+  }
+
+  .admin-third-classification.is-out::after {
+    content: "No";
+    font-size: 7.4px;
   }
 }
 
