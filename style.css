@@ -152,6 +152,10 @@ body {
   white-space: nowrap;
 }
 
+.knockout-prediction-card .team.visitante {
+  padding-left: 8px;
+}
+
 .match-card.partido-bloqueado {
   border: 1px solid #fecaca;
 }
