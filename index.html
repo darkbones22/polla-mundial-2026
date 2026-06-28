@@ -91,14 +91,14 @@
     <section id="pollasActivasBox" class="pollas-summary"></section>
 
     <nav class="main-menu">
-      <button id="tabPronosticos" class="menu-button active" onclick="mostrarSeccion('pronosticos')">
-        <span class="tab-label-full">Pronósticos fase de grupos</span>
-        <span class="tab-label-mobile">Grupos</span>
-      </button>
-
-      <button id="tabEliminacion" class="menu-button" onclick="mostrarSeccion('eliminacion')">
+      <button id="tabEliminacion" class="menu-button active" onclick="mostrarSeccion('eliminacion')">
         <span class="tab-label-full">Pronósticos fase de eliminación</span>
         <span class="tab-label-mobile">Eliminación</span>
+      </button>
+
+      <button id="tabPronosticos" class="menu-button" onclick="mostrarSeccion('pronosticos')">
+        <span class="tab-label-full">Pronósticos fase de grupos</span>
+        <span class="tab-label-mobile">Grupos</span>
       </button>
 
       <button id="tabRanking" class="menu-button" onclick="mostrarSeccion('ranking')">
@@ -123,7 +123,7 @@
     </nav>
 
     <!-- SECCIÓN PRONÓSTICOS -->
-    <section id="seccionPronosticos" class="page-section">
+    <section id="seccionPronosticos" class="page-section hidden">
 
       <section class="progress-card">
         <p id="contadorPronosticos">Pronósticos completados: 0 de 72</p>
@@ -162,7 +162,7 @@
     </section>
 
     <!-- SECCIÓN ELIMINACIÓN -->
-    <section id="seccionEliminacion" class="page-section hidden">
+    <section id="seccionEliminacion" class="page-section">
 
       <section class="progress-card">
         <p id="contadorEliminacion">Pronósticos completados: 0 de 32</p>

@@ -2114,7 +2114,7 @@ function abrirApp(validacionCodigo) {
   llenarSelectorPollaGlobal(validacionCodigo.pollas);
   llenarSelectorRanking(validacionCodigo.pollas);
   actualizarVisibilidadAdmin(validacionCodigo);
-  mostrarSeccion("pronosticos");
+  mostrarSeccion("eliminacion");
   recargarPronosticosGruposDesdeLocalStorage();
   recargarPronosticosEliminacionDesdeLocalStorage();
   actualizarContadorPronosticos();
@@ -2496,7 +2496,7 @@ function manejarErrorAdmin(respuesta) {
     usuarioAdminActual = false;
     actualizarVisibilidadAdmin(null);
     mostrarFeedbackAdmin("No autorizado.", "error");
-    mostrarSeccion("pronosticos");
+    mostrarSeccion("eliminacion");
     return true;
   }
 
@@ -5212,7 +5212,7 @@ async function mostrarSeccion(seccion) {
   tabAdmin?.classList.remove("active");
 
   if (seccion === "admin" && !usuarioAdminActual) {
-    await mostrarSeccion("pronosticos");
+    await mostrarSeccion("eliminacion");
     return;
   }
 
